@@ -1,0 +1,28 @@
+#!/bin/bash
+
+killtree() {
+  local pid=$1
+  local signal=$2
+  if [ "$1" != "$$" ]; then
+    kill -STOP ${child}
+    for child in $(ps -o pid --no-headers --ppid ${pid}); do
+      killtree ${child} ${signal}
+    done
+    kill -${signal} ${child}
+    kill -CONT ${child}
+  fi
+}
+
+begin() {
+  local pid=$1
+  for child in $(ps -o pid --no-headers --ppid ${pid}); do
+    killtree ${child} "TERM"
+  done
+  sleep 5
+  for child in $(ps -o pid --no-headers --ppid ${pid}); do
+    killtree ${child} "KILL"
+  done
+}
+
+begin $@
+

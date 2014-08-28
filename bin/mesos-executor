@@ -1,0 +1,3 @@
+#!/bin/bash
+
+exec java $HADOOP_OPTS $EXECUTOR_OPTS -cp lib/*.jar org.apache.mesos.hdfs.MesosExecutor

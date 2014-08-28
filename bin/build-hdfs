@@ -1,0 +1,27 @@
+#!/bin/bash
+
+mvn clean package
+
+wget http://archive.cloudera.com/cdh5/cdh/5/hadoop-2.3.0-cdh5.1.0.tar.gz
+tar xf hadoop-2.*.tar.gz
+cd hadoop-2.*
+
+# Remove unneeded computer stuff
+rm -rf cloudera
+rm -rf examples*
+rm -rf src
+rm -rf share/hadoop/mapreduce*
+rm -rf share/hadoop/yarn
+rm -rf share/doc
+rm -rf etc/hadoop-mapreduce*
+
+# Copy scripts to bin
+cp ../bin/hdfs-mesos* bin/
+cp ../target/*-uber.jar lib/
+cp ../conf/* etc/hadoop/
+
+# Build executor package
+cd ..
+tar czf hadoop-mesos-cdh5.tar.gz hadoop-2.*
+
+echo "Done!"

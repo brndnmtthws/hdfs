@@ -1,0 +1,15 @@
+#!/bin/bash
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+export JAVA_HOME=$(dirname $(readlink -f $(which java)))/../..
+
+trap "{ $DIR/mesos-killtree "$$" ; exit 0; }" EXIT
+
+function run_zkfc() {
+  while [ true ] ; do
+    $DIR/hdfs zkfc
+    sleep 10
+  done
+}
+
+run_zkfc

@@ -1,0 +1,7 @@
+#!/bin/bash
+
+if [ -z "$PORT0" ] ; then
+  PORT0="8765"
+fi
+
+exec java -cp lib/*.jar -Dmesos.site.path=etc/hadoop -Dmesos.hdfs.config.server.port=$PORT0 org.apache.mesos.hdfs.Main
