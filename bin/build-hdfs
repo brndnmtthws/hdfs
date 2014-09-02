@@ -15,6 +15,12 @@ rm -rf share/hadoop/yarn
 rm -rf share/doc
 rm -rf etc/hadoop-mapreduce*
 
+# Get native libraries
+wget https://github.com/cloudera/Impala/archive/cdh5-1.4_5.1.0.zip
+unzip -q cdh5-1.4_5.1.0.zip
+cp Impala-cdh5-1.4_5.1.0/thirdparty/hadoop-2.3.0-cdh5.1.0/lib/native/lib* lib/native
+rm -rf cdh5-1* Impala*
+
 # Copy scripts to bin
 cp ../bin/hdfs-mesos* bin/
 cp ../target/*-uber.jar lib/

@@ -1,13 +1,19 @@
 package org.apache.mesos.hdfs;
 
 import com.google.common.util.concurrent.RateLimiter;
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.Executor;
 import org.apache.mesos.ExecutorDriver;
 import org.apache.mesos.MesosExecutorDriver;
 import org.apache.mesos.Protos.*;
+import org.apache.mesos.hdfs.config.SchedulerConf;
+import org.apache.mesos.hdfs.util.StreamRedirect;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Map;
@@ -17,10 +23,21 @@ public class MesosExecutor implements Executor {
   public static final Log log = LogFactory.getLog(MesosExecutor.class);
   private Map<TaskID, Task> tasks = new ConcurrentHashMap<>();
   private ExecutorInfo executorInfo;
-  private RateLimiter reloadLimiter = RateLimiter.create(1/60.); // no more than once every 60s
+  private RateLimiter reloadLimiter = RateLimiter.create(1 / 60.); // no more than once every 60s
+  private BackupService backupService;
+  private SchedulerConf schedulerConf;
+
+  @Inject
+  MesosExecutor(SchedulerConf schedulerConf, BackupService backupService) {
+    this.backupService = backupService;
+    this.schedulerConf = schedulerConf;
+  }
 
   public static void main(String[] args) {
-    MesosExecutorDriver driver = new MesosExecutorDriver(new MesosExecutor());
+    Injector injector = Guice.createInjector(new ProdConfigModule());
+
+    MesosExecutorDriver driver =
+        new MesosExecutorDriver(injector.getInstance(MesosExecutor.class));
     System.exit(driver.run() == Status.DRIVER_STOPPED ? 0 : 1);
   }
 
@@ -28,6 +45,13 @@ public class MesosExecutor implements Executor {
   public void registered(ExecutorDriver driver, ExecutorInfo executorInfo,
                          FrameworkInfo frameworkInfo, SlaveInfo slaveInfo) {
     log.info("Executor registered with the slave");
+
+    // Make sure data dir exists
+    File dataDir = new File(schedulerConf.getDataDir());
+    if (!dataDir.exists()) {
+      dataDir.mkdirs();
+    }
+
   }
 
   @Override
@@ -38,6 +62,18 @@ public class MesosExecutor implements Executor {
     driver.sendStatusUpdate(TaskStatus.newBuilder()
         .setTaskId(task.getTaskId())
         .setState(TaskState.TASK_RUNNING).build());
+
+    // Check if we have a namenode.
+    // If so, report back to scheduler whether or not there's a backup archive available.
+    if (task.getTaskId().getValue().contains("namenode.namenode")) {
+      if (backupService.checkForBackup()) {
+        driver.sendStatusUpdate(TaskStatus.newBuilder()
+            .setTaskId(task.getTaskId())
+            .setState(TaskState.TASK_RUNNING)
+            .setMessage("backup-archive-available")
+            .build());
+      }
+    }
   }
 
   @Override
@@ -117,7 +153,7 @@ public class MesosExecutor implements Executor {
       int exitCode = process.waitFor();
       log.info("Finished reloading hdfs-site.xml, exited with status " + exitCode);
     } catch (InterruptedException | IOException e) {
-      log.error(e);
+      log.error("Caught exception", e);
     }
   }
 
@@ -208,6 +244,9 @@ public class MesosExecutor implements Executor {
           log.info("Asked to initializeSharedEdits");
           namenodeInit(driver, "-s", "initialized");
           break;
+        case "backup":
+          log.info("Asked to perform backup");
+          backupService.createAndStoreArchive();
         default:
           throw new RuntimeException("Unknown command: " + command);
       }
@@ -230,6 +269,7 @@ public class MesosExecutor implements Executor {
     public TaskInfo taskInfo;
     public String cmd;
     public Process process;
+
     Task(TaskInfo taskInfo) {
       this.taskInfo = taskInfo;
       this.cmd = taskInfo.getData().toStringUtf8();

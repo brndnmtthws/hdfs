@@ -1,9 +1,9 @@
-package org.apache.mesos.hdfs;
+package org.apache.mesos.hdfs.config;
 
 import org.apache.hadoop.conf.Configuration;
 
 public class SchedulerConf extends MainConf {
-  SchedulerConf(Configuration conf, int configServerPort) {
+  public SchedulerConf(Configuration conf, int configServerPort) {
     super(conf, configServerPort);
   }
 
@@ -139,5 +139,21 @@ public class SchedulerConf extends MainConf {
 
   public String getHaZookeeperQuorum() {
     return getConf().get("mesos.hdfs.zkfc.ha.zookeeper.quorum");
+  }
+
+  public String getStorageProvider() {
+    return getConf().get("mesos.hdfs.backup.storage.provider");
+  }
+
+  public String getStorageBucket() {
+    return getConf().get("mesos.hdfs.backup.storage.bucket");
+  }
+
+  public String getStoragePrefix() {
+    return getConf().get("mesos.hdfs.backup.storage.prefix");
+  }
+
+  public String getStorageCredentialsPath() {
+    return getConf().get("mesos.hdfs.backup.storage.credentials.path");
   }
 }

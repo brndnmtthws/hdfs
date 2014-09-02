@@ -1,4 +1,4 @@
-package org.apache.mesos.hdfs;
+package org.apache.mesos.hdfs.util;
 
 public class ResourceRoles {
   public String cpuRole = null;

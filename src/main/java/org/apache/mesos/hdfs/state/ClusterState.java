@@ -1,8 +1,9 @@
-package org.apache.mesos.hdfs;
+package org.apache.mesos.hdfs.state;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.Protos;
+import org.apache.mesos.hdfs.Scheduler;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -10,14 +11,14 @@ import java.util.Map;
 import java.util.Set;
 
 public class ClusterState {
-  public static final Log log = LogFactory.getLog(ClusterState.class);
-  private State state;
-  private Map<Protos.TaskID, Scheduler.DfsTask> tasks;
-  private Set<Protos.TaskID> journalnodes;
-  private Set<Protos.TaskID> namenodes;
-  private Set<String> dfsHosts;
-  private Set<String> journalnodeHosts;
-  private Set<String> namenodeHosts;
+  private static final Log log = LogFactory.getLog(ClusterState.class);
+  private final State state;
+  private final Map<Protos.TaskID, Scheduler.DfsTask> tasks;
+  private final Set<Protos.TaskID> journalnodes;
+  private final Set<Protos.TaskID> namenodes;
+  private final Set<String> dfsHosts;
+  private final Set<String> journalnodeHosts;
+  private final Set<String> namenodeHosts;
 
 
   public ClusterState(State state) {
@@ -62,7 +63,7 @@ public class ClusterState {
     return !dfsHosts.contains(host);
   }
 
-  void addTask(Protos.TaskID taskId, Scheduler.DfsTask dfsTask) {
+  public void addTask(Protos.TaskID taskId, Scheduler.DfsTask dfsTask) {
     tasks.put(taskId, dfsTask);
     Scheduler.DfsTask.Type type = dfsTask.type;
     switch (type) {
@@ -77,7 +78,7 @@ public class ClusterState {
     }
   }
 
-  void updateTask(Protos.TaskStatus taskStatus) {
+  public void updateTask(Protos.TaskStatus taskStatus) {
     if (tasks.containsKey(taskStatus.getTaskId())) {
       tasks.get(taskStatus.getTaskId()).taskStatus = taskStatus;
       Scheduler.DfsTask.Type type = tasks.get(taskStatus.getTaskId()).type;
@@ -100,7 +101,7 @@ public class ClusterState {
     }
   }
 
-  void removeTask(Protos.TaskStatus taskStatus) {
+  public void removeTask(Protos.TaskStatus taskStatus) {
     Protos.TaskID taskId = taskStatus.getTaskId();
     if (tasks.containsKey(taskId) && tasks.get(taskId).hostname != null) {
       journalnodeHosts.remove(tasks.get(taskId).hostname);

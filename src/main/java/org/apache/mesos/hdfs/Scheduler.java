@@ -1,5 +1,6 @@
 package org.apache.mesos.hdfs;
 
+import com.google.inject.Inject;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.logging.Log;
@@ -7,6 +8,10 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.MesosSchedulerDriver;
 import org.apache.mesos.Protos.*;
 import org.apache.mesos.SchedulerDriver;
+import org.apache.mesos.hdfs.config.SchedulerConf;
+import org.apache.mesos.hdfs.state.ClusterState;
+import org.apache.mesos.hdfs.util.ResourceRoles;
+import org.apache.mesos.hdfs.util.ResourceUtils;
 import org.joda.time.DateTime;
 import org.joda.time.Seconds;
 
@@ -30,9 +35,10 @@ public class Scheduler implements org.apache.mesos.Scheduler,
   private boolean initializingCluster = false;
   private Set<TaskID> stagingTasks = new HashSet<>();
 
-  public Scheduler(MainConf mainConf, ClusterState clusterState) {
+  @Inject
+  public Scheduler(SchedulerConf conf, ClusterState clusterState) {
     this.clusterState = clusterState;
-    this.conf = new SchedulerConf(mainConf.getConf(), mainConf.getConfigServerPort());
+    this.conf = conf;
     pendingOffers = new ConcurrentHashMap<>();
 
     try {
@@ -66,7 +72,7 @@ public class Scheduler implements org.apache.mesos.Scheduler,
   public void frameworkMessage(SchedulerDriver driver, ExecutorID executorID,
                                SlaveID slaveID, byte[] data) {
     log.info("Framework message: executorId=" + executorID.getValue() + " slaveId=" + slaveID.getValue() +
-        " data='" + data + "'");
+        " data='" + Arrays.toString(data) + "'");
   }
 
   @Override
@@ -355,7 +361,7 @@ public class Scheduler implements org.apache.mesos.Scheduler,
     log.info("Slave lost slaveId=" + slaveId.getValue());
   }
 
-  private boolean sendMessageTo(SchedulerDriver driver, TaskID taskId, String message) {
+  private void sendMessageTo(SchedulerDriver driver, TaskID taskId, String message) {
     log.info(String.format("Sending message '%s' to taskId=%s", message, taskId.getValue()));
     DfsTask dfsTask = clusterState.getDfsTask(taskId);
     try {
@@ -367,10 +373,10 @@ public class Scheduler implements org.apache.mesos.Scheduler,
           SlaveID.newBuilder().setValue(dfsTask.slaveId).build(),
           message.getBytes("UTF-8")
       );
-      return true;
+      return;
     } catch (UnsupportedEncodingException e) {
       log.error(e);
-      return false;
+      return;
     }
   }
 
@@ -515,7 +521,7 @@ public class Scheduler implements org.apache.mesos.Scheduler,
       }
     }
 
-    enum Type {
+    public enum Type {
       NN,
       DN,
       JN,

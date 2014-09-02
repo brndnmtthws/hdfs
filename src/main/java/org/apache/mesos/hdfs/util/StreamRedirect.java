@@ -1,12 +1,12 @@
-package org.apache.mesos.hdfs;
+package org.apache.mesos.hdfs.util;
 
 import java.io.*;
 
-class StreamRedirect extends Thread {
+public class StreamRedirect extends Thread {
   InputStream stream;
   PrintStream outputStream;
 
-  StreamRedirect(InputStream stream, PrintStream outputStream) {
+  public StreamRedirect(InputStream stream, PrintStream outputStream) {
     this.stream = stream;
     this.outputStream = outputStream;
   }

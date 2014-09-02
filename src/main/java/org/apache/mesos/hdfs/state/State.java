@@ -1,4 +1,4 @@
-package org.apache.mesos.hdfs;
+package org.apache.mesos.hdfs.state;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.mesos.Protos.FrameworkID;

@@ -1,6 +1,9 @@
-package org.apache.mesos.hdfs;
+package org.apache.mesos.hdfs.config;
 
 import com.floreysoft.jmte.Engine;
+import com.google.inject.Inject;
+import com.google.inject.name.Named;
+import org.apache.mesos.hdfs.state.ClusterState;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -23,9 +26,11 @@ public class ConfigServer {
   private Server server;
   private Engine engine;
   private SchedulerConf schedulerConf;
-  private String clusterName;
 
-  public ConfigServer(SchedulerConf schedulerConf, String sitePath, ClusterState clusterState) throws Exception {
+  @Inject
+  public ConfigServer(SchedulerConf schedulerConf, @Named("ConfigPath") String sitePath,
+                      ClusterState clusterState) throws
+      Exception {
     this.schedulerConf = schedulerConf;
     this.sitePath = sitePath;
     this.clusterState = clusterState;
