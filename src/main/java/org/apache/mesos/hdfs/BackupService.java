@@ -29,7 +29,8 @@ class BackupService {
   void addPathsToZip(ZipOutputStream zos, String path) throws IOException {
     File start = new File(path);
     File[] listing = start.listFiles();
-    if (listing == null) return;
+    if (listing == null)
+      return;
 
     for (File file : listing) {
       if (!file.isDirectory()) {

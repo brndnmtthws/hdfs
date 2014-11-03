@@ -29,7 +29,7 @@ public class ConfigServer {
 
   @Inject
   public ConfigServer(SchedulerConf schedulerConf, @Named("ConfigPath") String sitePath,
-                      ClusterState clusterState) throws
+      ClusterState clusterState) throws
       Exception {
     this.schedulerConf = schedulerConf;
     this.sitePath = sitePath;
@@ -47,7 +47,8 @@ public class ConfigServer {
   }
 
   private class ServeHdfsConfigHandler extends AbstractHandler {
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public void handle(String target, Request baseRequest, HttpServletRequest request,
+        HttpServletResponse response) throws IOException {
 
       String plainFilename = "";
       try {
@@ -58,7 +59,8 @@ public class ConfigServer {
       File confFile = new File(sitePath + "/" + plainFilename);
 
       if (!confFile.exists()) {
-        throw new FileNotFoundException("Couldn't file config file: " + confFile.getPath() + ". Please make sure it exists.");
+        throw new FileNotFoundException("Couldn't file config file: " + confFile.getPath()
+            + ". Please make sure it exists.");
       }
 
       String content = new String(Files.readAllBytes(Paths.get(confFile.getPath())));
@@ -84,7 +86,8 @@ public class ConfigServer {
         journalnodeString += jn + ":8485;";
       }
       if (!journalnodeString.isEmpty()) {
-        journalnodeString = journalnodeString.substring(0, journalnodeString.length() - 1); // Chop trailing ','
+        // Chop trailing ','
+        journalnodeString = journalnodeString.substring(0, journalnodeString.length() - 1);
       }
 
       model.put("journalnodes", journalnodeString);
@@ -104,7 +107,6 @@ public class ConfigServer {
       baseRequest.setHandled(true);
       response.getWriter().println(content);
     }
-
   }
 
 }

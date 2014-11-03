@@ -31,15 +31,16 @@ public class S3StorageProvider implements StorageProvider {
     S3Credentials s3Credentials = mapper.readValue(
         new File(schedulerConf.getStorageCredentialsPath()),
         S3Credentials.class
-    );
+        );
 
     s3Client = new AmazonS3Client(
         new BasicAWSCredentials(s3Credentials.accessKey, s3Credentials.secretKey)
-    );
+        );
   }
 
-  static public void storeObject(AmazonS3Client s3Client, SchedulerConf schedulerConf, String sourcePath,
-                                 String destinationObject) throws
+  static public void storeObject(AmazonS3Client s3Client, SchedulerConf schedulerConf,
+      String sourcePath,
+      String destinationObject) throws
       IOException {
     final String existingBucketName = schedulerConf.getStorageBucket();
     final String keyName = schedulerConf.getStoragePrefix() + destinationObject;
@@ -77,10 +78,10 @@ public class S3StorageProvider implements StorageProvider {
 
       CompleteMultipartUploadRequest compRequest = new
           CompleteMultipartUploadRequest(
-          existingBucketName,
-          keyName,
-          initResponse.getUploadId(),
-          partETags);
+              existingBucketName,
+              keyName,
+              initResponse.getUploadId(),
+              partETags);
 
       s3Client.completeMultipartUpload(compRequest);
     } catch (Exception e) {
@@ -90,8 +91,8 @@ public class S3StorageProvider implements StorageProvider {
     }
 
   }
-
-  static public List<String> listStoredObjects(AmazonS3Client s3Client, SchedulerConf schedulerConf) throws IOException {
+  static public List<String> listStoredObjects(AmazonS3Client s3Client, SchedulerConf schedulerConf)
+      throws IOException {
     List<String> result = new ArrayList<>();
     ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
         .withBucketName(schedulerConf.getStorageBucket())
@@ -112,7 +113,6 @@ public class S3StorageProvider implements StorageProvider {
 
     return result;
   }
-
   public void storeObject(String sourcePath, String destinationObject) throws IOException {
     storeObject(s3Client, schedulerConf, sourcePath, destinationObject);
   }
@@ -126,7 +126,7 @@ public class S3StorageProvider implements StorageProvider {
   }
 
   public void retrieveObject(AmazonS3Client s3Client, SchedulerConf schedulerConf, String object,
-                             String destinationPath) throws IOException {
+      String destinationPath) throws IOException {
     BufferedOutputStream bufferedOutputStream =
         new BufferedOutputStream(new FileOutputStream(destinationPath));
     try {
@@ -146,7 +146,7 @@ public class S3StorageProvider implements StorageProvider {
         long bytesToRead = Math.min(
             bytesRead + partSize,
             contentLength
-        );
+            );
 
         rangeObjectRequest.setRange(bytesRead, bytesToRead);
         S3Object objectPortion = s3Client.getObject(rangeObjectRequest);

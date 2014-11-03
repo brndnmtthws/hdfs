@@ -10,7 +10,7 @@ public class Main {
     Injector injector = Guice.createInjector(new ProdConfigModule());
     Thread sched = new Thread(
         injector.getInstance(Scheduler.class)
-    );
+        );
     sched.start();
 
     injector.getInstance(ConfigServer.class);

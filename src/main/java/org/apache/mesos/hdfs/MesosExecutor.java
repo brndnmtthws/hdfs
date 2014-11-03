@@ -43,7 +43,7 @@ public class MesosExecutor implements Executor {
 
   @Override
   public void registered(ExecutorDriver driver, ExecutorInfo executorInfo,
-                         FrameworkInfo frameworkInfo, SlaveInfo slaveInfo) {
+      FrameworkInfo frameworkInfo, SlaveInfo slaveInfo) {
     log.info("Executor registered with the slave");
 
     // Make sure data dir exists
@@ -114,7 +114,8 @@ public class MesosExecutor implements Executor {
     Process process = task.process;
     if (process == null) {
       try {
-        process = Runtime.getRuntime().exec(new String[]{"sh", "-c", task.cmd});
+        process = Runtime.getRuntime().exec(new String[]{
+            "sh", "-c", task.cmd});
         redirectProcess(process);
       } catch (IOException e) {
         log.fatal(e);
@@ -176,7 +177,8 @@ public class MesosExecutor implements Executor {
       reloadConfig();
       String fullCmd = task.cmd + " " + opt;
       log.info(String.format("About to run command: %s", fullCmd));
-      Process init = Runtime.getRuntime().exec(new String[]{"sh", "-c", fullCmd});
+      Process init = Runtime.getRuntime().exec(new String[]{
+          "sh", "-c", fullCmd});
       redirectProcess(init);
       int exitCode = init.waitFor();
       log.info("Finished running command, exited with status " + exitCode);
@@ -208,11 +210,11 @@ public class MesosExecutor implements Executor {
       command = new String(msg, "UTF-8");
 
       switch (command) {
-        case "start":
+        case "start" :
           log.info("Starting all processes");
           startProcesses(driver);
           break;
-        case "start_journalnode":
+        case "start_journalnode" :
           log.info("Starting journalnode");
           for (TaskID taskId : tasks.keySet()) {
             if (taskId.getValue().contains(".journalnode.")) {
@@ -221,7 +223,7 @@ public class MesosExecutor implements Executor {
             }
           }
           break;
-        case "reload":
+        case "reload" :
           log.info("Asked to reload config");
           reloadConfig();
           for (Task task : tasks.values()) {
@@ -232,22 +234,22 @@ public class MesosExecutor implements Executor {
             }
           }
           break;
-        case "initialize":
+        case "initialize" :
           log.info("Asked to initialize");
           namenodeInit(driver, "-i", "initialized");
           break;
-        case "bootstrap":
+        case "bootstrap" :
           log.info("Asked to bootstrap");
           namenodeInit(driver, "-b", "bootstrapped");
           break;
-        case "initializeSharedEdits":
+        case "initializeSharedEdits" :
           log.info("Asked to initializeSharedEdits");
           namenodeInit(driver, "-s", "initialized");
           break;
-        case "backup":
+        case "backup" :
           log.info("Asked to perform backup");
           backupService.createAndStoreArchive();
-        default:
+        default :
           throw new RuntimeException("Unknown command: " + command);
       }
     } catch (UnsupportedEncodingException e) {
@@ -273,7 +275,8 @@ public class MesosExecutor implements Executor {
     Task(TaskInfo taskInfo) {
       this.taskInfo = taskInfo;
       this.cmd = taskInfo.getData().toStringUtf8();
-      log.info(String.format("Launching task, taskId=%s cmd='%s'", taskInfo.getTaskId().getValue(), cmd));
+      log.info(String.format("Launching task, taskId=%s cmd='%s'", taskInfo.getTaskId().getValue(),
+          cmd));
     }
   }
 

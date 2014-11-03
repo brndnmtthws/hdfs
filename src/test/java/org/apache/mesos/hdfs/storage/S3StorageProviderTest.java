@@ -23,7 +23,7 @@ public class S3StorageProviderTest {
         TestUtils.computeTestDataRoot(S3StorageProviderTest.class).getPath() +
             "/" +
             UUID.randomUUID().toString()
-    );
+        );
 
     Injector injector = Guice.createInjector(testConfigModule);
     s3StorageProvider = injector.getInstance(S3StorageProvider.class);
