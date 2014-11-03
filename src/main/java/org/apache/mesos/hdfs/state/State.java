@@ -67,9 +67,9 @@ public class State {
   }
 
   /**
-   * Get serializable object from store null if none
+   * Get serializable object from store
    * 
-   * @return Object
+   * @return serialized object or null if none
    * @throws ExecutionException
    * @throws InterruptedException
    * @throws IOException
