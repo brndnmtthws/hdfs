@@ -58,14 +58,14 @@ public class GoogleStorageProviderTest {
     when(client.objects()).thenReturn(objects);
 
     String bucket = "test";
-    when(objects.insert(eq(bucket), any(StorageObject.class), any(InputStreamContent.class))).thenReturn(insert);
+    when(objects.insert(eq(bucket), any(StorageObject.class), any(InputStreamContent.class)))
+        .thenReturn(insert);
 
-    GoogleStorageProvider.storeObject(client, schedulerConfAcessor.getSchedulerConf(), datadir + "/test1",
-        "test/test1");
+    GoogleStorageProvider.storeObject(client, schedulerConfAcessor.getSchedulerConf(), datadir
+        + "/test1", "test/test1");
 
     verify(objects).insert(eq(bucket), any(StorageObject.class), any(InputStreamContent.class));
     verify(client).objects();
-    //verify(insert).execute();
   }
 
   @Test
@@ -81,11 +81,12 @@ public class GoogleStorageProviderTest {
     com.google.api.services.storage.model.Objects objectsListing = new com.google.api.services.storage.model.Objects();
     List<StorageObject> listing = Arrays.asList(
         new StorageObject().setBucket("test").setName("testprefix/test1")
-    );
+        );
     objectsListing.setItems(listing);
     when(list.execute()).thenReturn(objectsListing).thenReturn(null);
 
-    List<String> result = GoogleStorageProvider.listStoredObjects(client, schedulerConfAcessor.getSchedulerConf());
+    List<String> result = GoogleStorageProvider.listStoredObjects(client,
+        schedulerConfAcessor.getSchedulerConf());
 
     assertEquals("test1", result.get(0));
 
@@ -103,7 +104,8 @@ public class GoogleStorageProviderTest {
 
     when(objects.get(eq("test/testprefix"), eq("test1"))).thenReturn(get);
 
-    GoogleStorageProvider.retrieveObject(client, schedulerConfAcessor.getSchedulerConf(), "test1", "test1");
+    GoogleStorageProvider.retrieveObject(client, schedulerConfAcessor.getSchedulerConf(), "test1",
+        "test1");
 
     verify(get).executeMediaAndDownloadTo(any(BufferedOutputStream.class));
   }

@@ -38,7 +38,6 @@ class ProdConfigModule extends AbstractModule {
     return new SchedulerConf(conf, configServerPort);
   }
 
-
   @Provides
   ClusterState providesClusterState(SchedulerConf schedulerConf) {
     MesosNativeLibrary.load(schedulerConf.getNativeLibrary());

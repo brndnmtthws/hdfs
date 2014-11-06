@@ -57,7 +57,6 @@ public class TestConfigModule extends AbstractModule {
     return new SchedulerConf(conf, configServerPort);
   }
 
-
   @Provides
   ClusterState providesClusterState(SchedulerConf schedulerConf) {
     ZooKeeperState zkState = mock(ZooKeeperState.class);

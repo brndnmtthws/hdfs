@@ -13,8 +13,8 @@ public class ResourceUtils {
     this.scheduler = scheduler;
   }
 
-  public ResourceRoles getRolesForRole(Protos.Offer offer, ResourceRoles prevRoles, double cpus, double mem, int ports,
-                                       String role) {
+  public ResourceRoles getRolesForRole(Protos.Offer offer, ResourceRoles prevRoles, double cpus,
+      double mem, int ports, String role) {
     ResourceRoles roles = new ResourceRoles(prevRoles);
     for (Protos.Resource resource : offer.getResourcesList()) {
       if (!role.isEmpty() && !resource.getRole().equals(role)) {
@@ -61,15 +61,15 @@ public class ResourceUtils {
 
   public ResourceRoles sufficientRolesForNamenode(Protos.Offer offer) {
     // NameNode heap + JN + ZKFC heap + executor + overhead
-    final double memNeeded = Math.ceil((
-        scheduler.getConf().getExecutorHeap() +
+    final double memNeeded =
+        Math.ceil((scheduler.getConf().getExecutorHeap() +
             scheduler.getConf().getNamenodeHeapSize() +
             scheduler.getConf().getZkfcHeapSize() +
             scheduler.getConf().getJournalnodeHeapSize()
-    ) * scheduler.getConf().getJvmOverhead());
+            ) * scheduler.getConf().getJvmOverhead());
     final double cpusNeeded =
-        scheduler.getConf().getExecutorCpus() + scheduler.getConf().getNamenodeCpus() + scheduler.getConf()
-            .getJournalnodeCpus() + scheduler.getConf().getZkfcCpus();
+        scheduler.getConf().getExecutorCpus() + scheduler.getConf().getNamenodeCpus()
+            + scheduler.getConf().getJournalnodeCpus() + scheduler.getConf().getZkfcCpus();
     final int portsNeeded = 4;
 
     return getRolesFor(
@@ -82,8 +82,8 @@ public class ResourceUtils {
   public ResourceRoles sufficientRolesForJournalnode(Protos.Offer offer) {
     final double memNeeded = Math.ceil((
         scheduler.getConf().getExecutorHeap() +
-            scheduler.getConf().getJournalnodeHeapSize()
-    ) * scheduler.getConf().getJvmOverhead());
+        scheduler.getConf().getJournalnodeHeapSize()
+        ) * scheduler.getConf().getJvmOverhead());
     final double cpusNeeded =
         scheduler.getConf().getExecutorCpus() + scheduler.getConf().getJournalnodeCpus();
     final int portsNeeded = 2;
@@ -98,8 +98,8 @@ public class ResourceUtils {
   public ResourceRoles sufficientRolesForDatanode(Protos.Offer offer) {
     final double memNeeded = Math.ceil((
         scheduler.getConf().getExecutorHeap() +
-            scheduler.getConf().getDatanodeHeapSize()
-    ) * scheduler.getConf().getJvmOverhead());
+        scheduler.getConf().getDatanodeHeapSize()
+        ) * scheduler.getConf().getJvmOverhead());
     final double cpusNeeded =
         scheduler.getConf().getExecutorCpus() + scheduler.getConf().getDatanodeCpus();
     final int portsNeeded = 3;
@@ -119,12 +119,15 @@ public class ResourceUtils {
             .setRole(roles.cpuRole)
             .setScalar(Protos.Value.Scalar.newBuilder().setValue(cpus).build())
             .build(),
-        Protos.Resource.newBuilder()
+        Protos.Resource
+            .newBuilder()
             .setType(Protos.Value.Type.SCALAR)
             .setName("mem")
             .setRole(roles.memRole)
-            .setScalar(Protos.Value.Scalar.newBuilder().setValue(mem * scheduler.getConf().getJvmOverhead()).build())
+            .setScalar(
+                Protos.Value.Scalar.newBuilder()
+                    .setValue(mem * scheduler.getConf().getJvmOverhead()).build())
             .build()
-    );
+        );
   }
 }
