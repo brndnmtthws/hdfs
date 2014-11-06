@@ -39,9 +39,7 @@ public class S3StorageProvider implements StorageProvider {
   }
 
   static public void storeObject(AmazonS3Client s3Client, SchedulerConf schedulerConf,
-      String sourcePath,
-      String destinationObject) throws
-      IOException {
+    String sourcePath, String destinationObject) throws IOException {
     final String existingBucketName = schedulerConf.getStorageBucket();
     final String keyName = schedulerConf.getStoragePrefix() + destinationObject;
     List<PartETag> partETags = new ArrayList<>();

@@ -62,12 +62,10 @@ public class GoogleStorageProviderTest {
         .thenReturn(insert);
 
     GoogleStorageProvider.storeObject(client, schedulerConfAcessor.getSchedulerConf(), datadir
-        + "/test1",
-        "test/test1");
+        + "/test1", "test/test1");
 
     verify(objects).insert(eq(bucket), any(StorageObject.class), any(InputStreamContent.class));
     verify(client).objects();
-    // verify(insert).execute();
   }
 
   @Test

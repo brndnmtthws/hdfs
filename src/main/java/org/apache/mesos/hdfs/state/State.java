@@ -21,7 +21,7 @@ public class State {
   }
 
   /**
-   * return null if no frameworkId found
+   * Return null if no frameworkId found.
    * 
    * @throws ExecutionException
    * @throws InterruptedException

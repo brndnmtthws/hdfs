@@ -73,8 +73,7 @@ public class Scheduler implements org.apache.mesos.Scheduler,
   public void frameworkMessage(SchedulerDriver driver, ExecutorID executorID,
       SlaveID slaveID, byte[] data) {
     log.info("Framework message: executorId=" + executorID.getValue() + " slaveId="
-        + slaveID.getValue() +
-        " data='" + Arrays.toString(data) + "'");
+    + slaveID.getValue() + " data='" + Arrays.toString(data) + "'");
   }
 
   @Override
@@ -108,8 +107,7 @@ public class Scheduler implements org.apache.mesos.Scheduler,
   }
 
   private void launchNode(SchedulerDriver driver, Offer offer, ResourceRoles roles,
-      String nodeName,
-      List<String> taskNames) {
+      String nodeName, List<String> taskNames) {
     log.info(String.format("Launching node of type %s with tasks %s", nodeName,
         taskNames.toString()));
     int confServerPort = conf.getConfigServerPort();
@@ -273,13 +271,12 @@ public class Scheduler implements org.apache.mesos.Scheduler,
       incomingOffers.addAll(pendingOffers.values());
       for (Offer offer : incomingOffers) {
         if (namenodes < 2 && resourceUtils.sufficientRolesForNamenode(offer) != null
-            && clusterState.notInDfsHosts(offer
-                .getSlaveId().getValue())) {
+            && clusterState.notInDfsHosts(offer.getSlaveId().getValue())) {
           namenodes++;
           pendingOffers.put(offer.getId(), offer);
         } else if (journalnodes < conf.getJournalnodeCount()
-            && resourceUtils.sufficientRolesForJournalnode(offer) !=
-            null && clusterState.notInDfsHosts(offer.getSlaveId().getValue())) {
+            && resourceUtils.sufficientRolesForJournalnode(offer) !=null
+            && clusterState.notInDfsHosts(offer.getSlaveId().getValue())) {
           journalnodes++;
           pendingOffers.put(offer.getId(), offer);
         } else {
