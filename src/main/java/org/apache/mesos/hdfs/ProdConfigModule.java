@@ -50,13 +50,6 @@ class ProdConfigModule extends AbstractModule {
     return new ClusterState(state);
   }
 
-  @Provides
-  BackupService providesBackupService(SchedulerConf schedulerConf) throws Exception {
-    return (BackupService) Class.forName(schedulerConf.getStorageProvider())
-        .getDeclaredConstructor(SchedulerConf.class)
-        .newInstance(schedulerConf);
-  }
-
   @Override
   protected void configure() {
   }

@@ -24,12 +24,10 @@ public class MesosExecutor implements Executor {
   private Map<TaskID, Task> tasks = new ConcurrentHashMap<>();
   private ExecutorInfo executorInfo;
   private RateLimiter reloadLimiter = RateLimiter.create(1 / 60.); // no more than once every 60s
-  private BackupService backupService;
   private SchedulerConf schedulerConf;
 
   @Inject
-  MesosExecutor(SchedulerConf schedulerConf, BackupService backupService) {
-    this.backupService = backupService;
+  MesosExecutor(SchedulerConf schedulerConf) {
     this.schedulerConf = schedulerConf;
   }
 
@@ -62,18 +60,6 @@ public class MesosExecutor implements Executor {
     driver.sendStatusUpdate(TaskStatus.newBuilder()
         .setTaskId(task.getTaskId())
         .setState(TaskState.TASK_RUNNING).build());
-
-    // Check if we have a namenode.
-    // If so, report back to scheduler whether or not there's a backup archive available.
-    if (task.getTaskId().getValue().contains("namenode.namenode")) {
-      if (backupService.checkForBackup()) {
-        driver.sendStatusUpdate(TaskStatus.newBuilder()
-            .setTaskId(task.getTaskId())
-            .setState(TaskState.TASK_RUNNING)
-            .setMessage("backup-archive-available")
-            .build());
-      }
-    }
   }
 
   @Override
@@ -246,9 +232,6 @@ public class MesosExecutor implements Executor {
           log.info("Asked to initializeSharedEdits");
           namenodeInit(driver, "-s", "initialized");
           break;
-        case "backup" :
-          log.info("Asked to perform backup");
-          backupService.createAndStoreArchive();
         default :
           throw new RuntimeException("Unknown command: " + command);
       }

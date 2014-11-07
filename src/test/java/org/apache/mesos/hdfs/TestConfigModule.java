@@ -8,7 +8,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.mesos.hdfs.config.SchedulerConf;
 import org.apache.mesos.hdfs.state.ClusterState;
 import org.apache.mesos.hdfs.state.State;
-import org.apache.mesos.hdfs.storage.StorageProvider;
 import org.apache.mesos.state.ZooKeeperState;
 
 import java.util.Properties;
@@ -62,11 +61,6 @@ public class TestConfigModule extends AbstractModule {
     ZooKeeperState zkState = mock(ZooKeeperState.class);
     State state = mock(State.class);
     return new ClusterState(state);
-  }
-
-  @Provides
-  BackupService providesBackupService(SchedulerConf schedulerConf) {
-    return new BackupService(mock(StorageProvider.class), schedulerConf);
   }
 
   @Override
