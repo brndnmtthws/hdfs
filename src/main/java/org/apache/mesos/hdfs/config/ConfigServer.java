@@ -21,22 +21,14 @@ import java.util.*;
 
 public class ConfigServer {
 
-  final private String sitePath;
-  final private ClusterState clusterState;
   private Server server;
   private Engine engine;
   private SchedulerConf schedulerConf;
 
   @Inject
-  public ConfigServer(SchedulerConf schedulerConf, @Named("ConfigPath") String sitePath,
-      ClusterState clusterState) throws
-      Exception {
+  public ConfigServer(SchedulerConf schedulerConf) throws Exception {
     this.schedulerConf = schedulerConf;
-    this.sitePath = sitePath;
-    this.clusterState = clusterState;
-
     engine = new Engine();
-
     server = new Server(schedulerConf.getConfigServerPort());
     server.setHandler(new ServeHdfsConfigHandler());
     server.start();
@@ -47,16 +39,11 @@ public class ConfigServer {
   }
 
   private class ServeHdfsConfigHandler extends AbstractHandler {
-    public void handle(String target, Request baseRequest, HttpServletRequest request,
+    public synchronized void handle(String target, Request baseRequest, HttpServletRequest request,
         HttpServletResponse response) throws IOException {
 
-      String plainFilename = "";
-      try {
-        plainFilename = new File(new URI(target).getPath()).getName();
-      } catch (URISyntaxException e) {
-        e.printStackTrace();
-      }
-      File confFile = new File(sitePath + "/" + plainFilename);
+      ClusterState clusterState = ClusterState.getInstance();
+      File confFile = new File(schedulerConf.getConfigPath());
 
       if (!confFile.exists()) {
         throw new FileNotFoundException("Couldn't file config file: " + confFile.getPath()
@@ -86,7 +73,7 @@ public class ConfigServer {
         journalnodeString += jn + ":8485;";
       }
       if (!journalnodeString.isEmpty()) {
-        // Chop trailing ','
+        // Chop the trailing ,
         journalnodeString = journalnodeString.substring(0, journalnodeString.length() - 1);
       }
 
@@ -99,7 +86,8 @@ public class ConfigServer {
       content = engine.transform(content, model);
 
       response.setContentType("application/octet-stream;charset=utf-8");
-      response.setHeader("Content-Disposition", "attachment; filename=\"" + plainFilename + "\" ");
+      response
+          .setHeader("Content-Disposition", "attachment; filename=\"" + "hdfs-site.xml" + "\" ");
       response.setHeader("Content-Transfer-Encoding", "binary");
       response.setHeader("Content-Length", Integer.toString(content.length()));
 
