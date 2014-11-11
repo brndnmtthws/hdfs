@@ -41,16 +41,6 @@ public class TestConfigModule extends AbstractModule {
   }
 
   @Provides
-  SchedulerConf providesSchedulerConfig(Properties props, @Named("ConfigPath") String configPath) {
-    Configuration conf = new Configuration();
-    int configServerPort = Integer.valueOf(props.getProperty("mesos.hdfs.config.server.port",
-        "8765"));
-
-    conf.set("mesos.hdfs.data.dir", dataDir);
-    return new SchedulerConf(conf, configServerPort);
-  }
-
-  @Provides
   ClusterState providesClusterState(SchedulerConf schedulerConf) {
     ZooKeeperState zkState = mock(ZooKeeperState.class);
     State state = mock(State.class);

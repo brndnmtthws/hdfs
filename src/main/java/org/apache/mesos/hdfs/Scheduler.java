@@ -18,7 +18,13 @@ import org.joda.time.Seconds;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.*;
+import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import org.apache.mesos.MesosNativeLibrary;
@@ -39,7 +45,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   private boolean frameworkInitialized = false;
   private boolean initializingCluster = false;
   private Set<TaskID> stagingTasks = new HashSet<>();
-  //TODO simplify number of variables used
+  //TODO(elingg) simplify number of variables used
   private boolean firstNameNodeLaunched = false;
   private int nameNodesInitialized = 0;
 
@@ -59,7 +65,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   private void initClusterState() {
     MesosNativeLibrary.load(conf.getNativeLibrary());
     ZooKeeperState zkState = new ZooKeeperState(conf.getStateZkServers(),
-    conf.getStateZkTimeout(), TimeUnit.MILLISECONDS, "/hdfs-mesos/" + conf.getClusterName());
+        conf.getStateZkTimeout(), TimeUnit.MILLISECONDS, "/hdfs-mesos/" + conf.getClusterName());
     State state = new State(zkState);
     ClusterState clusterState = ClusterState.getInstance();
     clusterState.init(state);
@@ -112,7 +118,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
   @Override
   public void reregistered(SchedulerDriver driver, MasterInfo masterInfo) {
-    log.info("Reregistered framework, reconciling tasks.");
+    log.info("Reregistered framework.");
     ClusterState clusterState = ClusterState.getInstance();
     clusterState.clear();
     reconciledAt = new DateTime();
@@ -124,8 +130,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     log.info(String.format("Launching node of type %s with tasks %s", nodeName,
         taskNames.toString()));
     int confServerPort = conf.getConfigServerPort();
-    // TODO use up all the offer resources to make sure the machine is only
-    // being used for one thing
+    // TODO(elingg)  Make sure the machine is only being used for one thing by assigning the host
+    // for one purpose
     String taskIdName = String.format("%s.%d", nodeName, System.currentTimeMillis());
     ExecutorInfo executorInfo = ExecutorInfo.newBuilder()
         .setName(nodeName + " executor")
@@ -136,7 +142,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
                     .setName("cpus")
                     .setType(Value.Type.SCALAR)
                     .setScalar(Value.Scalar.newBuilder()
-                    .setValue(conf.getExecutorCpus()).build())
+                        .setValue(conf.getExecutorCpus()).build())
                     .setRole(roles.cpuRole)
                     .build(),
                 Resource.newBuilder()
@@ -261,7 +267,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
   @Override
   synchronized public void resourceOffers(SchedulerDriver driver, List<Offer> offers) {
-    ClusterState clusterState = ClusterState.getInstance();
+
     log.info(String.format("Received %d offers", offers.size()));
     int seconds = Seconds.secondsBetween(reconciledAt, DateTime.now()).getSeconds();
     if (frameworkInitialized && seconds < conf.getReconciliationStartupDelay()) {
@@ -280,6 +286,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       return;
     }
 
+    ClusterState clusterState = ClusterState.getInstance();
     if (clusterState.getNamenodes().size() == 0 && clusterState.getJournalnodes().size() == 0) {
       // Cluster must be formatted! Looks like we're starting fresh?
       log.info("No namenodes or journalnodes found.  Collecting offers until we have sufficient"
@@ -341,7 +348,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       remainingOffers.addAll(offers);
     }
 
-    if (!frameworkInitialized) { //TODO try testing this with initializing cluster variable
+    //TODO (elingg) try testing this with initializing cluster variable
+    if (!frameworkInitialized) {
       log.info(String.format("Declining remaining %d offers pending initialization",
           remainingOffers.size()));
       for (Offer offer : remainingOffers) {
@@ -398,7 +406,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       stagingTasks.remove(status.getTaskId());
       clusterState.updateTask(status);
       log.info("Received status update during cluster initialization");
-      //TODO try testing this with initializing cluster variable
+      //TODO (elingg) try testing this with initializing cluster variable
       if (dfsTask.type == DfsTask.Type.NN) {
         nameNodesInitialized++;
         if (nameNodesInitialized == 2) {

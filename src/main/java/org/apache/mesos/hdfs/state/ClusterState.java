@@ -37,6 +37,11 @@ public class ClusterState {
     journalnodeHosts = new HashSet<>();
     namenodeHosts = new HashSet<>();
   }
+
+  public void init(State state) {
+    this.state = state;
+  }
+
   public void clear() {
     tasks.clear();
     journalnodes.clear();
@@ -44,9 +49,6 @@ public class ClusterState {
     dfsHosts.clear();
     journalnodeHosts.clear();
     namenodeHosts.clear();
-  }
-  public void init(State state) {
-    this.state = state;
   }
 
   public State getState() {

@@ -21,7 +21,7 @@ public class State {
   }
 
   /**
-   * return null if no frameworkId found
+   * Return null if no frameworkId found.
    * 
    * @throws ExecutionException
    * @throws InterruptedException
@@ -67,9 +67,9 @@ public class State {
   }
 
   /**
-   * Get serializable object from store null if none
+   * Get serializable object from store.
    * 
-   * @return Object
+   * @return serialized object or null if none
    * @throws ExecutionException
    * @throws InterruptedException
    * @throws IOException
