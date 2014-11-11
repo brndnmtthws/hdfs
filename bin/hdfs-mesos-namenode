@@ -16,8 +16,8 @@ function format_namenode() {
   echo "Asked to format namenode"
   echo "Pausing for 10s"
   sleep 10
-  $DIR/hdfs namenode -format -force || exit 3
   $DIR/hdfs zkfc -formatZK -force
+  $DIR/hdfs namenode -format -force || exit 3
 }
 
 function initialize_shared_edits() {
