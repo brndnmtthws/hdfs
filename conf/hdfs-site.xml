@@ -167,6 +167,11 @@
     <name>dfs.namenode.replication.work.multiplier.per.iteration</name>
     <value>4</value>
   </property>
+  
+  <property>
+    <name>dfs.namenode.datanode.registration.ip-hostname-check</name>
+    <value>false</value>
+  </property>
 
   <property>
     <name>dfs.client.read.shortcircuit</name>
@@ -177,7 +182,6 @@
     <name>dfs.client.read.shortcircuit.streams.cache.size</name>
     <value>1000</value>
   </property>
-
 
   <property>
     <name>dfs.client.read.shortcircuit.streams.cache.size.expiry.ms</name>
