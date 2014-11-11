@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import org.apache.mesos.MesosNativeLibrary;
@@ -32,8 +34,7 @@ import org.apache.mesos.hdfs.config.SchedulerConf;
 import org.apache.mesos.hdfs.state.ClusterState;
 import org.apache.mesos.hdfs.state.State;
 import org.apache.mesos.state.ZooKeeperState;
-import java.util.Properties;
-import java.util.concurrent.TimeUnit;
+
 
 public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   public static final Log log = LogFactory.getLog(Scheduler.class);
