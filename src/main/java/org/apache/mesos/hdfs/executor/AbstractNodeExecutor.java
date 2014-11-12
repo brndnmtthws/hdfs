@@ -68,6 +68,11 @@ public abstract class AbstractNodeExecutor implements Executor {
       deleteFile(dataDir);
     }
     dataDir.mkdirs();
+
+    File hdfsDir = new File(schedulerConf.getSecondaryDataDir());
+    if (!hdfsDir.exists()) {
+      hdfsDir.mkdirs();
+    }
       
   }
 

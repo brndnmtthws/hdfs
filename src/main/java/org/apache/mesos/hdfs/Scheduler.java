@@ -3,37 +3,36 @@ package org.apache.mesos.hdfs;
 import com.google.inject.Inject;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.mesos.MesosSchedulerDriver;
-import org.apache.mesos.Protos.*;
-import org.apache.mesos.SchedulerDriver;
-import org.apache.mesos.hdfs.config.SchedulerConf;
-import org.apache.mesos.hdfs.state.ClusterState;
-import org.apache.mesos.hdfs.util.ResourceRoles;
-import org.apache.mesos.hdfs.util.ResourceUtils;
-import org.joda.time.DateTime;
-import org.joda.time.Seconds;
-
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Map;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import org.apache.mesos.MesosNativeLibrary;
+import java.util.concurrent.TimeUnit;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.mesos.hdfs.config.SchedulerConf;
 import org.apache.mesos.hdfs.config.SchedulerConf;
 import org.apache.mesos.hdfs.state.ClusterState;
+import org.apache.mesos.hdfs.state.ClusterState;
 import org.apache.mesos.hdfs.state.State;
+import org.apache.mesos.hdfs.util.ResourceRoles;
+import org.apache.mesos.hdfs.util.ResourceUtils;
+import org.apache.mesos.MesosNativeLibrary;
+import org.apache.mesos.MesosSchedulerDriver;
+import org.apache.mesos.Protos.*;
+import org.apache.mesos.SchedulerDriver;
 import org.apache.mesos.state.ZooKeeperState;
+import org.joda.time.DateTime;
+import org.joda.time.Seconds;
 
 
 public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
@@ -42,7 +41,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   private final String localhost;
   private final ResourceUtils resourceUtils = new ResourceUtils(this);
   private Map<OfferID, Offer> pendingOffers;
-  private DateTime reconciledAt;
   private boolean frameworkInitialized = false;
   private boolean initializingCluster = false;
   private Set<TaskID> stagingTasks = new HashSet<>();
@@ -57,7 +55,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     pendingOffers = new ConcurrentHashMap<>();
 
     try {
-      localhost = InetAddress.getLocalHost().getHostName();
+      localhost = InetAddress.getLocalHost().getHostAddress();
     } catch (UnknownHostException e) {
       throw new RuntimeException(e);
     }
@@ -122,7 +120,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     log.info("Reregistered framework.");
     ClusterState clusterState = ClusterState.getInstance();
     clusterState.clear();
-    reconciledAt = new DateTime();
   }
 
   private void launchNode(SchedulerDriver driver, Offer offer, ResourceRoles roles,
@@ -132,7 +129,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         taskNames.toString()));
     int confServerPort = conf.getConfigServerPort();
     // TODO(elingg)  Make sure the machine is only being used for one thing by assigning the host
-    // for one purpose
+    // for one purpose.  @See https://github.com/mesosphere/hdfs/issues/11
     String taskIdName = String.format("%s.%d", nodeName, System.currentTimeMillis());
     ExecutorInfo executorInfo = ExecutorInfo.newBuilder()
         .setName(nodeName + " executor")
@@ -270,15 +267,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   synchronized public void resourceOffers(SchedulerDriver driver, List<Offer> offers) {
 
     log.info(String.format("Received %d offers", offers.size()));
-    int seconds = Seconds.secondsBetween(reconciledAt, DateTime.now()).getSeconds();
-    if (frameworkInitialized && seconds < conf.getReconciliationStartupDelay()) {
-      log.info(String.format("Declining offers pending reconciliation: %ds remaining",
-          conf.getReconciliationStartupDelay() - seconds));
-      for (Offer offer : offers) {
-        driver.declineOffer(offer.getId());
-      }
-      return;
-    }
     if (!stagingTasks.isEmpty()) {
       log.info("Declining offers because tasks are currently staging");
       for (Offer offer : offers) {
@@ -349,8 +337,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       remainingOffers.addAll(offers);
     }
 
-    //TODO (elingg) try testing this with initializing cluster variable
-    if (!frameworkInitialized) {
+    if (initializingCluster) {
       log.info(String.format("Declining remaining %d offers pending initialization",
           remainingOffers.size()));
       for (Offer offer : remainingOffers) {
@@ -406,12 +393,12 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     } else if (status.getState().equals(TaskState.TASK_RUNNING)) {
       stagingTasks.remove(status.getTaskId());
       clusterState.updateTask(status);
-      log.info("Received status update during cluster initialization");
-      //TODO (elingg) try testing this with initializing cluster variable
+      //TODO(elingg) get rid of this extra variable and also DFS task object.  Instead use cluster
+      // state or a cleaner way of keeping track of what is running.
       if (dfsTask.type == DfsTask.Type.NN) {
         nameNodesInitialized++;
         if (nameNodesInitialized == 2) {
-          frameworkInitialized = true;
+          initializingCluster = false;
         }
       }
     }
@@ -470,7 +457,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       // Make sure this is the actual hostname.
       try {
         InetAddress addr = InetAddress.getByName(hostname);
-        this.hostname = addr.getHostName();
+        this.hostname = addr.getHostAddress();
       } catch (UnknownHostException e) {
         log.error(e);
         this.hostname = hostname;

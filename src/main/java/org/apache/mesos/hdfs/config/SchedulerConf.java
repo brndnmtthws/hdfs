@@ -62,7 +62,6 @@ public class SchedulerConf extends MainConf {
   public double getNamenodeCpus() {
     return getConf().getDouble("mesos.hdfs.namenode.cpus", 0.5);
   }
-
   public double getJournalnodeCpus() {
     return getConf().getDouble("mesos.hdfs.journalnode.cpus", 0.5);
   }
@@ -137,6 +136,10 @@ public class SchedulerConf extends MainConf {
 
   public String getDataDir() {
     return getConf().get("mesos.hdfs.data.dir", "/tmp/hdfs/data");
+  }
+
+  public String getSecondaryDataDir() {
+    return getConf().get("mesos.hdfs.secondary.data.dir", "/var/run/hadoop-hdfs");
   }
 
   public String getConfigPath() {
