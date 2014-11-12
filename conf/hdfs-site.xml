@@ -168,6 +168,7 @@
     <value>4</value>
   </property>
   
+  <!-- This property allows us to use IP's directly for communication instead of hostnames. -->
   <property>
     <name>dfs.namenode.datanode.registration.ip-hostname-check</name>
     <value>false</value>
