@@ -22,7 +22,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class AbstractNodeExecutor implements Executor {
   public static final Log log = LogFactory.getLog(AbstractNodeExecutor.class);
-  protected Map<TaskID, Task> tasks = new ConcurrentHashMap<>();
   protected ExecutorInfo executorInfo;
   // reload config no more than once every 60 sec
   protected RateLimiter reloadLimiter = RateLimiter.create(1 / 60.);
@@ -37,8 +36,7 @@ public abstract class AbstractNodeExecutor implements Executor {
   }
 
   /**
-   * Main method which injects the configuration and state and creates the
-   * driver.
+   * Main method which injects the configuration and state and creates the driver.
    **/
   public static void main(String[] args) {
     Injector injector = Guice.createInjector(new ProdConfigModule());
@@ -64,7 +62,8 @@ public abstract class AbstractNodeExecutor implements Executor {
    **/
   private void setUpDataDir() {
     File dataDir = new File(schedulerConf.getDataDir());
-     if (dataDir.exists()) {
+    if (dataDir.exists()) {
+      // TODO(elingg) Need to actually recover the data instead of getting rid of it.
       deleteFile(dataDir);
     }
     dataDir.mkdirs();
@@ -73,7 +72,7 @@ public abstract class AbstractNodeExecutor implements Executor {
     if (!hdfsDir.exists()) {
       hdfsDir.mkdirs();
     }
-      
+
   }
 
   /**
@@ -98,7 +97,8 @@ public abstract class AbstractNodeExecutor implements Executor {
     Process process = task.process;
     if (process == null) {
       try {
-        process = Runtime.getRuntime().exec(new String[]{"sh", "-c", task.cmd});
+        process = Runtime.getRuntime().exec(new String[]{
+            "sh", "-c", task.cmd});
         redirectProcess(process);
       } catch (IOException e) {
         log.fatal(e);
@@ -106,13 +106,12 @@ public abstract class AbstractNodeExecutor implements Executor {
         System.exit(2);
       }
     } else {
-      log.error("Received 'start' command, but process already running");
+      log.error("Tried to start process, but process already running");
     }
   }
 
   /**
-   * Reloads the cluster configuration so the executor has the correct
-   * configuration info.
+   * Reloads the cluster configuration so the executor has the correct configuration info.
    **/
   protected void reloadConfig() {
     if (!reloadLimiter.tryAcquire()) {
@@ -142,10 +141,8 @@ public abstract class AbstractNodeExecutor implements Executor {
       log.error("Caught exception", e);
     }
   }
-
   /**
-   * Redirects a process to STDERR and STDOUT for logging and debugging
-   * purposes.
+   * Redirects a process to STDERR and STDOUT for logging and debugging purposes.
    **/
   protected void redirectProcess(Process process) {
     StreamRedirect stdoutRedirect = new StreamRedirect(process.getInputStream(), System.out);
@@ -175,7 +172,6 @@ public abstract class AbstractNodeExecutor implements Executor {
       System.exit(1);
     }
   }
-
   /**
    * Abstract method to launch a task.
    **/
@@ -185,20 +181,10 @@ public abstract class AbstractNodeExecutor implements Executor {
    * Let the scheduler know that the task has failed.
    **/
   private void sendTaskFailed(ExecutorDriver driver, Task task) {
-    driver.sendStatusUpdate(TaskStatus.newBuilder().setTaskId(task.taskInfo.getTaskId())
-        .setState(TaskState.TASK_FAILED).build());
-  }
-
-  /**
-   * Kill the task and it's underlying process.
-   **/
-  @Override
-  public void killTask(ExecutorDriver driver, TaskID taskId) {
-    log.info("Killing task : " + taskId.getValue());
-    if (tasks.get(taskId).process != null) {
-      tasks.get(taskId).process.destroy();
-      tasks.get(taskId).process = null;
-    }
+    driver.sendStatusUpdate(TaskStatus.newBuilder()
+        .setTaskId(task.taskInfo.getTaskId())
+        .setState(TaskState.TASK_FAILED)
+        .build());
   }
 
   @Override
@@ -218,7 +204,7 @@ public abstract class AbstractNodeExecutor implements Executor {
 
   @Override
   public void error(ExecutorDriver driver, String message) {
-    log.error("AbstractNodeExecutor.error: " + message);
+    log.error(this.getClass().getName() + ".error: " + message);
   }
 
   @Override

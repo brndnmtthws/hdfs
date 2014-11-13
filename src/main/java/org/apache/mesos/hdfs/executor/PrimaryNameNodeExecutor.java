@@ -16,14 +16,17 @@ import java.io.IOException;
 
 /**
  * The executor for the Primary Name Node Machine.
- * 
  **/
 public class PrimaryNameNodeExecutor extends AbstractNodeExecutor {
   public static final Log log = LogFactory.getLog(PrimaryNameNodeExecutor.class);
 
+  private Task nameNodeTask;
+  private Task zkfcNodeTask;
+  private Task journalNodeTask;
+  private int taskCount;
+
   /**
    * The constructor for the primary name node which saves the configuration.
-   * 
    **/
   @Inject
   PrimaryNameNodeExecutor(SchedulerConf schedulerConf) {
@@ -48,32 +51,54 @@ public class PrimaryNameNodeExecutor extends AbstractNodeExecutor {
   public void launchTask(final ExecutorDriver driver, final TaskInfo taskInfo) {
     executorInfo = taskInfo.getExecutor();
     Task task = new Task(taskInfo);
-    tasks.put(taskInfo.getTaskId(), task);
-    driver.sendStatusUpdate(TaskStatus.newBuilder().setTaskId(taskInfo.getTaskId())
-        .setState(TaskState.TASK_RUNNING).setData(taskInfo.getData()).build());
+    if (taskInfo.getTaskId().getValue().contains(".journalnode.")) {
+      journalNodeTask = task;
+    } else if (taskInfo.getTaskId().getValue().contains(".namenode.namenode.")) {
+      nameNodeTask = task;
+    } else if (taskInfo.getTaskId().getValue().contains(".zkfc.")) {
+      zkfcNodeTask = task;
+    }
+    taskCount++;
 
-    if (tasks.size() == 3) {
-      for (TaskID taskId : tasks.keySet()) {
-        // Start journal node
-        if (taskId.getValue().contains(".journalnode.")) {
-          reloadConfig();
-          startProcess(driver, tasks.get(taskId));
-        }
-      }
-      for (TaskID taskId : tasks.keySet()) {
-        // Initialize and format the primary name node and journal node
-        if (taskId.getValue().contains(".namenode.namenode.")) {
-          runCommand(driver, tasks.get(taskId), "bin/hdfs-mesos-namenode -i");
-          // Start the primary name node
-          startProcess(driver, tasks.get(taskId));
-        }
-      }
-      for (TaskID taskId : tasks.keySet()) {
-        // Start the zkfc node
-        if (taskId.getValue().contains(".zkfc.")) {
-          startProcess(driver, tasks.get(taskId));
-        }
-      }
+    if (taskCount == 3) {
+      // Start journal node
+      driver.sendStatusUpdate(TaskStatus.newBuilder()
+          .setTaskId(journalNodeTask.taskInfo.getTaskId())
+          .setState(TaskState.TASK_RUNNING)
+          .build());
+      startProcess(driver, journalNodeTask);
+      // Initialize the journal node and name node
+      driver.sendStatusUpdate(TaskStatus.newBuilder()
+          .setTaskId(nameNodeTask.taskInfo.getTaskId())
+          .setState(TaskState.TASK_RUNNING)
+          .build());
+      runCommand(driver, nameNodeTask, "bin/hdfs-mesos-namenode -i");
+      // Start the primary name node
+      startProcess(driver, nameNodeTask);
+      // Start the zkfc node
+      driver.sendStatusUpdate(TaskStatus.newBuilder()
+          .setTaskId(zkfcNodeTask.taskInfo.getTaskId())
+          .setState(TaskState.TASK_RUNNING)
+          .build());
+      startProcess(driver, zkfcNodeTask);
+    }
+  }
+
+  @Override
+  public void killTask(ExecutorDriver driver, TaskID taskId) {
+    log.info("Killing task : " + taskId.getValue());
+    Task task = null;
+    if (taskId.getValue().contains(".journalnode.")) {
+      task = journalNodeTask;
+    } else if (taskId.getValue().contains(".namenode.namenode.")) {
+      task = nameNodeTask;
+    } else if (taskId.getValue().contains(".zkfc.")) {
+      task = zkfcNodeTask;
+    }
+
+    if (task != null && task.process != null) {
+      task.process.destroy();
+      task.process = null;
     }
   }
 

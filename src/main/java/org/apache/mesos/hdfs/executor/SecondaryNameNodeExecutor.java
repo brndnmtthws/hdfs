@@ -14,14 +14,17 @@ import org.apache.mesos.hdfs.ProdConfigModule;
 
 /**
  * The executor for the Secondary Name Node Machine.
- * 
  **/
 public class SecondaryNameNodeExecutor extends AbstractNodeExecutor {
   public static final Log log = LogFactory.getLog(SecondaryNameNodeExecutor.class);
 
+  private Task nameNodeTask;
+  private Task zkfcNodeTask;
+  private Task journalNodeTask;
+  private int taskCount;
+
   /**
    * The constructor for the secondary name node which saves the configuration.
-   * 
    **/
   @Inject
   SecondaryNameNodeExecutor(SchedulerConf schedulerConf) {
@@ -46,37 +49,61 @@ public class SecondaryNameNodeExecutor extends AbstractNodeExecutor {
   public void launchTask(final ExecutorDriver driver, final TaskInfo taskInfo) {
     executorInfo = taskInfo.getExecutor();
     Task task = new Task(taskInfo);
-    tasks.put(taskInfo.getTaskId(), task);
-    driver.sendStatusUpdate(TaskStatus.newBuilder().setTaskId(taskInfo.getTaskId())
-        .setState(TaskState.TASK_RUNNING).setData(taskInfo.getData()).build());
-    if (tasks.size() == 3) {
+    if (taskInfo.getTaskId().getValue().contains(".journalnode.")) {
+      journalNodeTask = task;
+    } else if (taskInfo.getTaskId().getValue().contains(".namenode.namenode.")) {
+      nameNodeTask = task;
+    } else if (taskInfo.getTaskId().getValue().contains(".zkfc.")) {
+      zkfcNodeTask = task;
+    }
+    taskCount++;
+
+    if (taskCount == 3) {
       // Start journal node
-      for (TaskID taskId : tasks.keySet()) {
-        if (taskId.getValue().contains(".journalnode.")) {
-          startProcess(driver, tasks.get(taskId));
+      driver.sendStatusUpdate(TaskStatus.newBuilder()
+          .setTaskId(journalNodeTask.taskInfo.getTaskId())
+          .setState(TaskState.TASK_RUNNING)
+          .build());
+      startProcess(driver, journalNodeTask);
+      // Start the name node
+      driver.sendStatusUpdate(TaskStatus.newBuilder()
+          .setTaskId(nameNodeTask.taskInfo.getTaskId())
+          .setState(TaskState.TASK_RUNNING)
+          .build());
+      // TODO(elingg) add trigger for this event after name node 1 has initialized. Remove the sleep
+      // code at that time.
+      synchronized (this) {
+        try {
+          wait(40000);
+        } catch (InterruptedException ex) {
         }
       }
+      // Bootstrap and start the secondary name node
+      runCommand(driver, nameNodeTask, "bin/hdfs-mesos-namenode -b");
+      startProcess(driver, nameNodeTask);
+      // Start the zkfc node
+      driver.sendStatusUpdate(TaskStatus.newBuilder()
+          .setTaskId(zkfcNodeTask.taskInfo.getTaskId())
+          .setState(TaskState.TASK_RUNNING)
+          .build());
+      startProcess(driver, zkfcNodeTask);
+    }
+  }
 
-      for (TaskID taskId : tasks.keySet()) {
-        if (taskId.getValue().contains(".namenode.namenode.")) {
-          // TODO add trigger for this event after name node 1 has initialized. Remove the sleep
-          // code at that time.
-          try {
-            Thread.sleep(40000);
-          } catch (InterruptedException ex) {
-          }
-          // Bootstrap and start the secondary name node
-          runCommand(driver, tasks.get(taskId), "bin/hdfs-mesos-namenode -b");
-          startProcess(driver, tasks.get(taskId));
-        }
-      }
-      for (TaskID taskId : tasks.keySet()) {
-        // Start the zkfc node
-        if (taskId.getValue().contains(".zkfc.")) {
-          startProcess(driver, tasks.get(taskId));
-        }
-      }
-
+  @Override
+  public void killTask(ExecutorDriver driver, TaskID taskId) {
+    log.info("Killing task : " + taskId.getValue());
+    Task task = null;
+    if (taskId.getValue().contains(".journalnode.")) {
+      task = journalNodeTask;
+    } else if (taskId.getValue().contains(".namenode.namenode.")) {
+      task = nameNodeTask;
+    } else if (taskId.getValue().contains(".zkfc.")) {
+      task = zkfcNodeTask;
+    }
+    if (task != null && task.process != null) {
+      task.process.destroy();
+      task.process = null;
     }
   }
 

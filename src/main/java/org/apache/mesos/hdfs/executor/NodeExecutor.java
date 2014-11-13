@@ -18,6 +18,7 @@ import org.apache.mesos.hdfs.ProdConfigModule;
  **/
 public class NodeExecutor extends AbstractNodeExecutor {
   public static final Log log = LogFactory.getLog(NodeExecutor.class);
+  private Task task;
 
   /**
    * The constructor for the node which saves the configuration.
@@ -44,12 +45,19 @@ public class NodeExecutor extends AbstractNodeExecutor {
   @Override
   public void launchTask(final ExecutorDriver driver, final TaskInfo taskInfo) {
     executorInfo = taskInfo.getExecutor();
-    Task task = new Task(taskInfo);
-    tasks.put(taskInfo.getTaskId(), task);
+    task = new Task(taskInfo);
     driver.sendStatusUpdate(TaskStatus.newBuilder().setTaskId(taskInfo.getTaskId())
         .setState(TaskState.TASK_RUNNING).setData(taskInfo.getData()).build());
     startProcess(driver, task);
 
   }
 
+  @Override
+  public void killTask(ExecutorDriver driver, TaskID taskId) {
+    log.info("Killing task : " + taskId.getValue());
+    if (task.process != null && taskId.equals(task.taskInfo.getTaskId())) {
+      task.process.destroy();
+      task.process = null;
+    }
+  }
 }

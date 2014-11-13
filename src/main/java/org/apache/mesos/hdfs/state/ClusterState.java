@@ -13,12 +13,12 @@ import java.util.Set;
 public class ClusterState {
   private static final Log log = LogFactory.getLog(ClusterState.class);
   private State state;
-  private Map<Protos.TaskID, Scheduler.DfsTask> tasks;
-  private Set<Protos.TaskID> journalnodes;
-  private Set<Protos.TaskID> namenodes;
-  private Set<String> dfsHosts;
-  private Set<String> journalnodeHosts;
-  private Set<String> namenodeHosts;
+  private final Map<Protos.TaskID, Scheduler.DfsTask> tasks;
+  private final Set<Protos.TaskID> journalnodes;
+  private final Set<Protos.TaskID> namenodes;
+  private final Set<String> dfsHosts;
+  private final Set<String> journalnodeHosts;
+  private final Set<String> namenodeHosts;
 
   private static ClusterState instance = null;
 

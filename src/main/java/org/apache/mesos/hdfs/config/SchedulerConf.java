@@ -104,7 +104,7 @@ public class SchedulerConf extends MainConf {
     return getConf().getInt("mesos.hdfs.journalnode.count", 1);
   }
 
-  // TODO use different path for executor
+  // TODO(elingg) use different path for executor
   public String getExecUri() {
     return getConf().get("mesos.hdfs.executor.uri",
         "https://s3-us-west-1.amazonaws.com/mesosphere-executors-public/hadoop-mesos-cdh5.tar.gz");
@@ -128,10 +128,6 @@ public class SchedulerConf extends MainConf {
 
   public String getMesosMasterUri() {
     return getConf().get("mesos.master.uri", "zk://localhost:2181/mesos");
-  }
-
-  public int getReconciliationStartupDelay() {
-    return getConf().getInt("mesos.hdfs.reconciliation.startup.delay", 60);
   }
 
   public String getDataDir() {
