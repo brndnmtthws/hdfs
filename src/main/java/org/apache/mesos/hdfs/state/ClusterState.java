@@ -102,6 +102,7 @@ public class ClusterState {
     if (tasks.containsKey(taskStatus.getTaskId())) {
       tasks.get(taskStatus.getTaskId()).taskStatus = taskStatus;
       Scheduler.DfsTask.Type type = tasks.get(taskStatus.getTaskId()).type;
+      dfsHosts.add(taskStatus.getSlaveId().getValue());
       switch (type) {
         case DN :
         case ZKFC :

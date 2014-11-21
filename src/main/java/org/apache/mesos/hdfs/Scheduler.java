@@ -22,8 +22,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.hdfs.config.SchedulerConf;
 import org.apache.mesos.hdfs.state.ClusterState;
 import org.apache.mesos.hdfs.state.State;
-import org.apache.mesos.hdfs.util.ResourceRoles;
-import org.apache.mesos.hdfs.util.ResourceUtils;
 import org.apache.mesos.MesosNativeLibrary;
 import org.apache.mesos.MesosSchedulerDriver;
 import org.apache.mesos.Protos.*;
@@ -37,7 +35,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   public static final Log log = LogFactory.getLog(Scheduler.class);
   private final SchedulerConf conf;
   private final String localhost;
-  private final ResourceUtils resourceUtils = new ResourceUtils(this);
   private Map<OfferID, Offer> pendingOffers;
   private boolean frameworkInitialized = false;
   private boolean initializingCluster = false;
@@ -120,7 +117,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     clusterState.clear();
   }
 
-  private void launchNode(SchedulerDriver driver, Offer offer, ResourceRoles roles,
+  private void launchNode(SchedulerDriver driver, Offer offer,
       String nodeName, List<String> taskNames, String executorName) {
     ClusterState clusterState = ClusterState.getInstance();
     log.info(String.format("Launching node of type %s with tasks %s", nodeName,
@@ -128,37 +125,12 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     int confServerPort = conf.getConfigServerPort();
     // TODO(elingg)  Make sure the machine is only being used for one thing by assigning the host
     // for one purpose.  @See https://github.com/mesosphere/hdfs/issues/11
+    List<Resource> resources = getExecutorResources();
     String taskIdName = String.format("%s.%d", nodeName, System.currentTimeMillis());
     ExecutorInfo executorInfo = ExecutorInfo.newBuilder()
         .setName(nodeName + " executor")
         .setExecutorId(ExecutorID.newBuilder().setValue("executor." + taskIdName).build())
-        .addAllResources(
-            Arrays.asList(
-                Resource.newBuilder()
-                    .setName("cpus")
-                    .setType(Value.Type.SCALAR)
-                    .setScalar(Value.Scalar.newBuilder()
-                        .setValue(conf.getExecutorCpus()).build())
-                    .setRole(roles.cpuRole)
-                    .build(),
-                Resource.newBuilder()
-                    .setName("mem")
-                    .setType(Value.Type.SCALAR)
-                    .setScalar(
-                        Value.Scalar.newBuilder()
-                            .setValue(conf.getExecutorHeap() * conf.getJvmOverhead()).build())
-                    .setRole(roles.memRole)
-                    .build(),
-                Resource.newBuilder()
-                    .setType(Value.Type.RANGES)
-                    .setName("ports")
-                    .setRole(roles.portsRole)
-                    .setRanges(
-                        Value.Ranges.newBuilder()
-                            .addRange(Value.Range.newBuilder()
-                                .setBegin(roles.portsBegin)
-                                .setEnd(roles.portsEnd)))
-                    .build()))
+        .addAllResources(resources)
         .setCommand(CommandInfo.newBuilder()
             .addAllUris(Arrays.asList(
                 CommandInfo.URI.newBuilder().setValue(conf.getExecUri())
@@ -190,9 +162,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
     List<TaskInfo> tasks = new ArrayList<>();
     for (String taskName : taskNames) {
-      List<Resource> resources = resourceUtils.buildResources(roles, conf.getTaskCpus(taskName),
-          conf.getTaskHeapSize(taskName));
-
+      List<Resource> taskResources = getTaskResources(taskName);
       TaskID taskId = TaskID.newBuilder()
           .setValue(String.format("task.%s.%s", taskName, taskIdName))
           .build();
@@ -201,7 +171,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           .setName(taskName)
           .setTaskId(taskId)
           .setSlaveId(offer.getSlaveId())
-          .addAllResources(resources)
+          .addAllResources(taskResources)
           .setData(ByteString.copyFromUtf8(
               String.format("bin/hdfs-mesos-%s", taskName)))
           .build();
@@ -213,31 +183,67 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     }
     driver.launchTasks(Arrays.asList(offer.getId()), tasks);
   }
+    
+  private List<Resource> getExecutorResources() {
+    return Arrays.asList(
+        Resource.newBuilder()
+            .setName("cpus")
+            .setType(Value.Type.SCALAR)
+            .setScalar(Value.Scalar.newBuilder()
+                .setValue(conf.getExecutorCpus()).build())
+            .setRole("*")
+            .build(),
+         Resource.newBuilder()
+            .setName("mem")
+            .setType(Value.Type.SCALAR)
+            .setScalar(Value.Scalar.newBuilder()
+                .setValue(conf.getExecutorHeap() * conf.getJvmOverhead()).build())
+            .setRole("*")
+            .build());
+  }
+    
+  private List<Resource> getTaskResources(String taskName) {
+    return Arrays.asList(
+        Resource.newBuilder()
+            .setName("cpus")
+            .setType(Value.Type.SCALAR)
+            .setScalar(Value.Scalar.newBuilder()
+                .setValue(conf.getTaskCpus(taskName)).build())
+            .setRole("*")
+            .build(),
+        Resource.newBuilder()
+            .setName("mem")
+            .setType(Value.Type.SCALAR)
+            .setScalar(Value.Scalar.newBuilder()
+                .setValue(conf.getTaskHeapSize(taskName)).build())
+            .setRole("*")
+            .build());
+  }
 
-  private void launchNamenode(SchedulerDriver driver, Offer offer, ResourceRoles roles) {
+  private void launchNamenode(SchedulerDriver driver, Offer offer) {
     if (!firstNameNodeLaunched) {
-      launchNode(driver, offer, roles, "namenode",
+      launchNode(driver, offer, "namenode",
           Arrays.asList("namenode", "zkfc", "journalnode"), "PrimaryNameNodeExecutor");
       firstNameNodeLaunched = true;
     } else {
-      launchNode(driver, offer, roles, "namenode",
+      launchNode(driver, offer, "namenode",
           Arrays.asList("namenode", "zkfc", "journalnode"), "SecondaryNameNodeExecutor");
     }
   }
 
-  private void launchJournalnode(SchedulerDriver driver, Offer offer, ResourceRoles roles) {
-    launchNode(driver, offer, roles, "journalnode", Arrays.asList("journalnode"), "NodeExecutor");
+  private void launchJournalnode(SchedulerDriver driver, Offer offer) {
+    launchNode(driver, offer, "journalnode", Arrays.asList("journalnode"), "NodeExecutor");
   }
 
-  private void launchDatanode(SchedulerDriver driver, Offer offer, ResourceRoles roles) {
-    launchNode(driver, offer, roles, "datanode", Arrays.asList("datanode"), "NodeExecutor");
+  private void launchDatanode(SchedulerDriver driver, Offer offer) {
+    launchNode(driver, offer, "datanode", Arrays.asList("datanode"), "NodeExecutor");
   }
 
   private void launchInitialJournalnodes(SchedulerDriver driver, Collection<Offer> offers) {
     int journalnodes = 0;
     for (Offer offer : offers) {
       pendingOffers.remove(offer.getId());
-      launchJournalnode(driver, offer, resourceUtils.sufficientRolesForJournalnode(offer));
+      launchJournalnode(driver, offer);
       journalnodes++;
       if (journalnodes >= conf.getJournalnodeCount()) {
         return;
@@ -249,21 +255,18 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     int namenodes = 0;
     // Find offer that matches
     for (Offer offer : offers) {
-      ResourceRoles roles = resourceUtils.sufficientRolesForNamenode(offer);
-      if (roles != null) {
         pendingOffers.remove(offer.getId());
-        launchNamenode(driver, offer, roles);
+        launchNamenode(driver, offer);
         namenodes++;
         if (namenodes >= 2) {
           return;
         }
       }
-    }
   }
 
   @Override
   synchronized public void resourceOffers(SchedulerDriver driver, List<Offer> offers) {
-    //TODO(elingg) all data nodes can be launched together after the other nodes have initialized.
+    //TODO(elingg) all datanodes can be launched together after the other nodes have initialized.
     //Remove this waiting period for datanodes.
     log.info(String.format("Received %d offers", offers.size()));
     if (!stagingTasks.isEmpty()) {
@@ -286,12 +289,10 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       incomingOffers.addAll(offers);
       incomingOffers.addAll(pendingOffers.values());
       for (Offer offer : incomingOffers) {
-        if (namenodes < 2 && resourceUtils.sufficientRolesForNamenode(offer) != null
-            && clusterState.notInDfsHosts(offer.getSlaveId().getValue())) {
+        if (namenodes < 2 && clusterState.notInDfsHosts(offer.getSlaveId().getValue())) {
           namenodes++;
           pendingOffers.put(offer.getId(), offer);
         } else if (journalnodes < conf.getJournalnodeCount()
-            && resourceUtils.sufficientRolesForJournalnode(offer) != null
             && clusterState.notInDfsHosts(offer.getSlaveId().getValue())) {
           journalnodes++;
           pendingOffers.put(offer.getId(), offer);
@@ -333,9 +334,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
     // Check to see if we can launch some datanodes
     for (Offer offer : offers) {
-      ResourceRoles roles = resourceUtils.sufficientRolesForDatanode(offer);
-      if (roles != null && clusterState.notInDfsHosts(offer.getSlaveId().getValue())) {
-        launchDatanode(driver, offer, roles);
+      if (clusterState.notInDfsHosts(offer.getSlaveId().getValue())) {
+        launchDatanode(driver, offer);
       } else {
         remainingOffers.add(offer);
       }
@@ -376,8 +376,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       stagingTasks.remove(status.getTaskId());
       clusterState.updateTask(status);
       //TODO(elingg) get rid of this extra variable and also DFS task object.  Instead use cluster
-      // state or a cleaner way of keeping track of what is running.
-      // Get rid of this nameNodesInitialized variable.
+      //state or a cleaner way of keeping track of what is running. Get rid of the
+      //namenodesInitialized variable.
       if (dfsTask.type == DfsTask.Type.NN) {
         nameNodesInitialized++;
         if (nameNodesInitialized == 2) {
