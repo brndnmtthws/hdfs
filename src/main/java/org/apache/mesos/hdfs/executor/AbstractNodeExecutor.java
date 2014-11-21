@@ -169,7 +169,7 @@ public abstract class AbstractNodeExecutor implements Executor {
       int exitCode = init.waitFor();
       log.info("Finished running command, exited with status " + exitCode);
       if (exitCode != 0) {
-        log.fatal("Unable to run command");
+        log.fatal("Unable to run command: " + command);
         sendTaskFailed(driver, task);
         System.exit(1);
       }
