@@ -119,7 +119,7 @@ public class SchedulerConf extends MainConf {
   }
 
   public String getHdfsUser() {
-    return getConf().get("mesos.hdfs.user", "hdfs");
+    return getConf().get("mesos.hdfs.user", "root");
   }
 
   public String getHdfsRole() {

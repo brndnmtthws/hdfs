@@ -20,8 +20,6 @@ import java.util.Set;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.hdfs.config.SchedulerConf;
-import org.apache.mesos.hdfs.config.SchedulerConf;
-import org.apache.mesos.hdfs.state.ClusterState;
 import org.apache.mesos.hdfs.state.ClusterState;
 import org.apache.mesos.hdfs.state.State;
 import org.apache.mesos.hdfs.util.ResourceRoles;
@@ -265,7 +263,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
   @Override
   synchronized public void resourceOffers(SchedulerDriver driver, List<Offer> offers) {
-
+    //TODO(elingg) all data nodes can be launched together after the other nodes have initialized.
+    //Remove this waiting period for datanodes.
     log.info(String.format("Received %d offers", offers.size()));
     if (!stagingTasks.isEmpty()) {
       log.info("Declining offers because tasks are currently staging");
@@ -318,24 +317,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     }
 
     List<Offer> remainingOffers = new ArrayList<>();
-
-    // We need to start another namenode. Do so now, and temporarily store the remaining offers.
-    if (clusterState.getNamenodes().size() < 2 && clusterState.getNamenodeHosts().size() < 2) {
-      // Combine pending offers + current offers
-      List<Offer> allOffers = new ArrayList<>();
-      allOffers.addAll(offers);
-      for (Offer offer : allOffers) {
-        ResourceRoles roles = resourceUtils.sufficientRolesForNamenode(offer);
-        if (roles != null && clusterState.notInDfsHosts(offer.getSlaveId().getValue())) {
-          launchNamenode(driver, offer, roles);
-          break; // Never start more than 1 at a time to prevent a race condition.
-        } else {
-          remainingOffers.add(offer);
-        }
-      }
-    } else {
-      remainingOffers.addAll(offers);
-    }
+    remainingOffers.addAll(offers);
 
     if (initializingCluster) {
       log.info(String.format("Declining remaining %d offers pending initialization",
@@ -395,6 +377,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       clusterState.updateTask(status);
       //TODO(elingg) get rid of this extra variable and also DFS task object.  Instead use cluster
       // state or a cleaner way of keeping track of what is running.
+      // Get rid of this nameNodesInitialized variable.
       if (dfsTask.type == DfsTask.Type.NN) {
         nameNodesInitialized++;
         if (nameNodesInitialized == 2) {

@@ -21,11 +21,16 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class AbstractNodeExecutor implements Executor {
+
   public static final Log log = LogFactory.getLog(AbstractNodeExecutor.class);
   protected ExecutorInfo executorInfo;
   // reload config no more than once every 60 sec
   protected RateLimiter reloadLimiter = RateLimiter.create(1 / 60.);
   protected SchedulerConf schedulerConf;
+
+  protected static String JOURNAL_NODE_TASKID = ".journalnode.";
+  protected static String NAME_NODE_TASKID = ".namenode.namenode.";
+  protected static String ZKFC_NODE_TASKID = ".zkfc.";
 
   /**
    * Constructor which takes in configuration.
@@ -51,6 +56,7 @@ public abstract class AbstractNodeExecutor implements Executor {
   @Override
   public void registered(ExecutorDriver driver, ExecutorInfo executorInfo,
       FrameworkInfo frameworkInfo, SlaveInfo slaveInfo) {
+    executorInfo = executorInfo;
     // Set up data dir
     setUpDataDir();
     log.info("Executor registered with the slave");
@@ -209,6 +215,7 @@ public abstract class AbstractNodeExecutor implements Executor {
 
   @Override
   public void shutdown(ExecutorDriver d) {
+    // TODO(elingg) let's shut down the driver more gracefully
     log.info("Executor asked to shutdown");
   }
 

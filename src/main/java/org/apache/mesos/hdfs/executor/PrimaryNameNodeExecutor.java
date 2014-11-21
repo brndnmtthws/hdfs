@@ -51,36 +51,36 @@ public class PrimaryNameNodeExecutor extends AbstractNodeExecutor {
   public void launchTask(final ExecutorDriver driver, final TaskInfo taskInfo) {
     executorInfo = taskInfo.getExecutor();
     Task task = new Task(taskInfo);
-    if (taskInfo.getTaskId().getValue().contains(".journalnode.")) {
+    if (taskInfo.getTaskId().getValue().contains(JOURNAL_NODE_TASKID)) {
       journalNodeTask = task;
-    } else if (taskInfo.getTaskId().getValue().contains(".namenode.namenode.")) {
+    } else if (taskInfo.getTaskId().getValue().contains(NAME_NODE_TASKID)) {
       nameNodeTask = task;
-    } else if (taskInfo.getTaskId().getValue().contains(".zkfc.")) {
+    } else if (taskInfo.getTaskId().getValue().contains(ZKFC_NODE_TASKID)) {
       zkfcNodeTask = task;
     }
     taskCount++;
 
     if (taskCount == 3) {
       // Start journal node
+      startProcess(driver, journalNodeTask);
       driver.sendStatusUpdate(TaskStatus.newBuilder()
           .setTaskId(journalNodeTask.taskInfo.getTaskId())
           .setState(TaskState.TASK_RUNNING)
           .build());
-      startProcess(driver, journalNodeTask);
       // Initialize the journal node and name node
+      runCommand(driver, nameNodeTask, "bin/hdfs-mesos-namenode -i");
+      // Start the primary name node
+      startProcess(driver, nameNodeTask);
       driver.sendStatusUpdate(TaskStatus.newBuilder()
           .setTaskId(nameNodeTask.taskInfo.getTaskId())
           .setState(TaskState.TASK_RUNNING)
           .build());
-      runCommand(driver, nameNodeTask, "bin/hdfs-mesos-namenode -i");
-      // Start the primary name node
-      startProcess(driver, nameNodeTask);
       // Start the zkfc node
+      startProcess(driver, zkfcNodeTask);
       driver.sendStatusUpdate(TaskStatus.newBuilder()
           .setTaskId(zkfcNodeTask.taskInfo.getTaskId())
           .setState(TaskState.TASK_RUNNING)
           .build());
-      startProcess(driver, zkfcNodeTask);
     }
   }
 
@@ -88,11 +88,11 @@ public class PrimaryNameNodeExecutor extends AbstractNodeExecutor {
   public void killTask(ExecutorDriver driver, TaskID taskId) {
     log.info("Killing task : " + taskId.getValue());
     Task task = null;
-    if (taskId.getValue().contains(".journalnode.")) {
+    if (taskId.getValue().contains(JOURNAL_NODE_TASKID)) {
       task = journalNodeTask;
-    } else if (taskId.getValue().contains(".namenode.namenode.")) {
+    } else if (taskId.getValue().contains(NAME_NODE_TASKID)) {
       task = nameNodeTask;
-    } else if (taskId.getValue().contains(".zkfc.")) {
+    } else if (taskId.getValue().contains(ZKFC_NODE_TASKID)) {
       task = zkfcNodeTask;
     }
 
