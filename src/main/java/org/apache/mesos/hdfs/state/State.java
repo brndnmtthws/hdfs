@@ -67,7 +67,7 @@ public class State {
   }
 
   /**
-   * Get serializable object from store
+   * Get serializable object from store.
    * 
    * @return serialized object or null if none
    * @throws ExecutionException

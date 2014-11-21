@@ -37,9 +37,7 @@ public class TestConfigModule extends AbstractModule {
   @Named("ConfigPath")
   String providesConfigPath(Properties props) {
     String sitePath = props.getProperty("mesos.site.path", "etc/hadoop");
-    return new Path(props.getProperty(
-        "mesos.conf.path",
-        sitePath + "/mesos-site.xml")).toString();
+    return new Path(props.getProperty("mesos.conf.path", sitePath + "/mesos-site.xml")).toString();
   }
 
   @Provides
@@ -47,20 +45,7 @@ public class TestConfigModule extends AbstractModule {
     Configuration conf = new Configuration();
     int configServerPort = Integer.valueOf(
         props.getProperty("mesos.hdfs.config.server.port", "8765"));
-
-    conf.set("mesos.hdfs.data.dir", dataDir);
-    conf.set("mesos.hdfs.backup.storage.credentials.path", credentialsPath);
-    conf.set("mesos.hdfs.backup.storage.bucket", backupBucket);
-    conf.set("mesos.hdfs.backup.storage.prefix", backupPrefix);
-
     return new SchedulerConf(conf, configServerPort);
-  }
-
-  @Provides
-  ClusterState providesClusterState(SchedulerConf schedulerConf) {
-    ZooKeeperState zkState = mock(ZooKeeperState.class);
-    State state = mock(State.class);
-    return new ClusterState(state);
   }
 
   @Override

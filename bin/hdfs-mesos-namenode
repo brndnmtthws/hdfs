@@ -8,6 +8,7 @@ trap "{ $DIR/mesos-killtree "$$" ; exit 0; }" EXIT
 function bootstrap_standby() {
   echo "Pausing for 10s before bootstrapping standby namenode"
   sleep 10
+  $DIR/hdfs zkfc -formatZK -force
   exec $DIR/hdfs namenode -bootstrapStandby -force
 }
 
@@ -15,8 +16,8 @@ function format_namenode() {
   echo "Asked to format namenode"
   echo "Pausing for 10s"
   sleep 10
-  $DIR/hdfs namenode -format -force || exit 3
   $DIR/hdfs zkfc -formatZK -force
+  $DIR/hdfs namenode -format -force || exit 3
 }
 
 function initialize_shared_edits() {

@@ -12,7 +12,7 @@ import java.util.Set;
 
 public class ClusterState {
   private static final Log log = LogFactory.getLog(ClusterState.class);
-  private final State state;
+  private State state;
   private final Map<Protos.TaskID, Scheduler.DfsTask> tasks;
   private final Set<Protos.TaskID> journalnodes;
   private final Set<Protos.TaskID> namenodes;
@@ -20,8 +20,16 @@ public class ClusterState {
   private final Set<String> journalnodeHosts;
   private final Set<String> namenodeHosts;
 
-  public ClusterState(State state) {
-    this.state = state;
+  private static ClusterState instance = null;
+
+  public static ClusterState getInstance() {
+    if (instance == null) {
+      instance = new ClusterState();
+    }
+    return instance;
+  }
+
+  private ClusterState() {
     tasks = new HashMap<>();
     journalnodes = new HashSet<>();
     namenodes = new HashSet<>();
@@ -29,6 +37,20 @@ public class ClusterState {
     journalnodeHosts = new HashSet<>();
     namenodeHosts = new HashSet<>();
   }
+
+  public void init(State state) {
+    this.state = state;
+  }
+
+  public void clear() {
+    tasks.clear();
+    journalnodes.clear();
+    namenodes.clear();
+    dfsHosts.clear();
+    journalnodeHosts.clear();
+    namenodeHosts.clear();
+  }
+
   public State getState() {
     return state;
   }
