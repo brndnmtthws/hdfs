@@ -32,6 +32,16 @@ import org.joda.time.Seconds;
 
 
 public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
+    
+  private static final String NAME_NODE_ID = "namenode";
+  private static final String JOURNAL_NODE_ID = "journalnode";
+  private static final String DATA_NODE_ID = "datanode";
+  private static final String ZKFC_NODE_ID = "zkfc";
+  private static final String NODE_EXECUTOR_ID = "NodeExecutor";
+  private static final String PRIMARY_NAME_NODE_EXECUTOR_ID = "PrimaryNameNodeExecutor";
+  private static final String SECONDARY_NAME_NODE_EXECUTOR_ID = "SecondaryNameNodeExecutor";
+  private static final Integer TOTAL_NAME_NODES = 2;
+    
   public static final Log log = LogFactory.getLog(Scheduler.class);
   private final SchedulerConf conf;
   private final String localhost;
@@ -39,7 +49,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   private boolean frameworkInitialized = false;
   private boolean initializingCluster = false;
   private Set<TaskID> stagingTasks = new HashSet<>();
-  //TODO(elingg) simplify number of variables used
+  //TODO(elingg) simplify number of variables used including variables related to namenodes
   private boolean firstNameNodeLaunched = false;
   private int nameNodesInitialized = 0;
 
@@ -123,8 +133,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     log.info(String.format("Launching node of type %s with tasks %s", nodeName,
         taskNames.toString()));
     int confServerPort = conf.getConfigServerPort();
-    // TODO(elingg)  Make sure the machine is only being used for one thing by assigning the host
-    // for one purpose.  @See https://github.com/mesosphere/hdfs/issues/11
     List<Resource> resources = getExecutorResources();
     String taskIdName = String.format("%s.%d", nodeName, System.currentTimeMillis());
     ExecutorInfo executorInfo = ExecutorInfo.newBuilder()
@@ -222,21 +230,21 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
   private void launchNamenode(SchedulerDriver driver, Offer offer) {
     if (!firstNameNodeLaunched) {
-      launchNode(driver, offer, "namenode",
-          Arrays.asList("namenode", "zkfc", "journalnode"), "PrimaryNameNodeExecutor");
+      launchNode(driver, offer, NAME_NODE_ID,
+          Arrays.asList(NAME_NODE_ID, ZKFC_NODE_ID, JOURNAL_NODE_ID), PRIMARY_NAME_NODE_EXECUTOR_ID);
       firstNameNodeLaunched = true;
     } else {
-      launchNode(driver, offer, "namenode",
-          Arrays.asList("namenode", "zkfc", "journalnode"), "SecondaryNameNodeExecutor");
+      launchNode(driver, offer, NAME_NODE_ID,
+          Arrays.asList(NAME_NODE_ID, ZKFC_NODE_ID, JOURNAL_NODE_ID), SECONDARY_NAME_NODE_EXECUTOR_ID);
     }
   }
 
   private void launchJournalnode(SchedulerDriver driver, Offer offer) {
-    launchNode(driver, offer, "journalnode", Arrays.asList("journalnode"), "NodeExecutor");
+    launchNode(driver, offer, JOURNAL_NODE_ID, Arrays.asList(JOURNAL_NODE_ID), NODE_EXECUTOR_ID);
   }
 
   private void launchDatanode(SchedulerDriver driver, Offer offer) {
-    launchNode(driver, offer, "datanode", Arrays.asList("datanode"), "NodeExecutor");
+    launchNode(driver, offer, DATA_NODE_ID, Arrays.asList(DATA_NODE_ID), NODE_EXECUTOR_ID);
   }
 
   private void launchInitialJournalnodes(SchedulerDriver driver, Collection<Offer> offers) {
@@ -258,7 +266,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         pendingOffers.remove(offer.getId());
         launchNamenode(driver, offer);
         namenodes++;
-        if (namenodes >= 2) {
+        if (namenodes >= TOTAL_NAME_NODES) {
           return;
         }
       }
@@ -289,9 +297,10 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       incomingOffers.addAll(offers);
       incomingOffers.addAll(pendingOffers.values());
       for (Offer offer : incomingOffers) {
-        if (namenodes < 2 && clusterState.notInDfsHosts(offer.getSlaveId().getValue())) {
-          namenodes++;
-          pendingOffers.put(offer.getId(), offer);
+        if (namenodes < TOTAL_NAME_NODES
+            && clusterState.notInDfsHosts(offer.getSlaveId().getValue())) {
+              namenodes++;
+              pendingOffers.put(offer.getId(), offer);
         } else if (journalnodes < conf.getJournalnodeCount()
             && clusterState.notInDfsHosts(offer.getSlaveId().getValue())) {
           journalnodes++;
@@ -303,7 +312,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       log.info(String.format(
           "Currently have %d pending offers, with journalnodes=%d and namenodes=%d",
           pendingOffers.size(), journalnodes, namenodes));
-      if (!initializingCluster && namenodes == 2 && journalnodes >= conf.getJournalnodeCount()) {
+      if (!initializingCluster && namenodes == TOTAL_NAME_NODES && journalnodes >= conf.getJournalnodeCount()) {
         log.info("Launching initial nodes with pending offers");
         initializingCluster = true;
         launchInitialNamenodes(driver, pendingOffers.values());
@@ -380,7 +389,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       //namenodesInitialized variable.
       if (dfsTask.type == DfsTask.Type.NN) {
         nameNodesInitialized++;
-        if (nameNodesInitialized == 2) {
+        if (nameNodesInitialized == TOTAL_NAME_NODES) {
           initializingCluster = false;
         }
       }
