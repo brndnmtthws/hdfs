@@ -429,16 +429,16 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
     public DfsTask(String type, String slaveId, String hostname) {
       switch (type) {
-        case "namenode" :
+        case NAME_NODE_ID :
           this.type = Type.NN;
           break;
-        case "journalnode" :
+        case JOURNAL_NODE_ID :
           this.type = Type.JN;
           break;
-        case "datanode" :
+        case DATA_NODE_ID :
           this.type = Type.DN;
           break;
-        case "zkfc" :
+        case ZKFC_NODE_ID :
           this.type = Type.ZKFC;
           break;
         default :
