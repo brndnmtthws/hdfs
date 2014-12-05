@@ -1,7 +1,15 @@
 #!/bin/bash
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-export JAVA_HOME=$(dirname $(readlink -f $(which java)))/../..
+
+JAVA_HOME_FILE=$(dirname $(readlink -f $(which java)))/../..
+
+if [ -f $JAVA_HOME_FILE/bin/java ];
+then
+  export JAVA_HOME=$(dirname $(readlink -f $(which java)))/../..
+else
+  export JAVA_HOME=$(dirname $(readlink -f $(which java)))/..
+fi
 
 trap "{ $DIR/mesos-killtree "$$" ; exit 0; }" EXIT
 
