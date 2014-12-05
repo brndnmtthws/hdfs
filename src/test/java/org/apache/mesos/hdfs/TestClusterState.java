@@ -43,9 +43,9 @@ public class TestClusterState {
     // Update task
     clusterState.updateTask(taskStatus);
 
-    assertTrue(clusterState.getNamenodes().contains(taskId));
+    assertTrue(clusterState.getNameNodes().contains(taskId));
     assertFalse(clusterState.notInDfsHosts(slaveId.getValue()));
-    assertTrue(clusterState.getNamenodeHosts().contains("10.19.15.1"));
+    assertTrue(clusterState.getNameNodeHosts().contains("10.19.15.1"));
   }
 
   @Test
@@ -79,15 +79,15 @@ public class TestClusterState {
     // Update task
     clusterState.updateTask(taskStatus);
 
-    assertTrue(clusterState.getJournalnodes().contains(taskId));
+    assertTrue(clusterState.getJournalNodes().contains(taskId));
     assertFalse(clusterState.notInDfsHosts(slaveId.getValue()));
-    assertTrue(clusterState.getJournalnodeHosts().contains("10.80.16.2"));
+    assertTrue(clusterState.getJournalNodeHosts().contains("10.80.16.2"));
 
     // Remove task
     clusterState.removeTask(taskStatus);
 
-    assertFalse(clusterState.getJournalnodes().contains(taskId));
+    assertFalse(clusterState.getJournalNodes().contains(taskId));
     assertTrue(clusterState.notInDfsHosts(slaveId.getValue()));
-    assertFalse(clusterState.getJournalnodeHosts().contains("10.80.16.2"));
+    assertFalse(clusterState.getJournalNodeHosts().contains("10.80.16.2"));
   }
 }

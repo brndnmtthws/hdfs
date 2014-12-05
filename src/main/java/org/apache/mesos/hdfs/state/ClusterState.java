@@ -14,11 +14,11 @@ public class ClusterState {
   private static final Log log = LogFactory.getLog(ClusterState.class);
   private State state;
   private final Map<Protos.TaskID, Scheduler.DfsTask> tasks;
-  private final Set<Protos.TaskID> journalnodes;
-  private final Set<Protos.TaskID> namenodes;
+  private final Set<Protos.TaskID> journalNodes;
+  private final Set<Protos.TaskID> nameNodes;
   private final Set<String> dfsHosts;
-  private final Set<String> journalnodeHosts;
-  private final Set<String> namenodeHosts;
+  private final Set<String> journalNodeHosts;
+  private final Set<String> nameNodeHosts;
 
   private static ClusterState instance = null;
 
@@ -31,11 +31,11 @@ public class ClusterState {
 
   private ClusterState() {
     tasks = new HashMap<>();
-    journalnodes = new HashSet<>();
-    namenodes = new HashSet<>();
+    journalNodes = new HashSet<>();
+    nameNodes = new HashSet<>();
     dfsHosts = new HashSet<>();
-    journalnodeHosts = new HashSet<>();
-    namenodeHosts = new HashSet<>();
+    journalNodeHosts = new HashSet<>();
+    nameNodeHosts = new HashSet<>();
   }
 
   public void init(State state) {
@@ -44,11 +44,11 @@ public class ClusterState {
 
   public void clear() {
     tasks.clear();
-    journalnodes.clear();
-    namenodes.clear();
+    journalNodes.clear();
+    nameNodes.clear();
     dfsHosts.clear();
-    journalnodeHosts.clear();
-    namenodeHosts.clear();
+    journalNodeHosts.clear();
+    nameNodeHosts.clear();
   }
 
   public State getState() {
@@ -63,20 +63,20 @@ public class ClusterState {
     return tasks.get(taskID);
   }
 
-  public final Set<Protos.TaskID> getJournalnodes() {
-    return journalnodes;
+  public final Set<Protos.TaskID> getJournalNodes() {
+    return journalNodes;
   }
 
-  public final Set<Protos.TaskID> getNamenodes() {
-    return namenodes;
+  public final Set<Protos.TaskID> getNameNodes() {
+    return nameNodes;
   }
 
-  public final Set<String> getJournalnodeHosts() {
-    return journalnodeHosts;
+  public final Set<String> getJournalNodeHosts() {
+    return journalNodeHosts;
   }
 
-  public final Set<String> getNamenodeHosts() {
-    return namenodeHosts;
+  public final Set<String> getNameNodeHosts() {
+    return nameNodeHosts;
   }
 
   public boolean notInDfsHosts(String host) {
@@ -88,10 +88,10 @@ public class ClusterState {
     Scheduler.DfsTask.Type type = dfsTask.type;
     switch (type) {
       case NN :
-        namenodeHosts.add(dfsTask.hostname);
+        nameNodeHosts.add(dfsTask.hostname);
         break;
       case JN :
-        journalnodeHosts.add(dfsTask.hostname);
+        journalNodeHosts.add(dfsTask.hostname);
         break;
       default :
         break;
@@ -108,10 +108,10 @@ public class ClusterState {
         case ZKFC :
           break;
         case NN :
-          namenodes.add(taskStatus.getTaskId());
+          nameNodes.add(taskStatus.getTaskId());
           break;
         case JN :
-          journalnodes.add(taskStatus.getTaskId());
+          journalNodes.add(taskStatus.getTaskId());
           break;
         default :
           Scheduler.log.error("Unknown task type: " + type);
@@ -125,12 +125,12 @@ public class ClusterState {
   public void removeTask(Protos.TaskStatus taskStatus) {
     Protos.TaskID taskId = taskStatus.getTaskId();
     if (tasks.containsKey(taskId) && tasks.get(taskId).hostname != null) {
-      journalnodeHosts.remove(tasks.get(taskId).hostname);
-      namenodeHosts.remove(tasks.get(taskId).hostname);
+      journalNodeHosts.remove(tasks.get(taskId).hostname);
+      nameNodeHosts.remove(tasks.get(taskId).hostname);
     }
     tasks.remove(taskId);
-    namenodes.remove(taskId);
-    journalnodes.remove(taskId);
+    nameNodes.remove(taskId);
+    journalNodes.remove(taskId);
     dfsHosts.remove(taskStatus.getSlaveId().getValue());
   }
 }

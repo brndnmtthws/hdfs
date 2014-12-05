@@ -11,15 +11,15 @@ public class SchedulerConf extends MainConf {
     return getConf().getInt("mesos.hdfs.hadoop.heap.size", 512);
   }
 
-  public int getDatanodeHeapSize() {
+  public int getDataNodeHeapSize() {
     return getConf().getInt("mesos.hdfs.datanode.heap.size", 1024);
   }
 
-  public int getJournalnodeHeapSize() {
+  public int getJournalNodeHeapSize() {
     return getHadoopHeapSize();
   }
 
-  public int getNamenodeHeapSize() {
+  public int getNameNodeHeapSize() {
     return getConf().getInt("mesos.hdfs.namenode.heap.size", 2048);
   }
 
@@ -59,14 +59,14 @@ public class SchedulerConf extends MainConf {
     return getConf().getInt("mesos.hdfs.executor.heap.size", 256);
   }
 
-  public double getNamenodeCpus() {
+  public double getNameNodeCpus() {
     return getConf().getDouble("mesos.hdfs.namenode.cpus", 0.5);
   }
-  public double getJournalnodeCpus() {
+  public double getJournalNodeCpus() {
     return getConf().getDouble("mesos.hdfs.journalnode.cpus", 0.5);
   }
 
-  public double getDatanodeCpus() {
+  public double getDataNodeCpus() {
     return getConf().getDouble("mesos.hdfs.datanode.cpus", 1.5);
   }
 
@@ -75,11 +75,11 @@ public class SchedulerConf extends MainConf {
       case "zkfc" :
         return getZkfcHeapSize();
       case "namenode" :
-        return getNamenodeHeapSize();
+        return getNameNodeHeapSize();
       case "datanode" :
-        return getDatanodeHeapSize();
+        return getDataNodeHeapSize();
       case "journalnode" :
-        return getJournalnodeHeapSize();
+        return getJournalNodeHeapSize();
       default :
         throw new RuntimeException("Invalid taskName=" + taskName);
     }
@@ -90,17 +90,17 @@ public class SchedulerConf extends MainConf {
       case "zkfc" :
         return getZkfcCpus();
       case "namenode" :
-        return getNamenodeCpus();
+        return getNameNodeCpus();
       case "datanode" :
-        return getDatanodeCpus();
+        return getDataNodeCpus();
       case "journalnode" :
-        return getJournalnodeCpus();
+        return getJournalNodeCpus();
       default :
         throw new RuntimeException("Invalid taskName=" + taskName);
     }
   }
 
-  public int getJournalnodeCount() {
+  public int getJournalNodeCount() {
     return getConf().getInt("mesos.hdfs.journalnode.count", 1);
   }
 
