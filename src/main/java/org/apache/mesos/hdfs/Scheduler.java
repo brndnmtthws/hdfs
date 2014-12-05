@@ -49,7 +49,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   private boolean frameworkInitialized = false;
   private boolean initializingCluster = false;
   private Set<TaskID> stagingTasks = new HashSet<>();
-  //TODO(elingg) simplify number of variables used including variables related to namenodes
+  //TODO(elingg) simplify number of variables used including variables related to NameNodes
   private boolean firstNameNodeLaunched = false;
   private int nameNodesInitialized = 0;
 
@@ -156,10 +156,10 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
                         .setValue(String.format("%d", conf.getHadoopHeapSize())).build(),
                     Environment.Variable.newBuilder()
                         .setName("HADOOP_NAMENODE_OPTS")
-                        .setValue("-Xmx" + conf.getNamenodeHeapSize() + "m").build(),
+                        .setValue("-Xmx" + conf.getNameNodeHeapSize() + "m").build(),
                     Environment.Variable.newBuilder()
                         .setName("HADOOP_DATANODE_OPTS")
-                        .setValue("-Xmx" + conf.getDatanodeHeapSize() + "m").build(),
+                        .setValue("-Xmx" + conf.getDataNodeHeapSize() + "m").build(),
                     Environment.Variable.newBuilder()
                         .setName("EXECUTOR_OPTS")
                         .setValue("-Xmx" + conf.getExecutorHeap() + "m").build())))
@@ -228,45 +228,47 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
             .build());
   }
 
-  private void launchNamenode(SchedulerDriver driver, Offer offer) {
+  private void launchNameNode(SchedulerDriver driver, Offer offer) {
     if (!firstNameNodeLaunched) {
       launchNode(driver, offer, NAME_NODE_ID,
-          Arrays.asList(NAME_NODE_ID, ZKFC_NODE_ID, JOURNAL_NODE_ID), PRIMARY_NAME_NODE_EXECUTOR_ID);
+          Arrays.asList(NAME_NODE_ID, ZKFC_NODE_ID, JOURNAL_NODE_ID),
+              PRIMARY_NAME_NODE_EXECUTOR_ID);
       firstNameNodeLaunched = true;
     } else {
       launchNode(driver, offer, NAME_NODE_ID,
-          Arrays.asList(NAME_NODE_ID, ZKFC_NODE_ID, JOURNAL_NODE_ID), SECONDARY_NAME_NODE_EXECUTOR_ID);
+          Arrays.asList(NAME_NODE_ID, ZKFC_NODE_ID, JOURNAL_NODE_ID),
+              SECONDARY_NAME_NODE_EXECUTOR_ID);
     }
   }
 
-  private void launchJournalnode(SchedulerDriver driver, Offer offer) {
+  private void launchJournalNode(SchedulerDriver driver, Offer offer) {
     launchNode(driver, offer, JOURNAL_NODE_ID, Arrays.asList(JOURNAL_NODE_ID), NODE_EXECUTOR_ID);
   }
 
-  private void launchDatanode(SchedulerDriver driver, Offer offer) {
+  private void launchDataNode(SchedulerDriver driver, Offer offer) {
     launchNode(driver, offer, DATA_NODE_ID, Arrays.asList(DATA_NODE_ID), NODE_EXECUTOR_ID);
   }
 
-  private void launchInitialJournalnodes(SchedulerDriver driver, Collection<Offer> offers) {
-    int journalnodes = 0;
+  private void launchInitialJournalNodes(SchedulerDriver driver, Collection<Offer> offers) {
+    int journalNodes = 0;
     for (Offer offer : offers) {
       pendingOffers.remove(offer.getId());
-      launchJournalnode(driver, offer);
-      journalnodes++;
-      if (journalnodes >= conf.getJournalnodeCount()) {
+      launchJournalNode(driver, offer);
+      journalNodes++;
+      if (journalNodes >= conf.getJournalNodeCount()) {
         return;
       }
     }
   }
 
-  private void launchInitialNamenodes(SchedulerDriver driver, Collection<Offer> offers) {
-    int namenodes = 0;
+  private void launchInitialNameNodes(SchedulerDriver driver, Collection<Offer> offers) {
+    int nameNodes = 0;
     // Find offer that matches
     for (Offer offer : offers) {
         pendingOffers.remove(offer.getId());
-        launchNamenode(driver, offer);
-        namenodes++;
-        if (namenodes >= TOTAL_NAME_NODES) {
+        launchNameNode(driver, offer);
+        nameNodes++;
+        if (nameNodes >= TOTAL_NAME_NODES) {
           return;
         }
       }
@@ -286,24 +288,24 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     }
 
     ClusterState clusterState = ClusterState.getInstance();
-    if (clusterState.getNamenodes().size() == 0 && clusterState.getJournalnodes().size() == 0) {
+    if (clusterState.getNameNodes().size() == 0 && clusterState.getJournalNodes().size() == 0) {
       // Cluster must be formatted! Looks like we're starting fresh?
-      log.info("No namenodes or journalnodes found.  Collecting offers until we have sufficient"
+      log.info("No NameNodes or JournalNodes found.  Collecting offers until we have sufficient"
           + "capacity to launch.");
 
-      int namenodes = 0;
-      int journalnodes = 0;
+      int nameNodes = 0;
+      int journalNodes = 0;
       List<Offer> incomingOffers = new ArrayList<>();
       incomingOffers.addAll(offers);
       incomingOffers.addAll(pendingOffers.values());
       for (Offer offer : incomingOffers) {
-        if (namenodes < TOTAL_NAME_NODES
+        if (nameNodes < TOTAL_NAME_NODES
             && clusterState.notInDfsHosts(offer.getSlaveId().getValue())) {
-              namenodes++;
+              nameNodes++;
               pendingOffers.put(offer.getId(), offer);
-        } else if (journalnodes < conf.getJournalnodeCount()
+        } else if (journalNodes < conf.getJournalNodeCount()
             && clusterState.notInDfsHosts(offer.getSlaveId().getValue())) {
-          journalnodes++;
+          journalNodes++;
           pendingOffers.put(offer.getId(), offer);
         } else {
           driver.declineOffer(offer.getId());
@@ -311,12 +313,13 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       }
       log.info(String.format(
           "Currently have %d pending offers, with journalnodes=%d and namenodes=%d",
-          pendingOffers.size(), journalnodes, namenodes));
-      if (!initializingCluster && namenodes == TOTAL_NAME_NODES && journalnodes >= conf.getJournalnodeCount()) {
+          pendingOffers.size(), journalNodes, nameNodes));
+      if (!initializingCluster && nameNodes == TOTAL_NAME_NODES
+            && journalNodes >= conf.getJournalNodeCount()) {
         log.info("Launching initial nodes with pending offers");
         initializingCluster = true;
-        launchInitialNamenodes(driver, pendingOffers.values());
-        launchInitialJournalnodes(driver, pendingOffers.values());
+        launchInitialNameNodes(driver, pendingOffers.values());
+        launchInitialJournalNodes(driver, pendingOffers.values());
         // Decline any remaining offer
         for (OfferID offerID : pendingOffers.keySet()) {
           driver.declineOffer(offerID);
@@ -341,10 +344,10 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     offers = remainingOffers;
     remainingOffers = new ArrayList<>();
 
-    // Check to see if we can launch some datanodes
+    // Check to see if we can launch some DataNodes
     for (Offer offer : offers) {
       if (clusterState.notInDfsHosts(offer.getSlaveId().getValue())) {
-        launchDatanode(driver, offer);
+        launchDataNode(driver, offer);
       } else {
         remainingOffers.add(offer);
       }

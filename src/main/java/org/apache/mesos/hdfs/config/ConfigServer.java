@@ -52,15 +52,15 @@ public class ConfigServer {
 
       String content = new String(Files.readAllBytes(Paths.get(confFile.getPath())));
 
-      Set<String> namenodes = new TreeSet<>();
-      namenodes.addAll(clusterState.getNamenodeHosts());
+      Set<String> nameNodes = new TreeSet<>();
+      nameNodes.addAll(clusterState.getNameNodeHosts());
 
-      Set<String> journalnodes = new TreeSet<>();
-      journalnodes.addAll(namenodes);
-      journalnodes.addAll(clusterState.getJournalnodeHosts());
+      Set<String> journalNodes = new TreeSet<>();
+      journalNodes.addAll(nameNodes);
+      journalNodes.addAll(clusterState.getJournalNodeHosts());
 
       Map<String, Object> model = new HashMap<>();
-      Iterator<String> iter = namenodes.iterator();
+      Iterator<String> iter = nameNodes.iterator();
       if (iter.hasNext()) {
         model.put("nn1Hostname", iter.next());
       }
@@ -68,16 +68,16 @@ public class ConfigServer {
         model.put("nn2Hostname", iter.next());
       }
 
-      String journalnodeString = "";
-      for (String jn : journalnodes) {
-        journalnodeString += jn + ":8485;";
+      String journalNodeString = "";
+      for (String jn : journalNodes) {
+        journalNodeString += jn + ":8485;";
       }
-      if (!journalnodeString.isEmpty()) {
+      if (!journalNodeString.isEmpty()) {
         // Chop the trailing ,
-        journalnodeString = journalnodeString.substring(0, journalnodeString.length() - 1);
+        journalNodeString = journalNodeString.substring(0, journalNodeString.length() - 1);
       }
 
-      model.put("journalnodes", journalnodeString);
+      model.put("journalnodes", journalNodeString);
 
       model.put("clusterName", schedulerConf.getClusterName());
       model.put("dataDir", schedulerConf.getDataDir());
