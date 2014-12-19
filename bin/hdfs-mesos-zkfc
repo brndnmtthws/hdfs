@@ -11,6 +11,7 @@ elif [ -f $JAVA_HOME_DIR/../bin/java ];
 then
   export JAVA_HOME=$JAVA_HOME_DIR/..
 else 
+  echo “Error JAVA_HOME cannot be determined from the registry”
   exit 1;
 fi
 
