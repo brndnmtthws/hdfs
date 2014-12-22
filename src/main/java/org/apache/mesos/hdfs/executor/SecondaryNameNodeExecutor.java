@@ -42,8 +42,8 @@ public class SecondaryNameNodeExecutor extends AbstractNodeExecutor {
   }
 
   /**
-   * Add tasks to the task list and then start the tasks in the following order: 1) Start Journal
-   * Node 2) Start Name Node 3) Start ZKFC Node
+   * Add tasks to the task list and then start the tasks in the following order: : 1) Start Journal
+   * Node 2) Receive Activate Message 3) Start Name Node 4) Start ZKFC Node
    **/
   @Override
   public void launchTask(final ExecutorDriver driver, final TaskInfo taskInfo) {
@@ -51,43 +51,20 @@ public class SecondaryNameNodeExecutor extends AbstractNodeExecutor {
     Task task = new Task(taskInfo);
     if (taskInfo.getTaskId().getValue().contains(JOURNAL_NODE_TASKID)) {
       journalNodeTask = task;
-    } else if (taskInfo.getTaskId().getValue().contains(NAME_NODE_TASKID)) {
-      nameNodeTask = task;
-    } else if (taskInfo.getTaskId().getValue().contains(ZKFC_NODE_TASKID)) {
-      zkfcNodeTask = task;
-    }
-    taskCount++;
-
-    if (taskCount == 3) {
-      // Start journal node
+      // Add the zkfc node task and wait for activate message
       startProcess(driver, journalNodeTask);
       driver.sendStatusUpdate(TaskStatus.newBuilder()
           .setTaskId(journalNodeTask.taskInfo.getTaskId())
           .setState(TaskState.TASK_RUNNING)
           .build());
-      // Start the name node
-      // TODO(elingg) add trigger for this event after name node 1 has initialized. Remove the sleep
-      // code at that time.
-      synchronized (this) {
-        try {
-          wait(40000);
-        } catch (InterruptedException ex) {
-        }
-      }
-      // Bootstrap and start the secondary name node
-      runCommand(driver, nameNodeTask, "bin/hdfs-mesos-namenode -b");
-      startProcess(driver, nameNodeTask);
-      driver.sendStatusUpdate(TaskStatus.newBuilder()
-          .setTaskId(nameNodeTask.taskInfo.getTaskId())
-          .setState(TaskState.TASK_RUNNING)
-          .build());
-      // Start the zkfc node
-      startProcess(driver, zkfcNodeTask);
-      driver.sendStatusUpdate(TaskStatus.newBuilder()
-          .setTaskId(zkfcNodeTask.taskInfo.getTaskId())
-          .setState(TaskState.TASK_RUNNING)
-          .build());
+    } else if (taskInfo.getTaskId().getValue().contains(NAME_NODE_TASKID)) {
+      // Add the name node task and wait for activate message
+      nameNodeTask = task;
+    } else if (taskInfo.getTaskId().getValue().contains(ZKFC_NODE_TASKID)) {
+      // Add the zkfc node task and wait for activate message
+      zkfcNodeTask = task;
     }
+
   }
 
   @Override
@@ -104,6 +81,28 @@ public class SecondaryNameNodeExecutor extends AbstractNodeExecutor {
     if (task != null && task.process != null) {
       task.process.destroy();
       task.process = null;
+    }
+  }
+
+  @Override
+  public void frameworkMessage(ExecutorDriver driver, byte[] msg) {
+    log.info("Executor received framework message of length: " + msg.length + " bytes");
+    String messageStr = new String(msg);
+    if (messageStr.equals("activate")) {
+      // Bootstrap the secondary name node
+      runCommand(driver, nameNodeTask, "bin/hdfs-mesos-namenode -b");
+      // Start the secondary name node
+      startProcess(driver, nameNodeTask);
+      driver.sendStatusUpdate(TaskStatus.newBuilder()
+          .setTaskId(nameNodeTask.taskInfo.getTaskId())
+          .setState(TaskState.TASK_RUNNING)
+          .build());
+      // Start the zkfc node
+      startProcess(driver, zkfcNodeTask);
+      driver.sendStatusUpdate(TaskStatus.newBuilder()
+          .setTaskId(zkfcNodeTask.taskInfo.getTaskId())
+          .setState(TaskState.TASK_RUNNING)
+          .build());
     }
   }
 
