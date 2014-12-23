@@ -137,7 +137,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         taskNames.toString()));
     int confServerPort = conf.getConfigServerPort();
     List<Resource> resources = getExecutorResources();
-    String taskIdName = String.format("%s.%s.%d", executorName, nodeName,
+    String taskIdName = String.format("%s.%s.%d", nodeName, executorName,
         System.currentTimeMillis());
 
     ExecutorInfo executorInfo = ExecutorInfo.newBuilder()
