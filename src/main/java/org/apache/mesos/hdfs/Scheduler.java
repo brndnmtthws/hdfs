@@ -154,7 +154,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
             .setEnvironment(Environment.newBuilder()
                 .addAllVariables(Arrays.asList(
                     Environment.Variable.newBuilder()
-                        .setName("HADOOP_OPTSf")
+                        .setName("HADOOP_OPTS")
                         .setValue(conf.getJvmOpts()).build(),
                     Environment.Variable.newBuilder()
                         .setName("HADOOP_HEAPSIZE")
