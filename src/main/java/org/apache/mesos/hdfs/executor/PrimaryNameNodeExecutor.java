@@ -11,6 +11,7 @@ import org.apache.mesos.MesosExecutorDriver;
 import org.apache.mesos.Protos.*;
 import org.apache.mesos.hdfs.config.SchedulerConf;
 import org.apache.mesos.hdfs.ProdConfigModule;
+import org.apache.mesos.hdfs.Scheduler;
 
 import java.io.IOException;
 
@@ -89,7 +90,7 @@ public class PrimaryNameNodeExecutor extends AbstractNodeExecutor {
   public void frameworkMessage(ExecutorDriver driver, byte[] msg) {
     log.info("Executor received framework message of length: " + msg.length + " bytes");
     String messageStr = new String(msg);
-    if (messageStr.equals("activate")) {
+    if (messageStr.equals(Scheduler.ACTIVATE_MESSAGE)) {
       // Initialize the journal node and name node
       runCommand(driver, nameNodeTask, "bin/hdfs-mesos-namenode -i");
       // Start the primary name node

@@ -40,7 +40,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   private static final String NODE_EXECUTOR_ID = "NodeExecutor";
   private static final String PRIMARY_NAME_NODE_EXECUTOR_ID = "PrimaryNameNodeExecutor";
   private static final String SECONDARY_NAME_NODE_EXECUTOR_ID = "SecondaryNameNodeExecutor";
-  private static final String ACTIVATE_MESSAGE = "activate";
+  public static final String ACTIVATE_MESSAGE = "activate";
   private static final Integer TOTAL_NAME_NODES = 2;
   private static final Integer TOTAL_JOURNAL_NODES = 3;
     
@@ -382,8 +382,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     
     ClusterState clusterState = ClusterState.getInstance();
     DfsTask dfsTask = clusterState.getDfsTask(status.getTaskId());
-    List<TaskID> currStagingTasksList = new ArrayList<TaskID>();
-    currStagingTasksList.addAll(stagingTasks);
+    List<TaskID> currentStagingTasksList = new ArrayList<TaskID>();
+    currentStagingTasksList.addAll(stagingTasks);
 
     if (status.getState().equals(TaskState.TASK_FAILED)
         || status.getState().equals(TaskState.TASK_FINISHED)
@@ -404,7 +404,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
             initializingCluster = false;
           } else {
             //Activate secondary name node after first name node is activated
-            for (TaskID taskId : currStagingTasksList) {
+            for (TaskID taskId : currentStagingTasksList) {
               if (taskId.getValue().contains(SECONDARY_NAME_NODE_EXECUTOR_ID)) {
                 sendMessageTo(driver, taskId, ACTIVATE_MESSAGE);
                 break;
@@ -415,7 +415,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           journalNodesRunning++;
           if (journalNodesRunning == TOTAL_JOURNAL_NODES) {
             //Activate primary name node after all journal nodes are activated
-              for (TaskID taskId : currStagingTasksList) {
+              for (TaskID taskId : currentStagingTasksList) {
                 if (taskId.getValue().contains(PRIMARY_NAME_NODE_EXECUTOR_ID)) {
                   sendMessageTo(driver, taskId, ACTIVATE_MESSAGE);
                   break;
@@ -459,9 +459,9 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     postfix = postfix.substring(postfix.indexOf(".") + 1, postfix.length());
     postfix = postfix.substring(postfix.indexOf(".") + 1, postfix.length());
     driver.sendFrameworkMessage(
-    ExecutorID.newBuilder().setValue("executor." + postfix).build(),
-    SlaveID.newBuilder().setValue(dfsTask.slaveId).build(),
-    message.getBytes());
+        ExecutorID.newBuilder().setValue("executor." + postfix).build(),
+        SlaveID.newBuilder().setValue(dfsTask.slaveId).build(),
+        message.getBytes());
   }
 
   public static class DfsTask {

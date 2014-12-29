@@ -11,6 +11,7 @@ import org.apache.mesos.MesosExecutorDriver;
 import org.apache.mesos.Protos.*;
 import org.apache.mesos.hdfs.config.SchedulerConf;
 import org.apache.mesos.hdfs.ProdConfigModule;
+import org.apache.mesos.hdfs.Scheduler;
 
 /**
  * The executor for the Secondary Name Node Machine.
@@ -51,7 +52,7 @@ public class SecondaryNameNodeExecutor extends AbstractNodeExecutor {
     Task task = new Task(taskInfo);
     if (taskInfo.getTaskId().getValue().contains(JOURNAL_NODE_TASKID)) {
       journalNodeTask = task;
-      // Add the zkfc node task and wait for activate message
+      // Start the journal node
       startProcess(driver, journalNodeTask);
       driver.sendStatusUpdate(TaskStatus.newBuilder()
           .setTaskId(journalNodeTask.taskInfo.getTaskId())
@@ -88,7 +89,7 @@ public class SecondaryNameNodeExecutor extends AbstractNodeExecutor {
   public void frameworkMessage(ExecutorDriver driver, byte[] msg) {
     log.info("Executor received framework message of length: " + msg.length + " bytes");
     String messageStr = new String(msg);
-    if (messageStr.equals("activate")) {
+    if (messageStr.equals(Scheduler.ACTIVATE_MESSAGE)) {
       // Bootstrap the secondary name node
       runCommand(driver, nameNodeTask, "bin/hdfs-mesos-namenode -b");
       // Start the secondary name node
