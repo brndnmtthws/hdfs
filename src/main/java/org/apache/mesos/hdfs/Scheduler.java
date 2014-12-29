@@ -40,7 +40,9 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   private static final String NODE_EXECUTOR_ID = "NodeExecutor";
   private static final String PRIMARY_NAME_NODE_EXECUTOR_ID = "PrimaryNameNodeExecutor";
   private static final String SECONDARY_NAME_NODE_EXECUTOR_ID = "SecondaryNameNodeExecutor";
+  public static final String ACTIVATE_MESSAGE = "activate";
   private static final Integer TOTAL_NAME_NODES = 2;
+  private static final Integer TOTAL_JOURNAL_NODES = 3;
     
   public static final Log log = LogFactory.getLog(Scheduler.class);
   private final SchedulerConf conf;
@@ -51,7 +53,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   private Set<TaskID> stagingTasks = new HashSet<>();
   //TODO(elingg) simplify number of variables used including variables related to NameNodes
   private boolean firstNameNodeLaunched = false;
-  private int nameNodesInitialized = 0;
+  private int nameNodesRunning = 0;
+  private int journalNodesRunning = 0;
 
   @Inject
   public Scheduler(SchedulerConf conf) {
@@ -134,7 +137,9 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         taskNames.toString()));
     int confServerPort = conf.getConfigServerPort();
     List<Resource> resources = getExecutorResources();
-    String taskIdName = String.format("%s.%d", nodeName, System.currentTimeMillis());
+    String taskIdName = String.format("%s.%s.%d", nodeName, executorName,
+        System.currentTimeMillis());
+
     ExecutorInfo executorInfo = ExecutorInfo.newBuilder()
         .setName(nodeName + " executor")
         .setExecutorId(ExecutorID.newBuilder().setValue("executor." + taskIdName).build())
@@ -318,8 +323,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
             && journalNodes >= conf.getJournalNodeCount()) {
         log.info("Launching initial nodes with pending offers");
         initializingCluster = true;
-        launchInitialNameNodes(driver, pendingOffers.values());
         launchInitialJournalNodes(driver, pendingOffers.values());
+        launchInitialNameNodes(driver, pendingOffers.values());
         // Decline any remaining offer
         for (OfferID offerID : pendingOffers.keySet()) {
           driver.declineOffer(offerID);
@@ -368,15 +373,17 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
   @Override
   public void statusUpdate(SchedulerDriver driver, TaskStatus status) {
-    ClusterState clusterState = ClusterState.getInstance();
     log.info(String.format(
         "Received status update for taskId=%s state=%s message='%s' stagingTasks.size=%d",
             status.getTaskId().getValue(),
             status.getState().toString(),
             status.getMessage(),
             stagingTasks.size()));
-
+    
+    ClusterState clusterState = ClusterState.getInstance();
     DfsTask dfsTask = clusterState.getDfsTask(status.getTaskId());
+    List<TaskID> currentStagingTasksList = new ArrayList<TaskID>();
+    currentStagingTasksList.addAll(stagingTasks);
 
     if (status.getState().equals(TaskState.TASK_FAILED)
         || status.getState().equals(TaskState.TASK_FINISHED)
@@ -385,18 +392,38 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       stagingTasks.remove(status.getTaskId());
       clusterState.removeTask(status);
     } else if (status.getState().equals(TaskState.TASK_RUNNING)) {
-      stagingTasks.remove(status.getTaskId());
-      clusterState.updateTask(status);
-      //TODO(elingg) get rid of this extra variable and also DFS task object.  Instead use cluster
-      //state or a cleaner way of keeping track of what is running. Get rid of the
-      //namenodesInitialized variable.
-      if (dfsTask.type == DfsTask.Type.NN) {
-        nameNodesInitialized++;
-        if (nameNodesInitialized == TOTAL_NAME_NODES) {
-          initializingCluster = false;
+        stagingTasks.remove(status.getTaskId());
+        clusterState.updateTask(status);
+        //TODO(elingg) get rid of this extra variable and also DFS task object.  Instead use cluster
+        //state or a cleaner way of keeping track of what is running. Get rid of the
+        //namenodesInitialized variable.
+        if (dfsTask.type == DfsTask.Type.NN) {
+          nameNodesRunning++;
+          if (nameNodesRunning == TOTAL_NAME_NODES) {
+            //Finished initializing cluster after both name nodes are initialized
+            initializingCluster = false;
+          } else {
+            //Activate secondary name node after first name node is activated
+            for (TaskID taskId : currentStagingTasksList) {
+              if (taskId.getValue().contains(SECONDARY_NAME_NODE_EXECUTOR_ID)) {
+                sendMessageTo(driver, taskId, ACTIVATE_MESSAGE);
+                break;
+              }
+            }
+          }
+        } else if (dfsTask.type == DfsTask.Type.JN) {
+          journalNodesRunning++;
+          if (journalNodesRunning == TOTAL_JOURNAL_NODES) {
+            //Activate primary name node after all journal nodes are activated
+              for (TaskID taskId : currentStagingTasksList) {
+                if (taskId.getValue().contains(PRIMARY_NAME_NODE_EXECUTOR_ID)) {
+                  sendMessageTo(driver, taskId, ACTIVATE_MESSAGE);
+                  break;
+                }
+              }
+           }
         }
-      }
-    }
+     }
   }
 
   @Override
@@ -422,6 +449,19 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     MesosSchedulerDriver driver = new MesosSchedulerDriver(this, frameworkInfo.build(),
         conf.getMesosMasterUri());
     driver.run().getValueDescriptor().getFullName();
+  }
+    
+  private void sendMessageTo(SchedulerDriver driver, TaskID taskId, String message) {
+    ClusterState clusterState = ClusterState.getInstance();
+    log.info(String.format("Sending message '%s' to taskId=%s", message, taskId.getValue()));
+    DfsTask dfsTask = clusterState.getDfsTask(taskId);
+    String postfix = taskId.getValue();
+    postfix = postfix.substring(postfix.indexOf(".") + 1, postfix.length());
+    postfix = postfix.substring(postfix.indexOf(".") + 1, postfix.length());
+    driver.sendFrameworkMessage(
+        ExecutorID.newBuilder().setValue("executor." + postfix).build(),
+        SlaveID.newBuilder().setValue(dfsTask.slaveId).build(),
+        message.getBytes());
   }
 
   public static class DfsTask {
