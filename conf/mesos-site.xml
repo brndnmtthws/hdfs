@@ -74,7 +74,7 @@
 
   <property>
     <name>mesos.hdfs.executor.cpus</name>
-    <value>0.5</value>
+    <value>0.1</value>
   </property>
 
   <property>
@@ -90,11 +90,6 @@
   <property>
     <name>mesos.hdfs.datanode.cpus</name>
     <value>1</value>
-  </property>
-
-  <property>
-    <name>mesos.hdfs.reconciliation.startup.delay</name>
-    <value>120</value>
   </property>
 
   <property>
