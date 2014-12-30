@@ -2,7 +2,6 @@
 HA HDFS on Apache Mesos
 ======================
 Starts 1 active NameNode (with JournalNode and ZKFC), 1 standby NN (+JN,ZKFC), 1 JN, and everything else is DataNodes.
---------------------------
 
 Building HDFS-Mesos
 --------------------------
