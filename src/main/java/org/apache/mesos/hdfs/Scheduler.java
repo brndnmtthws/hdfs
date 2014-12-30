@@ -250,7 +250,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         launchNode(driver, offer, NAME_NODE_ID,
                  Arrays.asList(NAME_NODE_ID, ZKFC_NODE_ID, JOURNAL_NODE_ID),
                  PRIMARY_NAME_NODE_EXECUTOR_ID);
-      } if (offers.size() > 0) {
+      }
+      if (offers.size() > 0) {
           Offer offer = offers.iterator().next();
           pendingOffers.remove(offer.getId());
           launchNode(driver, offer, NAME_NODE_ID,
