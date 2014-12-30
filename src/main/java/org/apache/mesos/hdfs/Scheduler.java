@@ -120,7 +120,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       throw new RuntimeException(e);
     }
     log.info("Registered framework frameworkId=" + frameworkId.getValue());
-    reregistered(driver, masterInfo);
   }
 
   @Override
