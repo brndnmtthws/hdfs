@@ -37,7 +37,6 @@ public class ClusterState {
     journalNodeHosts = new HashSet<>();
     nameNodeHosts = new HashSet<>();
   }
-
   public void init(State state) {
     this.state = state;
   }

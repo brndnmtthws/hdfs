@@ -384,7 +384,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
             //Activate secondary name node after first name node is activated
             for (TaskID taskId : currentStagingTasksList) {
                 if (taskId.getValue().contains(NAME_NODE_TASK_STR)) {
-                sendMessageTo(driver, taskId, "b");
+                sendMessageTo(driver, taskId, NAMENODE_BOOTSTRAP_MESSAGE);
                 break;
               }
             }
@@ -395,7 +395,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
             //Activate primary name node after all journal nodes are activated
               for (TaskID taskId : currentStagingTasksList) {
                 if (taskId.getValue().contains(NAME_NODE_TASK_STR)) {
-                  sendMessageTo(driver, taskId, "i");
+                  sendMessageTo(driver, taskId, NAMENODE_INIT_MESSAGE);
                   break;
                 }
               }
