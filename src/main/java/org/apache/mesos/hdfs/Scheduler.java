@@ -33,6 +33,7 @@ import org.joda.time.Seconds;
 
 public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     
+  public static final String ACTIVATE_MESSAGE = "activate";
   private static final String NAME_NODE_ID = "namenode";
   private static final String JOURNAL_NODE_ID = "journalnode";
   private static final String DATA_NODE_ID = "datanode";
@@ -40,19 +41,15 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   private static final String NODE_EXECUTOR_ID = "NodeExecutor";
   private static final String PRIMARY_NAME_NODE_EXECUTOR_ID = "PrimaryNameNodeExecutor";
   private static final String SECONDARY_NAME_NODE_EXECUTOR_ID = "SecondaryNameNodeExecutor";
-  public static final String ACTIVATE_MESSAGE = "activate";
   private static final Integer TOTAL_NAME_NODES = 2;
-  private static final Integer TOTAL_JOURNAL_NODES = 3;
     
   public static final Log log = LogFactory.getLog(Scheduler.class);
   private final SchedulerConf conf;
   private final String localhost;
-  private Map<OfferID, Offer> pendingOffers;
-  private boolean frameworkInitialized = false;
+  private Map<OfferID, Offer> pendingOffers = new ConcurrentHashMap<>();
   private boolean initializingCluster = false;
   private Set<TaskID> stagingTasks = new HashSet<>();
   //TODO(elingg) simplify number of variables used including variables related to NameNodes
-  private boolean firstNameNodeLaunched = false;
   private int nameNodesRunning = 0;
   private int journalNodesRunning = 0;
 
@@ -60,7 +57,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   public Scheduler(SchedulerConf conf) {
     this.conf = conf;
     initClusterState();
-    pendingOffers = new ConcurrentHashMap<>();
 
     try {
       localhost = InetAddress.getLocalHost().getHostAddress();
@@ -126,8 +122,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   @Override
   public void reregistered(SchedulerDriver driver, MasterInfo masterInfo) {
     log.info("Reregistered framework.");
-    ClusterState clusterState = ClusterState.getInstance();
-    clusterState.clear();
   }
 
   private void launchNode(SchedulerDriver driver, Offer offer,
@@ -233,23 +227,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
             .build());
   }
 
-  private void launchNameNode(SchedulerDriver driver, Offer offer) {
-    if (!firstNameNodeLaunched) {
-      launchNode(driver, offer, NAME_NODE_ID,
-          Arrays.asList(NAME_NODE_ID, ZKFC_NODE_ID, JOURNAL_NODE_ID),
-              PRIMARY_NAME_NODE_EXECUTOR_ID);
-      firstNameNodeLaunched = true;
-    } else {
-      launchNode(driver, offer, NAME_NODE_ID,
-          Arrays.asList(NAME_NODE_ID, ZKFC_NODE_ID, JOURNAL_NODE_ID),
-              SECONDARY_NAME_NODE_EXECUTOR_ID);
-    }
-  }
-
-  private void launchJournalNode(SchedulerDriver driver, Offer offer) {
-    launchNode(driver, offer, JOURNAL_NODE_ID, Arrays.asList(JOURNAL_NODE_ID), NODE_EXECUTOR_ID);
-  }
-
   private void launchDataNode(SchedulerDriver driver, Offer offer) {
     launchNode(driver, offer, DATA_NODE_ID, Arrays.asList(DATA_NODE_ID), NODE_EXECUTOR_ID);
   }
@@ -258,7 +235,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     int journalNodes = 0;
     for (Offer offer : offers) {
       pendingOffers.remove(offer.getId());
-      launchJournalNode(driver, offer);
+      launchNode(driver, offer, JOURNAL_NODE_ID, Arrays.asList(JOURNAL_NODE_ID), NODE_EXECUTOR_ID);
       journalNodes++;
       if (journalNodes >= conf.getJournalNodeCount()) {
         return;
@@ -267,15 +244,19 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   }
 
   private void launchInitialNameNodes(SchedulerDriver driver, Collection<Offer> offers) {
-    int nameNodes = 0;
-    // Find offer that matches
-    for (Offer offer : offers) {
+      if (offers.size() > 0) {
+        Offer offer = offers.iterator().next();
         pendingOffers.remove(offer.getId());
-        launchNameNode(driver, offer);
-        nameNodes++;
-        if (nameNodes >= TOTAL_NAME_NODES) {
-          return;
-        }
+        launchNode(driver, offer, NAME_NODE_ID,
+                 Arrays.asList(NAME_NODE_ID, ZKFC_NODE_ID, JOURNAL_NODE_ID),
+                 PRIMARY_NAME_NODE_EXECUTOR_ID);
+      }
+      if (offers.size() > 0) {
+          Offer offer = offers.iterator().next();
+          pendingOffers.remove(offer.getId());
+          launchNode(driver, offer, NAME_NODE_ID,
+                 Arrays.asList(NAME_NODE_ID, ZKFC_NODE_ID, JOURNAL_NODE_ID),
+                 SECONDARY_NAME_NODE_EXECUTOR_ID);
       }
   }
 
@@ -413,7 +394,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           }
         } else if (dfsTask.type == DfsTask.Type.JN) {
           journalNodesRunning++;
-          if (journalNodesRunning == TOTAL_JOURNAL_NODES) {
+          if (journalNodesRunning == (TOTAL_NAME_NODES + conf.getJournalNodeCount())) {
             //Activate primary name node after all journal nodes are activated
               for (TaskID taskId : currentStagingTasksList) {
                 if (taskId.getValue().contains(PRIMARY_NAME_NODE_EXECUTOR_ID)) {
@@ -440,7 +421,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       FrameworkID frameworkID = clusterState.getState().getFrameworkID();
       if (frameworkID != null) {
         frameworkInfo.setId(frameworkID);
-        frameworkInitialized = true;
       }
     } catch (InterruptedException | ExecutionException | InvalidProtocolBufferException e) {
       throw new RuntimeException(e);

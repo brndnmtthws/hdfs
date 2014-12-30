@@ -42,15 +42,6 @@ public class ClusterState {
     this.state = state;
   }
 
-  public void clear() {
-    tasks.clear();
-    journalNodes.clear();
-    nameNodes.clear();
-    dfsHosts.clear();
-    journalNodeHosts.clear();
-    nameNodeHosts.clear();
-  }
-
   public State getState() {
     return state;
   }
