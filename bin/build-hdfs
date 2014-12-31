@@ -3,17 +3,22 @@
 HADOOP_DIR=hadoop-2.3.0-cdh5.1.0
 HADOOP_ZIP=$HADOOP_DIR.tar.gz
 HADOOP_URL=http://archive.cloudera.com/cdh5/cdh/5/$HADOOP_ZIP
+NATIVE=native
 DIST=hdfs-mesos-0.0.2
 
 # Remove cached binaries and exit
 if [ "$1" == "clean" ]; then
     rm -f $HADOOP_ZIP
     rm -rf $HADOOP_DIR
-    rm -rf native
+    rm -rf $NATIVE
     rm -rf $DIST
     rm -f $DIST.tgz
+    mvn clean
     exit 0
 fi
+
+# Build and package hdfs-mesos project
+mvn package
 
 # Download hadoop binary
 if [ ! -f $HADOOP_ZIP ]; then
@@ -43,15 +48,15 @@ else
 fi
 
 # Get native libraries
-if [ ! -d "native" ]; then
+if [ ! -d $NATIVE ]; then
     echo "Downloading and unpacking native libs"
     wget https://github.com/cloudera/Impala/archive/cdh5-1.4_5.1.0.zip || exit
     unzip -q cdh5-1.4_5.1.0.zip
-    mkdir -p native
-    cp Impala-cdh5-1.4_5.1.0/thirdparty/hadoop-2.3.0-cdh5.1.0/lib/native/lib* native
+    mkdir -p $NATIVE
+    cp Impala-cdh5-1.4_5.1.0/thirdparty/hadoop-2.3.0-cdh5.1.0/lib/native/lib* $NATIVE
     rm -rf cdh5-1* Impala*
 else
-    echo "(native libs already exist, skipping dl)"
+    echo "($NATIVE libs already exist, skipping dl)"
 fi
 
 # Copy to dist
@@ -68,7 +73,7 @@ cd $DIST
 cp ../bin/* bin/
 cp ../target/*-uber.jar lib/
 cp ../conf/* etc/hadoop/
-cp ../native/* lib/native
+cp ../$NATIVE/* lib/native
 cd ..
 
 # Compress tarball

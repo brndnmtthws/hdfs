@@ -5,8 +5,8 @@ Starts 1 active NameNode (with JournalNode and ZKFC), 1 standby NN (+JN,ZKFC), 1
 
 Building HDFS-Mesos
 --------------------------
-1. `mvn package`
-2. `./bin/build-hdfs`
+1. `./bin/build-hdfs`
+2. To remove the project build output and downloaded binaries, run `./bin/build-hdfs clean`
 
 Installing HDFS-Mesos on your Cluster
 --------------------------
@@ -24,6 +24,6 @@ Starting HDFS-Mesos
 Using HDFS
 --------------------------
 See some of the many HDFS tutorials out there for more details, but here's a quick sanity check:
-1. `hadoop fs -ls hdfs://<NameNode>:50071/` should show nothing for starters
-2. `hadoop fs -put /path/to/src_file hdfs://<NameNode>:50071/`
-3. `hadoop fs -ls hdfs://<NameNode>:50071/` should now list src_file
+1. `hadoop fs -ls hdfs://<ActiveNameNode>:50071/` should show nothing for starters
+2. `hadoop fs -put /path/to/src_file hdfs://<ActiveNameNode>:50071/`
+3. `hadoop fs -ls hdfs://<ActiveNameNode>:50071/` should now list src_file
