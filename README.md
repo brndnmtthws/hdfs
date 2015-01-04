@@ -6,7 +6,8 @@ Starts 1 active NameNode (with JournalNode and ZKFC), 1 standby NN (+JN,ZKFC), 1
 Building HDFS-Mesos
 --------------------------
 1. `./bin/build-hdfs`
-2. To remove the project build output and downloaded binaries, run `./bin/build-hdfs clean`
+2. Run `./bin/build-hdfs nocompile` to skip the `mvn clean package` step and just re-bundle the binaries.
+3. To remove the project build output and downloaded binaries, run `./bin/build-hdfs clean`
 
 Installing HDFS-Mesos on your Cluster
 --------------------------

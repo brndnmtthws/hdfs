@@ -18,7 +18,9 @@ if [ "$1" == "clean" ]; then
 fi
 
 # Build and package hdfs-mesos project
-mvn package
+if [ "$1" != "nocompile" ]; then
+  mvn clean package
+fi
 
 # Download hadoop binary
 if [ ! -f $HADOOP_ZIP ]; then
