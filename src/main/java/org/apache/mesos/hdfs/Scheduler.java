@@ -116,7 +116,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       throw new RuntimeException(e);
     }
     log.info("Registered framework frameworkId=" + frameworkId.getValue());
-    reregistered(driver, masterInfo);
   }
 
   @Override
@@ -162,7 +161,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
                     Environment.Variable.newBuilder()
                         .setName("EXECUTOR_OPTS")
                         .setValue("-Xmx" + conf.getExecutorHeap() + "m").build())))
-            .setValue("env ; cd hadoop-2.* && exec java $HADOOP_OPTS $EXECUTOR_OPTS " +
+            .setValue("env ; cd hdfs-mesos-* && exec java $HADOOP_OPTS $EXECUTOR_OPTS " +
                       "-cp lib/*.jar org.apache.mesos.hdfs.executor." + executorName)
             .build())
         .build();
