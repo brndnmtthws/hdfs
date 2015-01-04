@@ -25,6 +25,7 @@ Starting HDFS-Mesos
 Using HDFS
 --------------------------
 See some of the many HDFS tutorials out there for more details, but here's a quick sanity check:
+
 1. `hadoop fs -ls hdfs://<ActiveNameNode>:50071/` should show nothing for starters
 2. `hadoop fs -put /path/to/src_file hdfs://<ActiveNameNode>:50071/`
 3. `hadoop fs -ls hdfs://<ActiveNameNode>:50071/` should now list src_file
