@@ -2,7 +2,6 @@ package org.apache.mesos.hdfs;
 
 import org.apache.mesos.Protos.*;
 import org.apache.mesos.hdfs.state.ClusterState;
-import org.apache.mesos.hdfs.Scheduler.DfsTask;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
@@ -17,7 +16,7 @@ public class TestClusterState {
     ClusterState clusterState = ClusterState.getInstance();
 
     TaskID taskId = TaskID.newBuilder()
-        .setValue("namenode")
+        .setValue(".namenode.namenode.123")
         .build();
 
     SlaveID slaveId = SlaveID.newBuilder()
@@ -31,8 +30,7 @@ public class TestClusterState {
         .build();
 
     // Add task
-    clusterState.addTask(taskId,
-        new DfsTask("namenode", slaveId.getValue(), "10.19.15.1"));
+    clusterState.addTask(taskId, "10.19.15.1", "worker10.19.15.1");
 
     TaskStatus taskStatus = TaskStatus.newBuilder()
         .setTaskId(taskId)
@@ -53,7 +51,7 @@ public class TestClusterState {
     ClusterState clusterState = ClusterState.getInstance();
 
     TaskID taskId = TaskID.newBuilder()
-        .setValue("journalnode")
+        .setValue(".namenode.journalnode.123")
         .build();
 
     SlaveID slaveId = SlaveID.newBuilder()
@@ -67,8 +65,7 @@ public class TestClusterState {
         .build();
 
     // Add task
-    clusterState.addTask(taskId,
-        new DfsTask("journalnode", slaveId.getValue(), "10.80.16.2"));
+    clusterState.addTask(taskId, "10.80.16.2", "worker10.80.16.2");
 
     TaskStatus taskStatus = TaskStatus.newBuilder()
         .setTaskId(taskId)

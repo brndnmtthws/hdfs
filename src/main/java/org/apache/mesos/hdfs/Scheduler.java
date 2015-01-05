@@ -22,6 +22,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.hdfs.config.SchedulerConf;
 import org.apache.mesos.hdfs.state.ClusterState;
 import org.apache.mesos.hdfs.state.State;
+import org.apache.mesos.hdfs.util.HDFSConstants;
 import org.apache.mesos.MesosNativeLibrary;
 import org.apache.mesos.MesosSchedulerDriver;
 import org.apache.mesos.Protos.*;
@@ -33,16 +34,6 @@ import org.joda.time.Seconds;
 
 public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     
-  public static final String NAMENODE_INIT_MESSAGE = "-i";
-  public static final String NAMENODE_BOOTSTRAP_MESSAGE = "-b";
-  private static final String NAME_NODE_ID = "namenode";
-  private static final String JOURNAL_NODE_ID = "journalnode";
-  private static final String DATA_NODE_ID = "datanode";
-  private static final String ZKFC_NODE_ID = "zkfc";
-  private static final String NODE_EXECUTOR_ID = "NodeExecutor";
-  private static final String NAME_NODE_EXECUTOR_ID = "NameNodeExecutor";
-  private static final String NAME_NODE_TASK_STR = NAME_NODE_ID + "." + NAME_NODE_ID + "."
-      + NAME_NODE_EXECUTOR_ID;
   private static final Integer TOTAL_NAME_NODES = 2;
     
   public static final Log log = LogFactory.getLog(Scheduler.class);
@@ -51,9 +42,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   private Map<OfferID, Offer> pendingOffers = new ConcurrentHashMap<>();
   private boolean initializingCluster = false;
   private Set<TaskID> stagingTasks = new HashSet<>();
-  //TODO(elingg) simplify number of variables used including variables related to NameNodes
-  private int nameNodesRunning = 0;
-  private int journalNodesRunning = 0;
 
   @Inject
   public Scheduler(SchedulerConf conf) {
@@ -186,8 +174,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       tasks.add(task);
 
       stagingTasks.add(taskId);
-      clusterState.addTask(taskId,
-          new DfsTask(taskName, offer.getSlaveId().getValue(), offer.getHostname()));
+      clusterState.addTask(taskId, offer.getHostname(), offer.getSlaveId().getValue());
     }
     driver.launchTasks(Arrays.asList(offer.getId()), tasks);
   }
@@ -229,14 +216,16 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   }
 
   private void launchDataNode(SchedulerDriver driver, Offer offer) {
-    launchNode(driver, offer, DATA_NODE_ID, Arrays.asList(DATA_NODE_ID), NODE_EXECUTOR_ID);
+    launchNode(driver, offer, HDFSConstants.DATA_NODE_ID, Arrays.asList(HDFSConstants.DATA_NODE_ID),
+        HDFSConstants.NODE_EXECUTOR_ID);
   }
 
   private void launchInitialJournalNodes(SchedulerDriver driver, Collection<Offer> offers) {
     int journalNodes = 0;
     for (Offer offer : offers) {
       pendingOffers.remove(offer.getId());
-      launchNode(driver, offer, JOURNAL_NODE_ID, Arrays.asList(JOURNAL_NODE_ID), NODE_EXECUTOR_ID);
+      launchNode(driver, offer, HDFSConstants.JOURNAL_NODE_ID,
+          Arrays.asList(HDFSConstants.JOURNAL_NODE_ID), HDFSConstants.NODE_EXECUTOR_ID);
       journalNodes++;
       if (journalNodes >= conf.getJournalNodeCount()) {
         return;
@@ -249,9 +238,9 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       if (offers.size() > 0) {
         Offer offer = offers.iterator().next();
         pendingOffers.remove(offer.getId());
-        launchNode(driver, offer, NAME_NODE_ID,
-                 Arrays.asList(NAME_NODE_ID, ZKFC_NODE_ID, JOURNAL_NODE_ID),
-                 NAME_NODE_EXECUTOR_ID);
+        launchNode(driver, offer, HDFSConstants.NAME_NODE_ID,
+            Arrays.asList(HDFSConstants.NAME_NODE_ID, HDFSConstants.ZKFC_NODE_ID,
+            HDFSConstants.JOURNAL_NODE_ID), HDFSConstants.NAME_NODE_EXECUTOR_ID);
         }
       }
   }
@@ -358,7 +347,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
             stagingTasks.size()));
     
     ClusterState clusterState = ClusterState.getInstance();
-    DfsTask dfsTask = clusterState.getDfsTask(status.getTaskId());
 
     if (status.getState().equals(TaskState.TASK_FAILED)
         || status.getState().equals(TaskState.TASK_FINISHED)
@@ -371,36 +359,33 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         clusterState.updateTask(status);
         List<TaskID> currentStagingTasksList = new ArrayList<TaskID>();
         currentStagingTasksList.addAll(stagingTasks);
-        //TODO(elingg) get rid of this extra variable and also DFS task object.  Instead use cluster
-        //state or a cleaner way of keeping track of what is running. Get rid of the
-        //namenodesInitialized variable.
-        if (dfsTask.type == DfsTask.Type.NN) {
-          nameNodesRunning++;
-          if (nameNodesRunning == TOTAL_NAME_NODES) {
+
+        if (status.getTaskId().getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
+          if (clusterState.getNameNodes().size() == TOTAL_NAME_NODES) {
             //Finished initializing cluster after both name nodes are initialized
             initializingCluster = false;
           } else {
             //Activate secondary name node after first name node is activated
             for (TaskID taskId : currentStagingTasksList) {
-              if (taskId.getValue().contains(NAME_NODE_TASK_STR)) {
-                sendMessageTo(driver, taskId, NAMENODE_BOOTSTRAP_MESSAGE);
+              if (taskId.getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
+                sendMessageTo(driver, taskId, HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE);
                 break;
               }
             }
           }
-        } else if (dfsTask.type == DfsTask.Type.JN) {
-          journalNodesRunning++;
-          if (journalNodesRunning == (TOTAL_NAME_NODES + conf.getJournalNodeCount())) {
+        } else if (status.getTaskId().getValue().contains(HDFSConstants.JOURNAL_NODE_TASKID) &&
+              (clusterState.getJournalNodes().size() ==
+              (TOTAL_NAME_NODES + conf.getJournalNodeCount()))) {
             //Activate primary name node after all journal nodes are activated
-              for (TaskID taskId : currentStagingTasksList) {
-                if (taskId.getValue().contains(NAME_NODE_TASK_STR)) {
-                  sendMessageTo(driver, taskId, NAMENODE_INIT_MESSAGE);
-                  break;
-                }
+            for (TaskID taskId : currentStagingTasksList) {
+              if (taskId.getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
+                sendMessageTo(driver, taskId, HDFSConstants.NAME_NODE_INIT_MESSAGE);
+                break;
               }
-           }
-        }
-     }
+            }
+         }
+      }
+     
   }
 
   @Override
@@ -430,57 +415,14 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   private void sendMessageTo(SchedulerDriver driver, TaskID taskId, String message) {
     ClusterState clusterState = ClusterState.getInstance();
     log.info(String.format("Sending message '%s' to taskId=%s", message, taskId.getValue()));
-    DfsTask dfsTask = clusterState.getDfsTask(taskId);
+    String slaveId = clusterState.getTaskSlaveMap().get(taskId);
     String postfix = taskId.getValue();
     postfix = postfix.substring(postfix.indexOf(".") + 1, postfix.length());
     postfix = postfix.substring(postfix.indexOf(".") + 1, postfix.length());
     driver.sendFrameworkMessage(
         ExecutorID.newBuilder().setValue("executor." + postfix).build(),
-        SlaveID.newBuilder().setValue(dfsTask.slaveId).build(),
+        SlaveID.newBuilder().setValue(slaveId).build(),
         message.getBytes());
-  }
-
-  public static class DfsTask {
-    public final Type type;
-    public TaskStatus taskStatus;
-    public String slaveId;
-    public String hostname;
-
-    public DfsTask(String type, String slaveId, String hostname) {
-      switch (type) {
-        case NAME_NODE_ID :
-          this.type = Type.NN;
-          break;
-        case JOURNAL_NODE_ID :
-          this.type = Type.JN;
-          break;
-        case DATA_NODE_ID :
-          this.type = Type.DN;
-          break;
-        case ZKFC_NODE_ID :
-          this.type = Type.ZKFC;
-          break;
-        default :
-          throw new RuntimeException("Invalid type: " + type);
-      }
-      this.slaveId = slaveId;
-
-      // Make sure this is the actual hostname.
-      try {
-        InetAddress addr = InetAddress.getByName(hostname);
-        this.hostname = addr.getHostAddress();
-      } catch (UnknownHostException e) {
-        log.error(e);
-        this.hostname = hostname;
-      }
-    }
-
-    public enum Type {
-      NN,
-      DN,
-      JN,
-      ZKFC,
-    }
   }
 
 }

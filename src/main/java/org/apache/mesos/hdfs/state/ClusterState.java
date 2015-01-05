@@ -4,6 +4,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.Protos;
 import org.apache.mesos.hdfs.Scheduler;
+import org.apache.mesos.hdfs.util.HDFSConstants;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -13,10 +14,10 @@ import java.util.Set;
 public class ClusterState {
   private static final Log log = LogFactory.getLog(ClusterState.class);
   private State state;
-  private final Map<Protos.TaskID, Scheduler.DfsTask> tasks;
+  private final Map<Protos.TaskID, String> taskHostMap;
   private final Set<Protos.TaskID> journalNodes;
   private final Set<Protos.TaskID> nameNodes;
-  private final Set<String> dfsHosts;
+  private final Map<Protos.TaskID, String> taskSlaveMap;
   private final Set<String> journalNodeHosts;
   private final Set<String> nameNodeHosts;
 
@@ -30,10 +31,10 @@ public class ClusterState {
   }
 
   private ClusterState() {
-    tasks = new HashMap<>();
+    taskHostMap = new HashMap<>();
+    taskSlaveMap = new HashMap<>();
     journalNodes = new HashSet<>();
     nameNodes = new HashSet<>();
-    dfsHosts = new HashSet<>();
     journalNodeHosts = new HashSet<>();
     nameNodeHosts = new HashSet<>();
   }
@@ -45,12 +46,12 @@ public class ClusterState {
     return state;
   }
 
-  public final Map<Protos.TaskID, Scheduler.DfsTask> getTasks() {
-    return tasks;
+  public final Map<Protos.TaskID, String> getTaskHostMap() {
+    return taskHostMap;
   }
 
-  public final Scheduler.DfsTask getDfsTask(Protos.TaskID taskID) {
-    return tasks.get(taskID);
+  public final Map<Protos.TaskID, String> getTaskSlaveMap() {
+    return taskSlaveMap;
   }
 
   public final Set<Protos.TaskID> getJournalNodes() {
@@ -70,57 +71,34 @@ public class ClusterState {
   }
 
   public boolean notInDfsHosts(String host) {
-    return !dfsHosts.contains(host);
+    return !taskSlaveMap.values().contains(host);
   }
 
-  public void addTask(Protos.TaskID taskId, Scheduler.DfsTask dfsTask) {
-    tasks.put(taskId, dfsTask);
-    Scheduler.DfsTask.Type type = dfsTask.type;
-    switch (type) {
-      case NN :
-        nameNodeHosts.add(dfsTask.hostname);
-        break;
-      case JN :
-        journalNodeHosts.add(dfsTask.hostname);
-        break;
-      default :
-        break;
+  public void addTask(Protos.TaskID taskId, String hostname, String slaveId) {
+    taskHostMap.put(taskId, hostname);
+    taskSlaveMap.put(taskId, slaveId);
+    if (taskId.getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
+      nameNodeHosts.add(hostname);
+    } else if (taskId.getValue().contains(HDFSConstants.JOURNAL_NODE_TASKID)) {
+      journalNodeHosts.add(hostname);
     }
   }
-
   public void updateTask(Protos.TaskStatus taskStatus) {
-    if (tasks.containsKey(taskStatus.getTaskId())) {
-      tasks.get(taskStatus.getTaskId()).taskStatus = taskStatus;
-      Scheduler.DfsTask.Type type = tasks.get(taskStatus.getTaskId()).type;
-      dfsHosts.add(taskStatus.getSlaveId().getValue());
-      switch (type) {
-        case DN :
-        case ZKFC :
-          break;
-        case NN :
-          nameNodes.add(taskStatus.getTaskId());
-          break;
-        case JN :
-          journalNodes.add(taskStatus.getTaskId());
-          break;
-        default :
-          Scheduler.log.error("Unknown task type: " + type);
-          break;
-      }
-    } else {
-      log.error("Asked to update unknown task, taskId=" + taskStatus.getTaskId().getValue());
+    if (taskStatus.getTaskId().getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
+      nameNodes.add(taskStatus.getTaskId());
+    } else if (taskStatus.getTaskId().getValue()
+        .contains(HDFSConstants.JOURNAL_NODE_TASKID)) {
+      journalNodes.add(taskStatus.getTaskId());
     }
   }
 
   public void removeTask(Protos.TaskStatus taskStatus) {
     Protos.TaskID taskId = taskStatus.getTaskId();
-    if (tasks.containsKey(taskId) && tasks.get(taskId).hostname != null) {
-      journalNodeHosts.remove(tasks.get(taskId).hostname);
-      nameNodeHosts.remove(tasks.get(taskId).hostname);
-    }
-    tasks.remove(taskId);
+    journalNodeHosts.remove(taskHostMap.get(taskId));
+    nameNodeHosts.remove(taskHostMap.get(taskId));
+    taskHostMap.remove(taskId);
     nameNodes.remove(taskId);
     journalNodes.remove(taskId);
-    dfsHosts.remove(taskStatus.getSlaveId().getValue());
+    taskSlaveMap.remove(taskId);
   }
 }

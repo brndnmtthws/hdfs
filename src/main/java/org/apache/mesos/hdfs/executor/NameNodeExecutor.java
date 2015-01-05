@@ -11,7 +11,7 @@ import org.apache.mesos.MesosExecutorDriver;
 import org.apache.mesos.Protos.*;
 import org.apache.mesos.hdfs.config.SchedulerConf;
 import org.apache.mesos.hdfs.ProdConfigModule;
-import org.apache.mesos.hdfs.Scheduler;
+import org.apache.mesos.hdfs.util.HDFSConstants;
 
 import java.io.IOException;
 
@@ -51,7 +51,7 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
   public void launchTask(final ExecutorDriver driver, final TaskInfo taskInfo) {
     executorInfo = taskInfo.getExecutor();
     Task task = new Task(taskInfo);
-    if (taskInfo.getTaskId().getValue().contains(JOURNAL_NODE_TASKID)) {
+    if (taskInfo.getTaskId().getValue().contains(HDFSConstants.JOURNAL_NODE_TASKID)) {
       journalNodeTask = task;
       // Start the journal node
       startProcess(driver, journalNodeTask);
@@ -59,10 +59,10 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
           .setTaskId(journalNodeTask.taskInfo.getTaskId())
           .setState(TaskState.TASK_RUNNING)
           .build());
-    } else if (taskInfo.getTaskId().getValue().contains(NAME_NODE_TASKID)) {
+    } else if (taskInfo.getTaskId().getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
       // Add the name node task and wait for activate message
       nameNodeTask = task;
-    } else if (taskInfo.getTaskId().getValue().contains(ZKFC_NODE_TASKID)) {
+    } else if (taskInfo.getTaskId().getValue().contains(HDFSConstants.ZKFC_NODE_TASKID)) {
       // Add the zkfc node task and wait for activate message
       zkfcNodeTask = task;
     }
@@ -72,11 +72,11 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
   public void killTask(ExecutorDriver driver, TaskID taskId) {
     log.info("Killing task : " + taskId.getValue());
     Task task = null;
-    if (taskId.getValue().contains(JOURNAL_NODE_TASKID)) {
+    if (taskId.getValue().contains(HDFSConstants.JOURNAL_NODE_TASKID)) {
       task = journalNodeTask;
-    } else if (taskId.getValue().contains(NAME_NODE_TASKID)) {
+    } else if (taskId.getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
       task = nameNodeTask;
-    } else if (taskId.getValue().contains(ZKFC_NODE_TASKID)) {
+    } else if (taskId.getValue().contains(HDFSConstants.ZKFC_NODE_TASKID)) {
       task = zkfcNodeTask;
     }
 
@@ -90,8 +90,8 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
   public void frameworkMessage(ExecutorDriver driver, byte[] msg) {
     log.info("Executor received framework message of length: " + msg.length + " bytes");
     String messageStr = new String(msg);
-    if (messageStr.equals(Scheduler.NAMENODE_INIT_MESSAGE) ||
-        messageStr.equals(Scheduler.NAMENODE_BOOTSTRAP_MESSAGE)) {
+    if (messageStr.equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)
+        || messageStr.equals(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE)) {
       // Initialize the journal node and name node
       runCommand(driver, nameNodeTask, "bin/hdfs-mesos-namenode " + messageStr);
       // Start the name node
