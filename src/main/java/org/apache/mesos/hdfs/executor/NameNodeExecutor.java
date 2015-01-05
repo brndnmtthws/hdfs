@@ -11,6 +11,7 @@ import org.apache.mesos.MesosExecutorDriver;
 import org.apache.mesos.Protos.*;
 import org.apache.mesos.hdfs.config.SchedulerConf;
 import org.apache.mesos.hdfs.ProdConfigModule;
+import org.apache.mesos.hdfs.Scheduler;
 
 import java.io.IOException;
 
@@ -40,7 +41,6 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
     MesosExecutorDriver driver = new MesosExecutorDriver(
         injector.getInstance(NameNodeExecutor.class));
     System.exit(driver.run() == Status.DRIVER_STOPPED ? 0 : 1);
-
   }
 
   /**
@@ -90,20 +90,23 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
   public void frameworkMessage(ExecutorDriver driver, byte[] msg) {
     log.info("Executor received framework message of length: " + msg.length + " bytes");
     String messageStr = new String(msg);
-    // Initialize the journal node and name node
-    runCommand(driver, nameNodeTask, "bin/hdfs-mesos-namenode -" + messageStr);
-    // Start the name node
-    startProcess(driver, nameNodeTask);
-    driver.sendStatusUpdate(TaskStatus.newBuilder()
-        .setTaskId(nameNodeTask.taskInfo.getTaskId())
-        .setState(TaskState.TASK_RUNNING)
-        .build());
-    // Start the zkfc node
-    startProcess(driver, zkfcNodeTask);
-    driver.sendStatusUpdate(TaskStatus.newBuilder()
-        .setTaskId(zkfcNodeTask.taskInfo.getTaskId())
-        .setState(TaskState.TASK_RUNNING)
-        .build());
+    if (messageStr.equals(Scheduler.NAMENODE_INIT_MESSAGE) ||
+        messageStr.equals(Scheduler.NAMENODE_BOOTSTRAP_MESSAGE)) {
+      // Initialize the journal node and name node
+      runCommand(driver, nameNodeTask, "bin/hdfs-mesos-namenode " + messageStr);
+      // Start the name node
+      startProcess(driver, nameNodeTask);
+      driver.sendStatusUpdate(TaskStatus.newBuilder()
+          .setTaskId(nameNodeTask.taskInfo.getTaskId())
+          .setState(TaskState.TASK_RUNNING)
+          .build());
+      // Start the zkfc node
+      startProcess(driver, zkfcNodeTask);
+      driver.sendStatusUpdate(TaskStatus.newBuilder()
+          .setTaskId(zkfcNodeTask.taskInfo.getTaskId())
+          .setState(TaskState.TASK_RUNNING)
+          .build());
+    }
   }
 
 }

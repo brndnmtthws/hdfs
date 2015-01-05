@@ -33,8 +33,8 @@ import org.joda.time.Seconds;
 
 public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     
-  private static final String NAMENODE_INIT_MESSAGE = "i";
-  private static final String NAMENODE_BOOTSTRAP_MESSAGE = "b";
+  public static final String NAMENODE_INIT_MESSAGE = "-i";
+  public static final String NAMENODE_BOOTSTRAP_MESSAGE = "-b";
   private static final String NAME_NODE_ID = "namenode";
   private static final String JOURNAL_NODE_ID = "journalnode";
   private static final String DATA_NODE_ID = "datanode";
