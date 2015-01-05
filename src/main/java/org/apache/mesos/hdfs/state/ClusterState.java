@@ -38,6 +38,7 @@ public class ClusterState {
     journalNodeHosts = new HashSet<>();
     nameNodeHosts = new HashSet<>();
   }
+
   public void init(State state) {
     this.state = state;
   }
@@ -83,6 +84,7 @@ public class ClusterState {
       journalNodeHosts.add(hostname);
     }
   }
+
   public void updateTask(Protos.TaskStatus taskStatus) {
     if (taskStatus.getTaskId().getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
       nameNodes.add(taskStatus.getTaskId());
