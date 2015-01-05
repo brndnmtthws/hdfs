@@ -18,8 +18,8 @@ import java.io.IOException;
 /**
  * The executor for the Primary Name Node Machine.
  **/
-public class PrimaryNameNodeExecutor extends AbstractNodeExecutor {
-  public static final Log log = LogFactory.getLog(PrimaryNameNodeExecutor.class);
+public class NameNodeExecutor extends AbstractNodeExecutor {
+  public static final Log log = LogFactory.getLog(NameNodeExecutor.class);
 
   private Task nameNodeTask;
   private Task zkfcNodeTask;
@@ -29,7 +29,7 @@ public class PrimaryNameNodeExecutor extends AbstractNodeExecutor {
    * The constructor for the primary name node which saves the configuration.
    **/
   @Inject
-  PrimaryNameNodeExecutor(SchedulerConf schedulerConf) {
+  NameNodeExecutor(SchedulerConf schedulerConf) {
     super(schedulerConf);
   }
 
@@ -39,7 +39,7 @@ public class PrimaryNameNodeExecutor extends AbstractNodeExecutor {
   public static void main(String[] args) {
     Injector injector = Guice.createInjector(new ProdConfigModule());
     MesosExecutorDriver driver = new MesosExecutorDriver(
-        injector.getInstance(PrimaryNameNodeExecutor.class));
+        injector.getInstance(NameNodeExecutor.class));
     System.exit(driver.run() == Status.DRIVER_STOPPED ? 0 : 1);
   }
 
@@ -90,10 +90,11 @@ public class PrimaryNameNodeExecutor extends AbstractNodeExecutor {
   public void frameworkMessage(ExecutorDriver driver, byte[] msg) {
     log.info("Executor received framework message of length: " + msg.length + " bytes");
     String messageStr = new String(msg);
-    if (messageStr.equals(Scheduler.ACTIVATE_MESSAGE)) {
+    if (messageStr.equals(Scheduler.NAMENODE_INIT_MESSAGE) ||
+        messageStr.equals(Scheduler.NAMENODE_BOOTSTRAP_MESSAGE)) {
       // Initialize the journal node and name node
-      runCommand(driver, nameNodeTask, "bin/hdfs-mesos-namenode -i");
-      // Start the primary name node
+      runCommand(driver, nameNodeTask, "bin/hdfs-mesos-namenode " + messageStr);
+      // Start the name node
       startProcess(driver, nameNodeTask);
       driver.sendStatusUpdate(TaskStatus.newBuilder()
           .setTaskId(nameNodeTask.taskInfo.getTaskId())

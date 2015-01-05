@@ -33,14 +33,16 @@ import org.joda.time.Seconds;
 
 public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     
-  public static final String ACTIVATE_MESSAGE = "activate";
+  public static final String NAMENODE_INIT_MESSAGE = "-i";
+  public static final String NAMENODE_BOOTSTRAP_MESSAGE = "-b";
   private static final String NAME_NODE_ID = "namenode";
   private static final String JOURNAL_NODE_ID = "journalnode";
   private static final String DATA_NODE_ID = "datanode";
   private static final String ZKFC_NODE_ID = "zkfc";
   private static final String NODE_EXECUTOR_ID = "NodeExecutor";
-  private static final String PRIMARY_NAME_NODE_EXECUTOR_ID = "PrimaryNameNodeExecutor";
-  private static final String SECONDARY_NAME_NODE_EXECUTOR_ID = "SecondaryNameNodeExecutor";
+  private static final String NAME_NODE_EXECUTOR_ID = "NameNodeExecutor";
+  private static final String NAME_NODE_TASK_STR = NAME_NODE_ID + "." + NAME_NODE_ID + "."
+      + NAME_NODE_EXECUTOR_ID;
   private static final Integer TOTAL_NAME_NODES = 2;
     
   public static final Log log = LogFactory.getLog(Scheduler.class);
@@ -243,19 +245,14 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   }
 
   private void launchInitialNameNodes(SchedulerDriver driver, Collection<Offer> offers) {
+      for (int i = 0; i < TOTAL_NAME_NODES; i++) {
       if (offers.size() > 0) {
         Offer offer = offers.iterator().next();
         pendingOffers.remove(offer.getId());
         launchNode(driver, offer, NAME_NODE_ID,
                  Arrays.asList(NAME_NODE_ID, ZKFC_NODE_ID, JOURNAL_NODE_ID),
-                 PRIMARY_NAME_NODE_EXECUTOR_ID);
-      }
-      if (offers.size() > 0) {
-          Offer offer = offers.iterator().next();
-          pendingOffers.remove(offer.getId());
-          launchNode(driver, offer, NAME_NODE_ID,
-                 Arrays.asList(NAME_NODE_ID, ZKFC_NODE_ID, JOURNAL_NODE_ID),
-                 SECONDARY_NAME_NODE_EXECUTOR_ID);
+                 NAME_NODE_EXECUTOR_ID);
+        }
       }
   }
 
@@ -362,8 +359,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     
     ClusterState clusterState = ClusterState.getInstance();
     DfsTask dfsTask = clusterState.getDfsTask(status.getTaskId());
-    List<TaskID> currentStagingTasksList = new ArrayList<TaskID>();
-    currentStagingTasksList.addAll(stagingTasks);
 
     if (status.getState().equals(TaskState.TASK_FAILED)
         || status.getState().equals(TaskState.TASK_FINISHED)
@@ -374,6 +369,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     } else if (status.getState().equals(TaskState.TASK_RUNNING)) {
         stagingTasks.remove(status.getTaskId());
         clusterState.updateTask(status);
+        List<TaskID> currentStagingTasksList = new ArrayList<TaskID>();
+        currentStagingTasksList.addAll(stagingTasks);
         //TODO(elingg) get rid of this extra variable and also DFS task object.  Instead use cluster
         //state or a cleaner way of keeping track of what is running. Get rid of the
         //namenodesInitialized variable.
@@ -385,8 +382,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           } else {
             //Activate secondary name node after first name node is activated
             for (TaskID taskId : currentStagingTasksList) {
-              if (taskId.getValue().contains(SECONDARY_NAME_NODE_EXECUTOR_ID)) {
-                sendMessageTo(driver, taskId, ACTIVATE_MESSAGE);
+              if (taskId.getValue().contains(NAME_NODE_TASK_STR)) {
+                sendMessageTo(driver, taskId, NAMENODE_BOOTSTRAP_MESSAGE);
                 break;
               }
             }
@@ -396,8 +393,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           if (journalNodesRunning == (TOTAL_NAME_NODES + conf.getJournalNodeCount())) {
             //Activate primary name node after all journal nodes are activated
               for (TaskID taskId : currentStagingTasksList) {
-                if (taskId.getValue().contains(PRIMARY_NAME_NODE_EXECUTOR_ID)) {
-                  sendMessageTo(driver, taskId, ACTIVATE_MESSAGE);
+                if (taskId.getValue().contains(NAME_NODE_TASK_STR)) {
+                  sendMessageTo(driver, taskId, NAMENODE_INIT_MESSAGE);
                   break;
                 }
               }
