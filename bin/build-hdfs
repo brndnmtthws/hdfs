@@ -19,7 +19,7 @@ fi
 
 # Build and package hdfs-mesos project
 if [ "$1" != "nocompile" ]; then
-  mvn clean package
+  mvn clean package || exit
 fi
 
 # Download hadoop binary
