@@ -34,8 +34,6 @@ import org.joda.time.Seconds;
 
 public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     
-  private static final Integer TOTAL_NAME_NODES = 2;
-    
   public static final Log log = LogFactory.getLog(Scheduler.class);
   private final SchedulerConf conf;
   private final String localhost;
@@ -216,33 +214,43 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   }
 
   private void launchDataNode(SchedulerDriver driver, Offer offer) {
-    launchNode(driver, offer, HDFSConstants.DATA_NODE_ID, Arrays.asList(HDFSConstants.DATA_NODE_ID),
+    launchNode(
+        driver,
+        offer,
+        HDFSConstants.DATA_NODE_ID,
+        Arrays.asList(HDFSConstants.DATA_NODE_ID),
         HDFSConstants.NODE_EXECUTOR_ID);
   }
 
   private void launchInitialJournalNodes(SchedulerDriver driver, Collection<Offer> offers) {
-    int journalNodes = 0;
-    for (Offer offer : offers) {
-      pendingOffers.remove(offer.getId());
-      launchNode(driver, offer, HDFSConstants.JOURNAL_NODE_ID,
-          Arrays.asList(HDFSConstants.JOURNAL_NODE_ID), HDFSConstants.NODE_EXECUTOR_ID);
-      journalNodes++;
-      if (journalNodes >= conf.getJournalNodeCount()) {
-        return;
+    for (int i = 0; i < conf.getJournalNodeCount(); i++) {
+      if (offers.size() > 0) {
+        Offer offer = offers.iterator().next();
+        pendingOffers.remove(offer.getId());
+        launchNode(
+            driver,
+            offer,
+            HDFSConstants.JOURNAL_NODE_ID,
+            Arrays.asList(HDFSConstants.JOURNAL_NODE_ID),
+            HDFSConstants.NODE_EXECUTOR_ID);
       }
     }
   }
 
   private void launchInitialNameNodes(SchedulerDriver driver, Collection<Offer> offers) {
-      for (int i = 0; i < TOTAL_NAME_NODES; i++) {
+    for (int i = 0; i < HDFSConstants.TOTAL_NAME_NODES; i++) {
       if (offers.size() > 0) {
         Offer offer = offers.iterator().next();
         pendingOffers.remove(offer.getId());
-        launchNode(driver, offer, HDFSConstants.NAME_NODE_ID,
+        launchNode(
+            driver,
+            offer,
+            HDFSConstants.NAME_NODE_ID,
             Arrays.asList(HDFSConstants.NAME_NODE_ID, HDFSConstants.ZKFC_NODE_ID,
-            HDFSConstants.JOURNAL_NODE_ID), HDFSConstants.NAME_NODE_EXECUTOR_ID);
-        }
+                HDFSConstants.JOURNAL_NODE_ID),
+            HDFSConstants.NAME_NODE_EXECUTOR_ID);
       }
+    }
   }
 
   @Override
@@ -260,34 +268,15 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
     ClusterState clusterState = ClusterState.getInstance();
     if (clusterState.getNameNodes().size() == 0 && clusterState.getJournalNodes().size() == 0) {
-      // Cluster must be formatted! Looks like we're starting fresh?
       log.info("No NameNodes or JournalNodes found.  Collecting offers until we have sufficient"
           + "capacity to launch.");
-
-      int nameNodes = 0;
-      int journalNodes = 0;
-      List<Offer> incomingOffers = new ArrayList<>();
-      incomingOffers.addAll(offers);
-      incomingOffers.addAll(pendingOffers.values());
-      for (Offer offer : incomingOffers) {
-        if (nameNodes < TOTAL_NAME_NODES
-            && clusterState.notInDfsHosts(offer.getSlaveId().getValue())) {
-              nameNodes++;
-              pendingOffers.put(offer.getId(), offer);
-        } else if (journalNodes < conf.getJournalNodeCount()
-            && clusterState.notInDfsHosts(offer.getSlaveId().getValue())) {
-          journalNodes++;
+      for (Offer offer: offers) {
           pendingOffers.put(offer.getId(), offer);
-        } else {
-          driver.declineOffer(offer.getId());
-        }
       }
-      log.info(String.format(
-          "Currently have %d pending offers, with journalnodes=%d and namenodes=%d",
-          pendingOffers.size(), journalNodes, nameNodes));
-      if (!initializingCluster && nameNodes == TOTAL_NAME_NODES
-            && journalNodes >= conf.getJournalNodeCount()) {
-        log.info("Launching initial nodes with pending offers");
+        
+      if (!initializingCluster) {
+        log.info(String.format("Launching initial nodes with %d pending offers",
+            pendingOffers.size()));
         initializingCluster = true;
         launchInitialJournalNodes(driver, pendingOffers.values());
         launchInitialNameNodes(driver, pendingOffers.values());
@@ -357,27 +346,25 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     } else if (status.getState().equals(TaskState.TASK_RUNNING)) {
         stagingTasks.remove(status.getTaskId());
         clusterState.updateTask(status);
-        List<TaskID> currentStagingTasksList = new ArrayList<TaskID>();
-        currentStagingTasksList.addAll(stagingTasks);
 
         if (status.getTaskId().getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
-          if (clusterState.getNameNodes().size() == TOTAL_NAME_NODES) {
+          if (clusterState.getNameNodes().size() == HDFSConstants.TOTAL_NAME_NODES) {
             //Finished initializing cluster after both name nodes are initialized
             initializingCluster = false;
           } else {
             //Activate secondary name node after first name node is activated
-            for (TaskID taskId : currentStagingTasksList) {
+            for (TaskID taskId : stagingTasks) {
               if (taskId.getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
                 sendMessageTo(driver, taskId, HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE);
                 break;
               }
             }
           }
-        } else if (status.getTaskId().getValue().contains(HDFSConstants.JOURNAL_NODE_TASKID) &&
+        } else if (status.getTaskId().getValue().contains(HDFSConstants.JOURNAL_NODE_ID) &&
               (clusterState.getJournalNodes().size() ==
-              (TOTAL_NAME_NODES + conf.getJournalNodeCount()))) {
+              (HDFSConstants.TOTAL_NAME_NODES + conf.getJournalNodeCount()))) {
             //Activate primary name node after all journal nodes are activated
-            for (TaskID taskId : currentStagingTasksList) {
+            for (TaskID taskId : stagingTasks) {
               if (taskId.getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
                 sendMessageTo(driver, taskId, HDFSConstants.NAME_NODE_INIT_MESSAGE);
                 break;

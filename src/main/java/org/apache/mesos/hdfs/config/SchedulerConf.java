@@ -107,7 +107,7 @@ public class SchedulerConf extends MainConf {
   // TODO(elingg) use different path for executor
   public String getExecUri() {
     return getConf().get("mesos.hdfs.executor.uri",
-        "https://s3-us-west-1.amazonaws.com/mesosphere-executors-public/hadoop-mesos-cdh5.tar.gz");
+        "https://s3-us-west-1.amazonaws.com/mesosphere-executors-public/hdfs-mesos-0.0.2.tgz");
   }
 
   public String getClusterName() {

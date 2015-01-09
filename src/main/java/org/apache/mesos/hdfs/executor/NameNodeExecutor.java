@@ -51,7 +51,7 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
   public void launchTask(final ExecutorDriver driver, final TaskInfo taskInfo) {
     executorInfo = taskInfo.getExecutor();
     Task task = new Task(taskInfo);
-    if (taskInfo.getTaskId().getValue().contains(HDFSConstants.JOURNAL_NODE_TASKID)) {
+    if (taskInfo.getTaskId().getValue().contains(HDFSConstants.JOURNAL_NODE_ID)) {
       journalNodeTask = task;
       // Start the journal node
       startProcess(driver, journalNodeTask);
@@ -62,7 +62,7 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
     } else if (taskInfo.getTaskId().getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
       // Add the name node task and wait for activate message
       nameNodeTask = task;
-    } else if (taskInfo.getTaskId().getValue().contains(HDFSConstants.ZKFC_NODE_TASKID)) {
+    } else if (taskInfo.getTaskId().getValue().contains(HDFSConstants.ZKFC_NODE_ID)) {
       // Add the zkfc node task and wait for activate message
       zkfcNodeTask = task;
     }
@@ -72,11 +72,11 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
   public void killTask(ExecutorDriver driver, TaskID taskId) {
     log.info("Killing task : " + taskId.getValue());
     Task task = null;
-    if (taskId.getValue().contains(HDFSConstants.JOURNAL_NODE_TASKID)) {
+    if (taskId.getValue().contains(HDFSConstants.JOURNAL_NODE_ID)) {
       task = journalNodeTask;
     } else if (taskId.getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
       task = nameNodeTask;
-    } else if (taskId.getValue().contains(HDFSConstants.ZKFC_NODE_TASKID)) {
+    } else if (taskId.getValue().contains(HDFSConstants.ZKFC_NODE_ID)) {
       task = zkfcNodeTask;
     }
 

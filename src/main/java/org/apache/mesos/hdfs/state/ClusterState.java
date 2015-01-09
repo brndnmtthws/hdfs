@@ -80,7 +80,7 @@ public class ClusterState {
     taskSlaveMap.put(taskId, slaveId);
     if (taskId.getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
       nameNodeHosts.add(hostname);
-    } else if (taskId.getValue().contains(HDFSConstants.JOURNAL_NODE_TASKID)) {
+    } else if (taskId.getValue().contains(HDFSConstants.JOURNAL_NODE_ID)) {
       journalNodeHosts.add(hostname);
     }
   }
@@ -89,7 +89,7 @@ public class ClusterState {
     if (taskStatus.getTaskId().getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
       nameNodes.add(taskStatus.getTaskId());
     } else if (taskStatus.getTaskId().getValue()
-        .contains(HDFSConstants.JOURNAL_NODE_TASKID)) {
+        .contains(HDFSConstants.JOURNAL_NODE_ID)) {
       journalNodes.add(taskStatus.getTaskId());
     }
   }
