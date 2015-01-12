@@ -22,14 +22,17 @@ public class ProdConfigModule extends AbstractModule {
 
   @Provides
   @Named("ConfigPath")
-  String providesConfigPath(Properties props) {
+  Path providesConfigPath(Properties props) {
     String sitePath = props.getProperty("mesos.site.path", "etc/hadoop");
-    return new Path(props.getProperty("mesos.conf.path", sitePath + "/mesos-site.xml")).toString();
+    return new Path(props.getProperty("mesos.conf.path", sitePath + "/mesos-site.xml"));
   }
 
   @Provides
-  SchedulerConf providesSchedulerConfig(Properties props, @Named("ConfigPath") String configPath) {
+  SchedulerConf providesSchedulerConfig(Properties props, @Named("ConfigPath") Path configPath) {
     Configuration conf = new Configuration();
+    System.out.println(configPath);
+    System.out.println(configPath);
+    System.out.println(configPath);
     conf.addResource(configPath);
     int configServerPort = Integer.valueOf(props.getProperty("mesos.hdfs.config.server.port",
         "8765"));
