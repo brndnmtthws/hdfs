@@ -30,9 +30,6 @@ public class ProdConfigModule extends AbstractModule {
   @Provides
   SchedulerConf providesSchedulerConfig(Properties props, @Named("ConfigPath") Path configPath) {
     Configuration conf = new Configuration();
-    System.out.println(configPath);
-    System.out.println(configPath);
-    System.out.println(configPath);
     conf.addResource(configPath);
     int configServerPort = Integer.valueOf(props.getProperty("mesos.hdfs.config.server.port",
         "8765"));
