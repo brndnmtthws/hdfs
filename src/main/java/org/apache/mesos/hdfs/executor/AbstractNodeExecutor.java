@@ -22,10 +22,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class AbstractNodeExecutor implements Executor {
 
-  protected static final String JOURNAL_NODE_TASKID = ".journalnode.";
-  protected static final String NAME_NODE_TASKID = ".namenode.namenode.";
-  protected static final String ZKFC_NODE_TASKID = ".zkfc.";
-
   public static final Log log = LogFactory.getLog(AbstractNodeExecutor.class);
   protected ExecutorInfo executorInfo;
   // reload config no more than once every 60 sec

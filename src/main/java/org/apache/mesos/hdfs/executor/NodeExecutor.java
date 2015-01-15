@@ -46,8 +46,10 @@ public class NodeExecutor extends AbstractNodeExecutor {
   public void launchTask(final ExecutorDriver driver, final TaskInfo taskInfo) {
     executorInfo = taskInfo.getExecutor();
     task = new Task(taskInfo);
-    driver.sendStatusUpdate(TaskStatus.newBuilder().setTaskId(taskInfo.getTaskId())
-        .setState(TaskState.TASK_RUNNING).setData(taskInfo.getData()).build());
+    driver.sendStatusUpdate(TaskStatus.newBuilder()
+        .setTaskId(taskInfo.getTaskId())
+        .setState(TaskState.TASK_RUNNING)
+        .setData(taskInfo.getData()).build());
     startProcess(driver, task);
 
   }
