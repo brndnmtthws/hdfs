@@ -21,6 +21,8 @@
 
     <java.abi>1.7</java.abi>
     <mesos.version>0.20.0</mesos.version>
+    <log4j-over-slf4j.version>1.7.10</log4j-over-slf4j.version>
+    <slf4j-simple.version>1.7.10</slf4j-simple.version>
     <hadoop.version>2.4.0</hadoop.version>
     <jetty.version>9.2.2.v20140723</jetty.version>
     <joda-time.version>2.4</joda-time.version>
@@ -47,10 +49,30 @@
     </dependency>
 
     <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>log4j-over-slf4j</artifactId>
+      <version>${log4j-over-slf4j.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>${slf4j-simple.version}</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-common</artifactId>
       <version>${hadoop.version}</version>
       <exclusions>
+        <exclusion>
+          <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-log4j12</artifactId>
+        </exclusion>
         <exclusion>
           <groupId>javax.servlet</groupId>
           <artifactId>servlet-api</artifactId>
