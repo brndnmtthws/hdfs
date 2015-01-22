@@ -116,44 +116,9 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     ClusterState clusterState = ClusterState.getInstance();
     log.info(String.format("Launching node of type %s with tasks %s", nodeName,
         taskNames.toString()));
-    int confServerPort = conf.getConfigServerPort();
-    List<Resource> resources = getExecutorResources();
     String taskIdName = String.format("%s.%s.%d", nodeName, executorName,
         System.currentTimeMillis());
-
-    ExecutorInfo executorInfo = ExecutorInfo.newBuilder()
-        .setName(nodeName + " executor")
-        .setExecutorId(ExecutorID.newBuilder().setValue("executor." + taskIdName).build())
-        .addAllResources(resources)
-        .setCommand(CommandInfo.newBuilder()
-            .addAllUris(Arrays.asList(
-                CommandInfo.URI.newBuilder().setValue(conf.getExecUri())
-                    .build(),
-                CommandInfo.URI.newBuilder().setValue(
-                    String.format("http://%s:%d/hdfs-site.xml", localhost, confServerPort))
-                    .build()))
-            .setEnvironment(Environment.newBuilder()
-                .addAllVariables(Arrays.asList(
-                    Environment.Variable.newBuilder()
-                        .setName("HADOOP_OPTS")
-                        .setValue(conf.getJvmOpts()).build(),
-                    Environment.Variable.newBuilder()
-                        .setName("HADOOP_HEAPSIZE")
-                        .setValue(String.format("%d", conf.getHadoopHeapSize())).build(),
-                    Environment.Variable.newBuilder()
-                        .setName("HADOOP_NAMENODE_OPTS")
-                        .setValue("-Xmx" + conf.getNameNodeHeapSize() + "m").build(),
-                    Environment.Variable.newBuilder()
-                        .setName("HADOOP_DATANODE_OPTS")
-                        .setValue("-Xmx" + conf.getDataNodeHeapSize() + "m").build(),
-                    Environment.Variable.newBuilder()
-                        .setName("EXECUTOR_OPTS")
-                        .setValue("-Xmx" + conf.getExecutorHeap() + "m").build())))
-            .setValue("env ; cd hdfs-mesos-* && exec java $HADOOP_OPTS $EXECUTOR_OPTS " +
-                      "-cp lib/*.jar org.apache.mesos.hdfs.executor." + executorName)
-            .build())
-        .build();
-
+    ExecutorInfo executorInfo = createExecutor(taskIdName, nodeName, executorName);
     List<TaskInfo> tasks = new ArrayList<>();
     for (String taskName : taskNames) {
       List<Resource> taskResources = getTaskResources(taskName);
@@ -176,6 +141,46 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     }
     driver.launchTasks(Arrays.asList(offer.getId()), tasks);
   }
+    
+  private ExecutorInfo createExecutor(String taskIdName, String nodeName, String executorName) {
+    int confServerPort = conf.getConfigServerPort();
+    List<Resource> resources = getExecutorResources();
+    ExecutorInfo executorInfo = ExecutorInfo.newBuilder()
+        .setName(nodeName + " executor")
+        .setExecutorId(ExecutorID.newBuilder().setValue("executor." + taskIdName).build())
+        .addAllResources(resources)
+        .setCommand(CommandInfo.newBuilder()
+        .addAllUris(Arrays.asList(
+            CommandInfo.URI.newBuilder().setValue(
+                conf.getExecUri())
+                .build(),
+            CommandInfo.URI.newBuilder().setValue(
+                String.format("http://%s:%d/hdfs-site.xml", localhost, confServerPort))
+                .build()))
+            .setEnvironment(Environment.newBuilder()
+                .addAllVariables(Arrays.asList(
+                Environment.Variable.newBuilder()
+                    .setName("HADOOP_OPTS")
+                    .setValue(conf.getJvmOpts()).build(),
+                Environment.Variable.newBuilder()
+                    .setName("HADOOP_HEAPSIZE")
+                    .setValue(String.format("%d", conf.getHadoopHeapSize())).build(),
+                Environment.Variable.newBuilder()
+                    .setName("HADOOP_NAMENODE_OPTS")
+                    .setValue("-Xmx" + conf.getNameNodeHeapSize() + "m").build(),
+                Environment.Variable.newBuilder()
+                    .setName("HADOOP_DATANODE_OPTS")
+                    .setValue("-Xmx" + conf.getDataNodeHeapSize() + "m").build(),
+                Environment.Variable.newBuilder()
+                    .setName("EXECUTOR_OPTS")
+                    .setValue("-Xmx" + conf.getExecutorHeap() + "m").build())))
+                    .setValue(
+                        "env ; cd hdfs-mesos-* && exec java $HADOOP_OPTS $EXECUTOR_OPTS " +
+                        "-cp lib/*.jar org.apache.mesos.hdfs.executor." + executorName)
+                        .build())
+                    .build();
+      return executorInfo;
+    }
     
   private List<Resource> getExecutorResources() {
     return Arrays.asList(
@@ -255,9 +260,9 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
   @Override
   synchronized public void resourceOffers(SchedulerDriver driver, List<Offer> offers) {
+    log.info(String.format("Received %d offers", offers.size()));
     //TODO(elingg) all datanodes can be launched together after the other nodes have initialized.
     //Remove this waiting period for datanodes.
-    log.info(String.format("Received %d offers", offers.size()));
     if (!stagingTasks.isEmpty()) {
       log.info("Declining offers because tasks are currently staging");
       for (Offer offer : offers) {
@@ -372,7 +377,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
             }
          }
       }
-     
   }
 
   @Override
