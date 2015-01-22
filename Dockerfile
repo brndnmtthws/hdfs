@@ -15,4 +15,4 @@ ADD hdfs-mesos-$HDFS_MESOS_VERSION.tgz /
 
 WORKDIR /hdfs-mesos-$HDFS_MESOS_VERSION
 
-CMD java -cp lib/*.jar -Dmesos.conf.path=/hdfs-mesos-$HDFS_MESOS_VERSION/etc/hadoop/mesos-site.xml -Dmesos.hdfs.config.server.port=8765 org.apache.mesos.hdfs.Main
+CMD ./bin/hdfs-mesos
