@@ -118,12 +118,13 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         taskNames.toString()));
     String taskIdName = String.format("%s.%s.%d", nodeName, executorName,
         System.currentTimeMillis());
-    ExecutorInfo executorInfo = createExecutor(taskIdName, nodeName, executorName);
+    List<Resource> resources = getExecutorResources();
+    ExecutorInfo executorInfo = createExecutor(taskIdName, nodeName, executorName, resources);
     List<TaskInfo> tasks = new ArrayList<>();
     for (String taskName : taskNames) {
       List<Resource> taskResources = getTaskResources(taskName);
       TaskID taskId = TaskID.newBuilder()
-          .setValue(String.format("task.%s.%s", taskName, taskIdName))
+          .setValue(String.format("task.%s.%s", resources, taskName, taskIdName))
           .build();
       TaskInfo task = TaskInfo.newBuilder()
           .setExecutor(executorInfo)
@@ -142,9 +143,9 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     driver.launchTasks(Arrays.asList(offer.getId()), tasks);
   }
     
-  private ExecutorInfo createExecutor(String taskIdName, String nodeName, String executorName) {
+  private ExecutorInfo createExecutor(String taskIdName, String nodeName, String executorName,
+    List<Resource> resources) {
     int confServerPort = conf.getConfigServerPort();
-    List<Resource> resources = getExecutorResources();
     ExecutorInfo executorInfo = ExecutorInfo.newBuilder()
         .setName(nodeName + " executor")
         .setExecutorId(ExecutorID.newBuilder().setValue("executor." + taskIdName).build())
