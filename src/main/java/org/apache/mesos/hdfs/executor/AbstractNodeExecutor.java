@@ -17,6 +17,9 @@ import org.apache.mesos.hdfs.util.StreamRedirect;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -55,26 +58,27 @@ public abstract class AbstractNodeExecutor implements Executor {
     executorInfo = executorInfo;
     // Set up data dir
     setUpDataDir();
+    createSymbolicLink();
     log.info("Executor registered with the slave");
-
   }
 
   /**
    * Delete and recreate the data directory.
    **/
   private void setUpDataDir() {
+    // Create primary data dir if it does not exist
     File dataDir = new File(schedulerConf.getDataDir());
+    // TODO(elingg) Need to actually recover the data instead of getting rid of it.
     if (dataDir.exists()) {
-      // TODO(elingg) Need to actually recover the data instead of getting rid of it.
       deleteFile(dataDir);
     }
     dataDir.mkdirs();
 
-    File hdfsDir = new File(schedulerConf.getSecondaryDataDir());
-    if (!hdfsDir.exists()) {
-      hdfsDir.mkdirs();
+    // Create secondary data dir if it does not exist
+    File secondaryDataDir = new File(schedulerConf.getSecondaryDataDir());
+    if (!secondaryDataDir.exists()) {
+      secondaryDataDir.mkdirs();
     }
-
   }
 
   /**
@@ -91,6 +95,29 @@ public abstract class AbstractNodeExecutor implements Executor {
     fileToDelete.delete();
   }
 
+  /**
+   * Create Symbolc Link for the HDFS binary.
+   **/
+  private void createSymbolicLink() {
+    log.info("Create symbolic link for HDFS binary");
+    try {
+      // Get hdfs executable direcotry
+      File hadoopBinary = new File(System.getProperty("user.dir"));
+      Path hadoopBinaryPath = Paths.get(hadoopBinary.getAbsolutePath());
+
+      // Delete and recreate directory for symbolic link
+      String linkPath = "/opt/mesosphere/hadoop";
+      File linkDir = new File(linkPath);
+      if (linkDir.exists()) {
+        deleteFile(linkDir);
+      }
+
+      Path linkDirPath = Paths.get(linkPath);
+      Files.createSymbolicLink(linkDirPath, hadoopBinaryPath);
+    } catch (Exception e) {
+      log.error("Error creating the sym link to hdfs binary: " + e);
+    }
+  }
   /**
    * Starts a task's process so it goes into running state.
    **/
