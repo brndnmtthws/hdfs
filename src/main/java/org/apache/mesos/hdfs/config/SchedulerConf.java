@@ -138,6 +138,10 @@ public class SchedulerConf extends MainConf {
     return getConf().get("mesos.hdfs.secondary.data.dir", "/var/run/hadoop-hdfs");
   }
 
+  public String getFrameworkMountPath() {
+    return getConf().get("mesos.hdfs.framework.mnt.path", "/opt/mesosphere/");
+  }
+
   public String getConfigPath() {
     return getConf().get("mesos.hdfs.config.path", "etc/hadoop/hdfs-site.xml");
   }
