@@ -22,4 +22,8 @@ public class HDFSConstants {
   public static final String NODE_EXECUTOR_ID = "NodeExecutor";
   public static final String NAME_NODE_EXECUTOR_ID = "NameNodeExecutor";
 
+  // Path to Store HDFS Binary
+  public static final String MESOSPHERE_OPT_PATH = "/opt/mesosphere/";
+  public static final String HDFS_BINARY_PATH = MESOSPHERE_OPT_PATH + "hadoop";
+
 }

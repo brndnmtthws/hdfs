@@ -12,6 +12,7 @@ import org.apache.mesos.MesosExecutorDriver;
 import org.apache.mesos.Protos.*;
 import org.apache.mesos.hdfs.config.SchedulerConf;
 import org.apache.mesos.hdfs.ProdConfigModule;
+import org.apache.mesos.hdfs.util.HDFSConstants;
 import org.apache.mesos.hdfs.util.StreamRedirect;
 
 import java.io.File;
@@ -99,23 +100,26 @@ public abstract class AbstractNodeExecutor implements Executor {
    * Create Symbolc Link for the HDFS binary.
    **/
   private void createSymbolicLink() {
-    log.info("Create symbolic link for HDFS binary");
+    log.info("Creating a symbolic link for HDFS binary");
     try {
       // Get hdfs executable direcotry
-      File hadoopBinary = new File(System.getProperty("user.dir"));
-      Path hadoopBinaryPath = Paths.get(hadoopBinary.getAbsolutePath());
+      File sandboxHdfsBinary = new File(System.getProperty("user.dir"));
+      Path sandboxHdfsBinaryPath = Paths.get(sandboxHdfsBinary.getAbsolutePath());
 
-      // Delete and recreate directory for symbolic link
-      String linkPath = "/opt/mesosphere/hadoop";
-      File linkDir = new File(linkPath);
-      if (linkDir.exists()) {
-        deleteFile(linkDir);
+      // Delete and recreate directory for symbolic link every time
+      File hdfsBinaryDir = new File(HDFSConstants.HDFS_BINARY_PATH);
+      File baseDir = new File(HDFSConstants.MESOSPHERE_OPT_PATH);
+      if (hdfsBinaryDir.exists()) {
+        deleteFile(hdfsBinaryDir);
+      } else if (!baseDir.exists()) {
+        baseDir.mkdirs();
       }
 
-      Path linkDirPath = Paths.get(linkPath);
-      Files.createSymbolicLink(linkDirPath, hadoopBinaryPath);
+      // Create symbolic link
+      Path linkDirPath = Paths.get(HDFSConstants.HDFS_BINARY_PATH);
+      Files.createSymbolicLink(linkDirPath, sandboxHdfsBinaryPath);
     } catch (Exception e) {
-      log.error("Error creating the sym link to hdfs binary: " + e);
+      log.error("Error creating the symbolic link to hdfs binary: " + e);
     }
   }
   /**
