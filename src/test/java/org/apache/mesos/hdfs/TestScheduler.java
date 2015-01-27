@@ -15,7 +15,9 @@ import org.mockito.MockitoAnnotations;
 import java.util.Collection;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyList;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class TestScheduler {
@@ -26,29 +28,52 @@ public class TestScheduler {
   @Captor
   ArgumentCaptor<Collection<Protos.TaskInfo>> taskInfosCapture;
 
-  private final Protos.OfferID offerId1 = Protos.OfferID.newBuilder().setValue("offer1").build();
-  private final Protos.Offer firstOffer = Protos.Offer.newBuilder()
-      .setId(offerId1)
-      .setFrameworkId(Protos.FrameworkID.newBuilder().setValue("framework1").build())
-      .setSlaveId(Protos.SlaveID.newBuilder().setValue("slave1").build())
-      .setHostname("hostname")
-      .build();
-
   @Test
   public void acceptsAllTheResourceOffersItCanUntilItHasEnoughToStart() {
     Scheduler scheduler = new Scheduler(new SchedulerConf(new Configuration(), 0));
 
-    scheduler.resourceOffers(driver, Lists.newArrayList(firstOffer));
+    scheduler.resourceOffers(driver,
+        Lists.newArrayList(
+            createTestOffer(0),
+            createTestOffer(1),
+            createTestOffer(2)
+        ));
 
-    verify(driver).launchTasks(eq(Lists.newArrayList(offerId1)), taskInfosCapture.capture());
-    Collection<Protos.TaskInfo> taskInfos = taskInfosCapture.getValue();
-    assertEquals(1, taskInfos.size());
-    Protos.TaskInfo taskInfo = taskInfos.iterator().next();
-    assertEquals("slave1", taskInfo.getSlaveId().getValue());
+    verify(driver, times(3)).launchTasks(anyList(), taskInfosCapture.capture());
+    assertEquals(3, taskInfosCapture.getValue().size());
+  }
+
+  @Test
+  public void declinesAnyOffersPastWhatItNeeds() {
+    Scheduler scheduler = new Scheduler(new SchedulerConf(new Configuration(), 0));
+
+    scheduler.resourceOffers(driver,
+        Lists.newArrayList(
+            createTestOffer(0),
+            createTestOffer(1),
+            createTestOffer(2),
+            createTestOffer(3)
+        ));
+
+    verify(driver, times(1)).declineOffer(any(Protos.OfferID.class));
   }
 
   @Before
   public void initializeMocks() {
     MockitoAnnotations.initMocks(this);
+  }
+
+  private Protos.OfferID createTestOfferId(int instanceNumber) {
+    return Protos.OfferID.newBuilder().setValue("offer" + instanceNumber).build();
+  }
+
+
+  private Protos.Offer createTestOffer(int instanceNumber) {
+    return Protos.Offer.newBuilder()
+        .setId(createTestOfferId(instanceNumber))
+        .setFrameworkId(Protos.FrameworkID.newBuilder().setValue("framework1").build())
+        .setSlaveId(Protos.SlaveID.newBuilder().setValue("slave" + instanceNumber).build())
+        .setHostname("host" + instanceNumber)
+        .build();
   }
 }

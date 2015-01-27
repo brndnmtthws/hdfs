@@ -71,8 +71,8 @@ public class ClusterState {
     return nameNodeHosts;
   }
 
-  public boolean notInDfsHosts(String host) {
-    return !taskSlaveMap.values().contains(host);
+  public boolean notInDfsHosts(String slaveId) {
+    return !taskSlaveMap.values().contains(slaveId);
   }
 
   public void addTask(Protos.TaskID taskId, String hostname, String slaveId) {
