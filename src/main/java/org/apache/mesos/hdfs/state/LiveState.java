@@ -30,27 +30,27 @@ public class LiveState {
     nameNodeHosts = new HashSet<>();
   }
 
-  public final Map<Protos.TaskID, String> getTaskHostMap() {
+  public Map<Protos.TaskID, String> getTaskHostMap() {
     return taskHostMap;
   }
 
-  public final Map<Protos.TaskID, String> getTaskSlaveMap() {
+  public Map<Protos.TaskID, String> getTaskSlaveMap() {
     return taskSlaveMap;
   }
 
-  public final Set<Protos.TaskID> getJournalNodes() {
+  public Set<Protos.TaskID> getJournalNodes() {
     return journalNodes;
   }
 
-  public final Set<Protos.TaskID> getNameNodes() {
+  public Set<Protos.TaskID> getNameNodes() {
     return nameNodes;
   }
 
-  public final Set<String> getJournalNodeHosts() {
+  public Set<String> getJournalNodeHosts() {
     return journalNodeHosts;
   }
 
-  public final Set<String> getNameNodeHosts() {
+  public Set<String> getNameNodeHosts() {
     return nameNodeHosts;
   }
 

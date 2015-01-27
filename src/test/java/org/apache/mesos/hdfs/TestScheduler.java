@@ -1,6 +1,7 @@
 package org.apache.mesos.hdfs;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.mesos.Protos;
 import org.apache.mesos.SchedulerDriver;
@@ -17,10 +18,10 @@ import org.mockito.MockitoAnnotations;
 import java.util.Collection;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyList;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 public class TestScheduler {
 
@@ -63,6 +64,30 @@ public class TestScheduler {
         ));
 
     verify(driver, times(1)).declineOffer(any(Protos.OfferID.class));
+  }
+
+  @Test
+  public void acceptsTasksForDataNodesIfClusterInitialized() {
+    LiveState state = mock(LiveState.class);
+    Scheduler scheduler = new Scheduler(schedulerConf, state, persistentState);
+
+    when(state.getNameNodes()).thenReturn(Sets.newHashSet(createTaskId("1")));
+    when(state.getJournalNodes()).thenReturn(Sets.newHashSet(createTaskId("2")));
+    when(state.notInDfsHosts(anyString())).thenReturn(true);
+
+    scheduler.resourceOffers(driver,
+        Lists.newArrayList(
+            createTestOffer(0)
+        )
+    );
+
+    verify(driver, times(1)).launchTasks(anyList(), taskInfosCapture.capture());
+    Protos.TaskInfo taskInfo = taskInfosCapture.getValue().iterator().next();
+    assertTrue(taskInfo.getName().contains("datanode"));
+  }
+
+  private Protos.TaskID createTaskId(String id) {
+    return Protos.TaskID.newBuilder().setValue(id).build();
   }
 
   @Before
