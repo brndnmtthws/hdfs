@@ -102,7 +102,7 @@ public abstract class AbstractNodeExecutor implements Executor {
   private void createSymbolicLink() {
     log.info("Creating a symbolic link for HDFS binary");
     try {
-      // Get hdfs executable direcotry
+      // Find Hdfs binary in sandbox
       File sandboxHdfsBinary = new File(System.getProperty("user.dir"));
       Path sandboxHdfsBinaryPath = Paths.get(sandboxHdfsBinary.getAbsolutePath());
 
@@ -111,11 +111,13 @@ public abstract class AbstractNodeExecutor implements Executor {
       if (!mesosphereOptDir.exists()) {
         mesosphereOptDir.mkdirs();
       }
+
       // Delete and recreate directory for symbolic link every time
       File hdfsBinaryDir = new File(HDFSConstants.HDFS_BINARY_PATH);
       if (hdfsBinaryDir.exists()) {
         deleteFile(hdfsBinaryDir);
       }
+
       // Create symbolic link
       Path hdfsLinkDirPath = Paths.get(HDFSConstants.HDFS_BINARY_PATH);
       Files.createSymbolicLink(hdfsLinkDirPath, sandboxHdfsBinaryPath);
