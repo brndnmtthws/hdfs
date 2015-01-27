@@ -5,6 +5,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.mesos.Protos;
 import org.apache.mesos.SchedulerDriver;
 import org.apache.mesos.hdfs.config.SchedulerConf;
+import org.apache.mesos.hdfs.state.LiveState;
+import org.apache.mesos.hdfs.state.PersistentState;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -22,15 +24,20 @@ import static org.mockito.Mockito.verify;
 
 public class TestScheduler {
 
+  private final SchedulerConf schedulerConf = new SchedulerConf(new Configuration());
+
   @Mock
   SchedulerDriver driver;
+
+  @Mock
+  PersistentState persistentState;
 
   @Captor
   ArgumentCaptor<Collection<Protos.TaskInfo>> taskInfosCapture;
 
   @Test
   public void acceptsAllTheResourceOffersItCanUntilItHasEnoughToStart() {
-    Scheduler scheduler = new Scheduler(new SchedulerConf(new Configuration(), 0));
+    Scheduler scheduler = new Scheduler(schedulerConf, new LiveState(), persistentState);
 
     scheduler.resourceOffers(driver,
         Lists.newArrayList(
@@ -45,7 +52,7 @@ public class TestScheduler {
 
   @Test
   public void declinesAnyOffersPastWhatItNeeds() {
-    Scheduler scheduler = new Scheduler(new SchedulerConf(new Configuration(), 0));
+    Scheduler scheduler = new Scheduler(schedulerConf, new LiveState(), persistentState);
 
     scheduler.resourceOffers(driver,
         Lists.newArrayList(

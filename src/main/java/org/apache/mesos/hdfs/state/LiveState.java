@@ -1,9 +1,9 @@
 package org.apache.mesos.hdfs.state;
 
+import com.google.inject.Singleton;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.Protos;
-import org.apache.mesos.hdfs.Scheduler;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 
 import java.util.HashMap;
@@ -11,9 +11,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class ClusterState {
-  private static final Log log = LogFactory.getLog(ClusterState.class);
-  private State state;
+@Singleton
+public class LiveState {
+  private static final Log log = LogFactory.getLog(LiveState.class);
   private final Map<Protos.TaskID, String> taskHostMap;
   private final Set<Protos.TaskID> journalNodes;
   private final Set<Protos.TaskID> nameNodes;
@@ -21,30 +21,13 @@ public class ClusterState {
   private final Set<String> journalNodeHosts;
   private final Set<String> nameNodeHosts;
 
-  private static ClusterState instance = null;
-
-  public static ClusterState getInstance() {
-    if (instance == null) {
-      instance = new ClusterState();
-    }
-    return instance;
-  }
-
-  private ClusterState() {
+  public LiveState() {
     taskHostMap = new HashMap<>();
     taskSlaveMap = new HashMap<>();
     journalNodes = new HashSet<>();
     nameNodes = new HashSet<>();
     journalNodeHosts = new HashSet<>();
     nameNodeHosts = new HashSet<>();
-  }
-
-  public void init(State state) {
-    this.state = state;
-  }
-
-  public State getState() {
-    return state;
   }
 
   public final Map<Protos.TaskID, String> getTaskHostMap() {

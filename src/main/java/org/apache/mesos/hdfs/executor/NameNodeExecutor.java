@@ -5,15 +5,12 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.mesos.Executor;
 import org.apache.mesos.ExecutorDriver;
 import org.apache.mesos.MesosExecutorDriver;
 import org.apache.mesos.Protos.*;
+import org.apache.mesos.hdfs.HdfsModule;
 import org.apache.mesos.hdfs.config.SchedulerConf;
-import org.apache.mesos.hdfs.ProdConfigModule;
 import org.apache.mesos.hdfs.util.HDFSConstants;
-
-import java.io.IOException;
 
 /**
  * The executor for the Primary Name Node Machine.
@@ -37,7 +34,7 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
    * Main method for executor, which injects the configuration and state and starts the driver.
    */
   public static void main(String[] args) {
-    Injector injector = Guice.createInjector(new ProdConfigModule());
+    Injector injector = Guice.createInjector(new HdfsModule());
     MesosExecutorDriver driver = new MesosExecutorDriver(
         injector.getInstance(NameNodeExecutor.class));
     System.exit(driver.run() == Status.DRIVER_STOPPED ? 0 : 1);

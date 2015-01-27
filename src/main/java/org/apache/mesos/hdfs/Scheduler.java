@@ -3,67 +3,41 @@ package org.apache.mesos.hdfs;
 import com.google.inject.Inject;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import java.io.UnsupportedEncodingException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.mesos.hdfs.config.SchedulerConf;
-import org.apache.mesos.hdfs.state.ClusterState;
-import org.apache.mesos.hdfs.state.State;
-import org.apache.mesos.hdfs.util.HDFSConstants;
-import org.apache.mesos.MesosNativeLibrary;
 import org.apache.mesos.MesosSchedulerDriver;
 import org.apache.mesos.Protos.*;
 import org.apache.mesos.SchedulerDriver;
-import org.apache.mesos.state.ZooKeeperState;
-import org.joda.time.DateTime;
-import org.joda.time.Seconds;
+import org.apache.mesos.hdfs.config.SchedulerConf;
+import org.apache.mesos.hdfs.state.LiveState;
+import org.apache.mesos.hdfs.state.PersistentState;
+import org.apache.mesos.hdfs.util.HDFSConstants;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 
 
 public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     
   public static final Log log = LogFactory.getLog(Scheduler.class);
   private final SchedulerConf conf;
-  private final String localhost;
+  private final LiveState liveState;
+  private PersistentState persistentState;
+
   private Map<OfferID, Offer> pendingOffers = new ConcurrentHashMap<>();
   private boolean initializingCluster = false;
   private Set<TaskID> stagingTasks = new HashSet<>();
 
   @Inject
-  public Scheduler(SchedulerConf conf) {
+  public Scheduler(SchedulerConf conf, LiveState liveState) {
+    this(conf, liveState, new PersistentState(conf));
+  }
+
+  public Scheduler(SchedulerConf conf, LiveState liveState, PersistentState persistentState) {
     this.conf = conf;
-    initClusterState();
-
-    try {
-      localhost = InetAddress.getLocalHost().getHostAddress();
-    } catch (UnknownHostException e) {
-      throw new RuntimeException(e);
-    }
-  }
-    
-  private void initClusterState() {
-    MesosNativeLibrary.load(conf.getNativeLibrary());
-    ZooKeeperState zkState = new ZooKeeperState(conf.getStateZkServers(),
-        conf.getStateZkTimeout(), TimeUnit.MILLISECONDS, "/hdfs-mesos/" + conf.getClusterName());
-    State state = new State(zkState);
-    ClusterState clusterState = ClusterState.getInstance();
-    clusterState.init(state);
-  }
-
-  public SchedulerConf getConf() {
-    return conf;
+    this.liveState = liveState;
+    this.persistentState = persistentState;
   }
 
   @Override
@@ -98,8 +72,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   @Override
   public void registered(SchedulerDriver driver, FrameworkID frameworkId, MasterInfo masterInfo) {
     try {
-      ClusterState clusterState = ClusterState.getInstance();
-      clusterState.getState().setFrameworkId(frameworkId);
+      persistentState.setFrameworkId(frameworkId);
     } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }
@@ -113,7 +86,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
   private void launchNode(SchedulerDriver driver, Offer offer,
       String nodeName, List<String> taskNames, String executorName) {
-    ClusterState clusterState = ClusterState.getInstance();
     log.info(String.format("Launching node of type %s with tasks %s", nodeName,
         taskNames.toString()));
     String taskIdName = String.format("%s.%s.%d", nodeName, executorName,
@@ -138,7 +110,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       tasks.add(task);
 
       stagingTasks.add(taskId);
-      clusterState.addTask(taskId, offer.getHostname(), offer.getSlaveId().getValue());
+      liveState.addTask(taskId, offer.getHostname(), offer.getSlaveId().getValue());
     }
     driver.launchTasks(Arrays.asList(offer.getId()), tasks);
   }
@@ -146,7 +118,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   private ExecutorInfo createExecutor(String taskIdName, String nodeName, String executorName,
     List<Resource> resources) {
     int confServerPort = conf.getConfigServerPort();
-    ExecutorInfo executorInfo = ExecutorInfo.newBuilder()
+    return ExecutorInfo.newBuilder()
         .setName(nodeName + " executor")
         .setExecutorId(ExecutorID.newBuilder().setValue("executor." + taskIdName).build())
         .addAllResources(resources)
@@ -156,7 +128,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
                 conf.getExecUri())
                 .build(),
             CommandInfo.URI.newBuilder().setValue(
-                String.format("http://%s:%d/hdfs-site.xml", localhost, confServerPort))
+                String.format("http://%s:%d/hdfs-site.xml", conf.getFrameworkHostAddress(), confServerPort))
                 .build()))
             .setEnvironment(Environment.newBuilder()
                 .addAllVariables(Arrays.asList(
@@ -180,7 +152,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
                         "-cp lib/*.jar org.apache.mesos.hdfs.executor." + executorName)
                         .build())
                     .build();
-      return executorInfo;
     }
     
   private List<Resource> getExecutorResources() {
@@ -272,9 +243,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       return;
     }
 
-    ClusterState clusterState = ClusterState.getInstance();
-    if (clusterState.getNameNodes().size() == 0 && clusterState.getJournalNodes().size() == 0) {
-      log.info("No NameNodes or JournalNodes found.  Collecting offers until we have sufficient"
+    if (liveState.getNameNodes().size() == 0 && liveState.getJournalNodes().size() == 0) {
+      log.info("No NameNodes or JournalNodes found.  Collecting offers until we have sufficient "
           + "capacity to launch.");
       for (Offer offer: offers) {
           pendingOffers.put(offer.getId(), offer);
@@ -312,7 +282,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
     // Check to see if we can launch some DataNodes
     for (Offer offer : offers) {
-      if (clusterState.notInDfsHosts(offer.getSlaveId().getValue())) {
+      if (liveState.notInDfsHosts(offer.getSlaveId().getValue())) {
         launchDataNode(driver, offer);
       } else {
         remainingOffers.add(offer);
@@ -340,21 +310,19 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
             status.getState().toString(),
             status.getMessage(),
             stagingTasks.size()));
-    
-    ClusterState clusterState = ClusterState.getInstance();
 
     if (status.getState().equals(TaskState.TASK_FAILED)
         || status.getState().equals(TaskState.TASK_FINISHED)
         || status.getState().equals(TaskState.TASK_KILLED)
         || status.getState().equals(TaskState.TASK_LOST)) {
       stagingTasks.remove(status.getTaskId());
-      clusterState.removeTask(status);
+      liveState.removeTask(status);
     } else if (status.getState().equals(TaskState.TASK_RUNNING)) {
         stagingTasks.remove(status.getTaskId());
-        clusterState.updateTask(status);
+        liveState.updateTask(status);
 
         if (status.getTaskId().getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
-          if (clusterState.getNameNodes().size() == HDFSConstants.TOTAL_NAME_NODES) {
+          if (liveState.getNameNodes().size() == HDFSConstants.TOTAL_NAME_NODES) {
             //Finished initializing cluster after both name nodes are initialized
             initializingCluster = false;
           } else {
@@ -367,7 +335,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
             }
           }
         } else if (status.getTaskId().getValue().contains(HDFSConstants.JOURNAL_NODE_ID) &&
-              (clusterState.getJournalNodes().size() ==
+              (liveState.getJournalNodes().size() ==
               (HDFSConstants.TOTAL_NAME_NODES + conf.getJournalNodeCount()))) {
             //Activate primary name node after all journal nodes are activated
             for (TaskID taskId : stagingTasks) {
@@ -382,7 +350,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
   @Override
   public void run() {
-    ClusterState clusterState = ClusterState.getInstance();
     FrameworkInfo.Builder frameworkInfo = FrameworkInfo.newBuilder()
         .setName("HDFS " + conf.getClusterName())
         .setFailoverTimeout(conf.getFailoverTimeout())
@@ -391,7 +358,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         .setCheckpoint(true);
 
     try {
-      FrameworkID frameworkID = clusterState.getState().getFrameworkID();
+      FrameworkID frameworkID = persistentState.getFrameworkID();
       if (frameworkID != null) {
         frameworkInfo.setId(frameworkID);
       }
@@ -405,9 +372,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   }
     
   private void sendMessageTo(SchedulerDriver driver, TaskID taskId, String message) {
-    ClusterState clusterState = ClusterState.getInstance();
     log.info(String.format("Sending message '%s' to taskId=%s", message, taskId.getValue()));
-    String slaveId = clusterState.getTaskSlaveMap().get(taskId);
+    String slaveId = liveState.getTaskSlaveMap().get(taskId);
     String postfix = taskId.getValue();
     postfix = postfix.substring(postfix.indexOf(".") + 1, postfix.length());
     postfix = postfix.substring(postfix.indexOf(".") + 1, postfix.length());

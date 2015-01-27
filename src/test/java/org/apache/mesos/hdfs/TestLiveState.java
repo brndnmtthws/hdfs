@@ -1,19 +1,20 @@
 package org.apache.mesos.hdfs;
 
-import org.apache.mesos.Protos.*;
-import org.apache.mesos.hdfs.state.ClusterState;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
+import org.apache.mesos.Protos.SlaveID;
+import org.apache.mesos.Protos.TaskID;
+import org.apache.mesos.Protos.TaskState;
+import org.apache.mesos.Protos.TaskStatus;
+import org.apache.mesos.hdfs.state.LiveState;
 import org.junit.Test;
 
-public class TestClusterState {
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+public class TestLiveState {
 
   @Test
   public void testNameNodeTask() {
-    ClusterState clusterState = ClusterState.getInstance();
+    LiveState clusterState = new LiveState();
 
     TaskID taskId = TaskID.newBuilder()
         .setValue(".namenode.namenode.123")
@@ -21,12 +22,6 @@ public class TestClusterState {
 
     SlaveID slaveId = SlaveID.newBuilder()
         .setValue("worker10.19.15.1")
-        .build();
-
-    TaskInfo task = TaskInfo.newBuilder()
-        .setName("namenode")
-        .setTaskId(taskId)
-        .setSlaveId(slaveId)
         .build();
 
     // Add task
@@ -48,7 +43,7 @@ public class TestClusterState {
 
   @Test
   public void testJournalNodeTask() {
-    ClusterState clusterState = ClusterState.getInstance();
+    LiveState clusterState = new LiveState();
 
     TaskID taskId = TaskID.newBuilder()
         .setValue(".namenode.journalnode.123")
@@ -56,12 +51,6 @@ public class TestClusterState {
 
     SlaveID slaveId = SlaveID.newBuilder()
         .setValue("worker10.80.16.2")
-        .build();
-
-    TaskInfo task = TaskInfo.newBuilder()
-        .setName("journalnode")
-        .setTaskId(taskId)
-        .setSlaveId(slaveId)
         .build();
 
     // Add task
