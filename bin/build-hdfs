@@ -56,7 +56,9 @@ if [ ! -d $DIST ]; then
     echo "Creating new $DIST dist folder"
     mkdir -p $DIST
 else
-    echo "($DIST already exists, skipping create)"
+    echo "($DIST already exists, deleting before create)"
+    rm -rf $DIST
+    mkdir -p $DIST
 fi
 
 # Copy to dist
@@ -84,4 +86,5 @@ cd ..
 
 # Compress tarball
 echo "Compressing to $DIST.tgz"
+rm -f $DIST.tgz
 tar czf $DIST.tgz $DIST
