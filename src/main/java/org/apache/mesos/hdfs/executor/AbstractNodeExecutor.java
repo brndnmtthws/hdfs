@@ -97,7 +97,7 @@ public abstract class AbstractNodeExecutor implements Executor {
   }
 
   /**
-   * Create Symbolc Link for the HDFS binary.
+   * Create Symbolic Link for the HDFS binary.
    **/
   private void createSymbolicLink() {
     log.info("Creating a symbolic link for HDFS binary");
