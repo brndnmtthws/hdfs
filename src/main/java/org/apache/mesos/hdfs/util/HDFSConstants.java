@@ -23,6 +23,6 @@ public class HDFSConstants {
   public static final String NAME_NODE_EXECUTOR_ID = "NameNodeExecutor";
 
   // Path to Store HDFS Binary
-  public static final String HDFS_BINARY_DIR = "hadoop";
+  public static final String HDFS_BINARY_DIR = "hdfs";
 
 }
