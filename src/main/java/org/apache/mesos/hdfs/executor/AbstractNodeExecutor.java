@@ -12,11 +12,15 @@ import org.apache.mesos.MesosExecutorDriver;
 import org.apache.mesos.Protos.*;
 import org.apache.mesos.hdfs.config.SchedulerConf;
 import org.apache.mesos.hdfs.ProdConfigModule;
+import org.apache.mesos.hdfs.util.HDFSConstants;
 import org.apache.mesos.hdfs.util.StreamRedirect;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -55,26 +59,27 @@ public abstract class AbstractNodeExecutor implements Executor {
     executorInfo = executorInfo;
     // Set up data dir
     setUpDataDir();
+    createSymbolicLink();
     log.info("Executor registered with the slave");
-
   }
 
   /**
    * Delete and recreate the data directory.
    **/
   private void setUpDataDir() {
+    // Create primary data dir if it does not exist
     File dataDir = new File(schedulerConf.getDataDir());
+    // TODO(elingg) Need to actually recover the data instead of getting rid of it.
     if (dataDir.exists()) {
-      // TODO(elingg) Need to actually recover the data instead of getting rid of it.
       deleteFile(dataDir);
     }
     dataDir.mkdirs();
 
-    File hdfsDir = new File(schedulerConf.getSecondaryDataDir());
-    if (!hdfsDir.exists()) {
-      hdfsDir.mkdirs();
+    // Create secondary data dir if it does not exist
+    File secondaryDataDir = new File(schedulerConf.getSecondaryDataDir());
+    if (!secondaryDataDir.exists()) {
+      secondaryDataDir.mkdirs();
     }
-
   }
 
   /**
@@ -91,6 +96,39 @@ public abstract class AbstractNodeExecutor implements Executor {
     fileToDelete.delete();
   }
 
+  /**
+   * Create Symbolic Link for the HDFS binary.
+   **/
+  private void createSymbolicLink() {
+    log.info("Creating a symbolic link for HDFS binary");
+    try {
+      // Find Hdfs binary in sandbox
+      File sandboxHdfsBinary = new File(System.getProperty("user.dir"));
+      Path sandboxHdfsBinaryPath = Paths.get(sandboxHdfsBinary.getAbsolutePath());
+
+      // Create mesosphere opt dir (parent dir of the symbolic link) if it does not exist
+      File frameworkMountDir = new File(schedulerConf.getFrameworkMountPath());
+      if (!frameworkMountDir.exists()) {
+        frameworkMountDir.mkdirs();
+      }
+
+      // Delete and recreate directory for symbolic link every time
+      String hdfsBinaryPath = schedulerConf.getFrameworkMountPath()
+          + HDFSConstants.HDFS_BINARY_DIR;
+      File hdfsBinaryDir = new File(hdfsBinaryPath);
+      if (hdfsBinaryDir.exists()) {
+        deleteFile(hdfsBinaryDir);
+      }
+
+      // Create symbolic link
+      Path hdfsLinkDirPath = Paths.get(hdfsBinaryPath);
+      Files.createSymbolicLink(hdfsLinkDirPath, sandboxHdfsBinaryPath);
+      log.info("The linked HDFS binary path is: " + sandboxHdfsBinaryPath);
+      log.info("The symbolic link path is: " + hdfsLinkDirPath);
+    } catch (Exception e) {
+      log.error("Error creating the symbolic link to hdfs binary: " + e);
+    }
+  }
   /**
    * Starts a task's process so it goes into running state.
    **/
