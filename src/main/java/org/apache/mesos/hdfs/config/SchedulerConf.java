@@ -192,6 +192,8 @@ public class SchedulerConf extends Configured {
     return hostAddress;
   }
 
+  // The port can be changed by setting the PORT0 environment variable
+  // See /bin/hdfs-mesos for more details
   public int getConfigServerPort() {
     String configServerPortString = System.getProperty("mesos.hdfs.config.server.port");
     if (configServerPortString == null) {
