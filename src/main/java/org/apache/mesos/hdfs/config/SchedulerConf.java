@@ -17,9 +17,10 @@ public class SchedulerConf extends Configured {
   }
 
   public SchedulerConf() {
+    // The path is configurable via the mesos.conf.path system property
+    // so it can be changed when starting up the scheduler via bash
     Properties props = System.getProperties();
-    String sitePath = props.getProperty("mesos.site.path", "etc/hadoop");
-    Path configPath = new Path(props.getProperty("mesos.conf.path", sitePath + "/mesos-site.xml"));
+    Path configPath = new Path(props.getProperty("mesos.conf.path", "etc/hadoop/mesos-site.xml"));
     Configuration configuration = new Configuration();
     configuration.addResource(configPath);
     setConf(configuration);
