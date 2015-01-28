@@ -126,7 +126,8 @@ public abstract class AbstractNodeExecutor implements Executor {
       log.info("The linked HDFS binary path is: " + sandboxHdfsBinaryPath);
       log.info("The symbolic link path is: " + hdfsLinkDirPath);
     } catch (Exception e) {
-      log.error("Error creating the symbolic link to hdfs binary: " + e);
+      log.fatal("Error creating the symbolic link to hdfs binary: " + e);
+      System.exit(1);
     }
   }
   /**
