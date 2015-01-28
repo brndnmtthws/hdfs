@@ -1,7 +1,9 @@
 package org.apache.mesos.hdfs.state;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import org.apache.mesos.MesosNativeLibrary;
 import org.apache.mesos.Protos.FrameworkID;
+import org.apache.mesos.hdfs.config.SchedulerConf;
 import org.apache.mesos.state.Variable;
 import org.apache.mesos.state.ZooKeeperState;
 
@@ -9,24 +11,20 @@ import java.io.*;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
-public class State {
+public class PersistentState {
   private static String FRAMEWORK_ID_KEY = "frameworkId";
   private static String NODES_KEY = "nodes";
   private static String NAMENODE_KEY = "namenode";
   private ZooKeeperState zkState;
 
-  public State(ZooKeeperState zkState) {
-    this.zkState = zkState;
+  public PersistentState(SchedulerConf conf) {
+    MesosNativeLibrary.load(conf.getNativeLibrary());
+    this.zkState = new ZooKeeperState(conf.getStateZkServers(),
+        conf.getStateZkTimeout(), TimeUnit.MILLISECONDS, "/hdfs-mesos/" + conf.getClusterName());
   }
 
-  /**
-   * Return null if no frameworkId found.
-   * 
-   * @throws ExecutionException
-   * @throws InterruptedException
-   * @throws InvalidProtocolBufferException
-   */
   public FrameworkID getFrameworkID() throws InterruptedException, ExecutionException,
       InvalidProtocolBufferException {
     byte[] existingFrameworkId = zkState.fetch(FRAMEWORK_ID_KEY).get().value();

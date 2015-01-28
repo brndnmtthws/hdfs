@@ -1,10 +1,29 @@
 package org.apache.mesos.hdfs.config;
 
+import com.google.inject.Singleton;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.fs.Path;
 
-public class SchedulerConf extends MainConf {
-  public SchedulerConf(Configuration conf, int configServerPort) {
-    super(conf, configServerPort);
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.Properties;
+
+@Singleton
+public class SchedulerConf extends Configured {
+
+  public SchedulerConf(Configuration conf) {
+    setConf(conf);
+  }
+
+  public SchedulerConf() {
+    // The path is configurable via the mesos.conf.path system property
+    // so it can be changed when starting up the scheduler via bash
+    Properties props = System.getProperties();
+    Path configPath = new Path(props.getProperty("mesos.conf.path", "etc/hadoop/mesos-site.xml"));
+    Configuration configuration = new Configuration();
+    configuration.addResource(configPath);
+    setConf(configuration);
   }
 
   public int getHadoopHeapSize() {
@@ -150,4 +169,37 @@ public class SchedulerConf extends MainConf {
     return getConf().get("mesos.hdfs.zkfc.ha.zookeeper.quorum", "localhost:2181");
   }
 
+  public String getStateZkServers() {
+    return getConf().get("mesos.hdfs.state.zk", "localhost:2181");
+  }
+
+  public int getStateZkTimeout() {
+    return getConf().getInt("mesos.hdfs.state.zk.timeout.ms", 20000);
+  }
+
+  public String getNativeLibrary() {
+    return getConf().get("mesos.native.library", "/usr/local/lib/libmesos.so");
+  }
+
+  public String getFrameworkHostAddress() {
+    String hostAddress = getConf().get("mesos.hdfs.framework.hostaddress");
+    if (hostAddress == null) {
+      try {
+        hostAddress = InetAddress.getLocalHost().getHostAddress();
+      } catch (UnknownHostException e) {
+        throw new RuntimeException(e);
+      }
+    }
+    return hostAddress;
+  }
+
+  // The port can be changed by setting the PORT0 environment variable
+  // See /bin/hdfs-mesos for more details
+  public int getConfigServerPort() {
+    String configServerPortString = System.getProperty("mesos.hdfs.config.server.port");
+    if (configServerPortString == null) {
+      configServerPortString = getConf().get("mesos.hdfs.config.server.port", "8765");
+    }
+    return Integer.valueOf(configServerPortString);
+  }
 }

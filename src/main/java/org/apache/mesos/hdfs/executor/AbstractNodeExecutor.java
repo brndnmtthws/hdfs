@@ -11,7 +11,6 @@ import org.apache.mesos.ExecutorDriver;
 import org.apache.mesos.MesosExecutorDriver;
 import org.apache.mesos.Protos.*;
 import org.apache.mesos.hdfs.config.SchedulerConf;
-import org.apache.mesos.hdfs.ProdConfigModule;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 import org.apache.mesos.hdfs.util.StreamRedirect;
 
@@ -44,7 +43,7 @@ public abstract class AbstractNodeExecutor implements Executor {
    * Main method which injects the configuration and state and creates the driver.
    **/
   public static void main(String[] args) {
-    Injector injector = Guice.createInjector(new ProdConfigModule());
+    Injector injector = Guice.createInjector();
     MesosExecutorDriver driver = new MesosExecutorDriver(
         injector.getInstance(AbstractNodeExecutor.class));
     System.exit(driver.run() == Status.DRIVER_STOPPED ? 0 : 1);

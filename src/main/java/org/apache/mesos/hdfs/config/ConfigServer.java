@@ -2,8 +2,7 @@ package org.apache.mesos.hdfs.config;
 
 import com.floreysoft.jmte.Engine;
 import com.google.inject.Inject;
-import com.google.inject.name.Named;
-import org.apache.mesos.hdfs.state.ClusterState;
+import org.apache.mesos.hdfs.state.LiveState;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -13,8 +12,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -24,10 +21,12 @@ public class ConfigServer {
   private Server server;
   private Engine engine;
   private SchedulerConf schedulerConf;
+  private LiveState liveState;
 
   @Inject
-  public ConfigServer(SchedulerConf schedulerConf) throws Exception {
+  public ConfigServer(SchedulerConf schedulerConf, LiveState liveState) throws Exception {
     this.schedulerConf = schedulerConf;
+    this.liveState = liveState;
     engine = new Engine();
     server = new Server(schedulerConf.getConfigServerPort());
     server.setHandler(new ServeHdfsConfigHandler());
@@ -42,7 +41,6 @@ public class ConfigServer {
     public synchronized void handle(String target, Request baseRequest, HttpServletRequest request,
         HttpServletResponse response) throws IOException {
 
-      ClusterState clusterState = ClusterState.getInstance();
       File confFile = new File(schedulerConf.getConfigPath());
 
       if (!confFile.exists()) {
@@ -53,11 +51,11 @@ public class ConfigServer {
       String content = new String(Files.readAllBytes(Paths.get(confFile.getPath())));
 
       Set<String> nameNodes = new TreeSet<>();
-      nameNodes.addAll(clusterState.getNameNodeHosts());
+      nameNodes.addAll(liveState.getNameNodeHosts());
 
       Set<String> journalNodes = new TreeSet<>();
       journalNodes.addAll(nameNodes);
-      journalNodes.addAll(clusterState.getJournalNodeHosts());
+      journalNodes.addAll(liveState.getJournalNodeHosts());
 
       Map<String, Object> model = new HashMap<>();
       Iterator<String> iter = nameNodes.iterator();
