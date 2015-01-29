@@ -16,6 +16,8 @@ import org.apache.mesos.hdfs.util.HDFSConstants;
 import org.apache.mesos.hdfs.util.StreamRedirect;
 
 import java.io.File;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
@@ -125,10 +127,27 @@ public abstract class AbstractNodeExecutor implements Executor {
       Files.createSymbolicLink(hdfsLinkDirPath, sandboxHdfsBinaryPath);
       log.info("The linked HDFS binary path is: " + sandboxHdfsBinaryPath);
       log.info("The symbolic link path is: " + hdfsLinkDirPath);
+      // Adding binary to the PATH environment variable
+      addBinaryToPath(hdfsBinaryPath);
     } catch (Exception e) {
       log.fatal("Error creating the symbolic link to hdfs binary: " + e);
       System.exit(1);
     }
+  }
+
+  /**
+   * Add hdfs binary to the PATH environment variable by linking it to /usr/bin/hadoop. This
+   * requires that /usr/bin/ is on the Mesos slave PATH, which is defined as part of the standard
+   * Mesos slave packaging.
+   **/
+  private void addBinaryToPath(String hdfsBinaryPath) throws IOException {
+    String pathEnvVarLocation = "/usr/bin/hadoop";
+    String scriptContent = "#!/bin/bash \n" + hdfsBinaryPath + "/bin/hadoop \"$@\"";
+    FileWriter fileWriter = new FileWriter(pathEnvVarLocation);
+    BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+    bufferedWriter.write(scriptContent);
+    bufferedWriter.close();
+    Runtime.getRuntime().exec("chmod a+x " + pathEnvVarLocation);
   }
   /**
    * Starts a task's process so it goes into running state.
