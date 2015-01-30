@@ -86,9 +86,21 @@ public class TestScheduler {
     assertTrue(taskInfo.getName().contains("datanode"));
   }
 
-  private Protos.TaskID createTaskId(String id) {
-    return Protos.TaskID.newBuilder().setValue(id).build();
+  @Test
+  public void putsRunningTasksInLiveState() {
+    LiveState liveState = mock(LiveState.class);
+    Scheduler scheduler = new Scheduler(schedulerConf, liveState, persistentState);
+
+    scheduler.resourceOffers(driver,
+        Lists.newArrayList(
+            createTestOffer(0)
+        )
+    );
+
+    verify(liveState, times(1)).addTask(any(Protos.TaskID.class), eq(createTestOffer(0).getHostname()), eq(createTestOffer(0).getSlaveId().getValue()));
   }
+
+  private Protos.TaskID createTaskId(String id) { return Protos.TaskID.newBuilder().setValue(id).build(); }
 
   @Before
   public void initializeMocks() {
