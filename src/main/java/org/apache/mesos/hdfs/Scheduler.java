@@ -27,7 +27,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
   private Map<OfferID, Offer> pendingOffers = new ConcurrentHashMap<>();
   private boolean initializingCluster = false;
-  private Set<TaskID> stagingTasks = new HashSet<>();
 
   @Inject
   public Scheduler(SchedulerConf conf, LiveState liveState) {
@@ -109,7 +108,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           .build();
       tasks.add(task);
 
-      stagingTasks.add(taskId);
+      liveState.addStagingTask(taskId);
       liveState.addTask(taskId, offer.getHostname(), offer.getSlaveId().getValue());
     }
     driver.launchTasks(Arrays.asList(offer.getId()), tasks);
@@ -235,7 +234,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     log.info(String.format("Received %d offers", offers.size()));
     //TODO(elingg) all datanodes can be launched together after the other nodes have initialized.
     //Remove this waiting period for datanodes.
-    if (!stagingTasks.isEmpty()) {
+    if (!liveState.getStagingTasks().isEmpty()) {
       log.info("Declining offers because tasks are currently staging");
       for (Offer offer : offers) {
         driver.declineOffer(offer.getId());
@@ -306,19 +305,19 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   public void statusUpdate(SchedulerDriver driver, TaskStatus status) {
     log.info(String.format(
         "Received status update for taskId=%s state=%s message='%s' stagingTasks.size=%d",
-            status.getTaskId().getValue(),
-            status.getState().toString(),
-            status.getMessage(),
-            stagingTasks.size()));
+        status.getTaskId().getValue(),
+        status.getState().toString(),
+        status.getMessage(),
+        liveState.getStagingTasks().size()));
 
     if (status.getState().equals(TaskState.TASK_FAILED)
         || status.getState().equals(TaskState.TASK_FINISHED)
         || status.getState().equals(TaskState.TASK_KILLED)
         || status.getState().equals(TaskState.TASK_LOST)) {
-      stagingTasks.remove(status.getTaskId());
+      liveState.removeStagingTask(status.getTaskId());
       liveState.removeTask(status);
     } else if (status.getState().equals(TaskState.TASK_RUNNING)) {
-        stagingTasks.remove(status.getTaskId());
+        liveState.removeStagingTask(status.getTaskId());
         liveState.updateTask(status);
 
         if (status.getTaskId().getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
@@ -327,7 +326,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
             initializingCluster = false;
           } else {
             //Activate secondary name node after first name node is activated
-            for (TaskID taskId : stagingTasks) {
+            for (TaskID taskId : liveState.getStagingTasks()) {
               if (taskId.getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
                 sendMessageTo(driver, taskId, HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE);
                 break;
@@ -338,7 +337,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
               (liveState.getJournalNodes().size() ==
               (HDFSConstants.TOTAL_NAME_NODES + conf.getJournalNodeCount()))) {
             //Activate primary name node after all journal nodes are activated
-            for (TaskID taskId : stagingTasks) {
+            for (TaskID taskId : liveState.getStagingTasks()) {
               if (taskId.getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
                 sendMessageTo(driver, taskId, HDFSConstants.NAME_NODE_INIT_MESSAGE);
                 break;
