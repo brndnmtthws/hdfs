@@ -234,7 +234,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     log.info(String.format("Received %d offers", offers.size()));
     //TODO(elingg) all datanodes can be launched together after the other nodes have initialized.
     //Remove this waiting period for datanodes.
-    if (!getStagingTasks().isEmpty()) {
+    if (!liveState.getStagingTasks().isEmpty()) {
       log.info("Declining offers because tasks are currently staging");
       for (Offer offer : offers) {
         driver.declineOffer(offer.getId());

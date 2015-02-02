@@ -88,27 +88,7 @@ public class TestScheduler {
     assertTrue(taskInfo.getName().contains("datanode"));
   }
 
-  @Test
-  public void putsRunningTasksInLiveState() {
-    LiveState liveState = mock(LiveState.class);
-    Scheduler scheduler = new Scheduler(schedulerConf, liveState, persistentState);
 
-    scheduler.resourceOffers(driver,
-        Lists.newArrayList(
-            createTestOffer(0)
-            )
-        );
-
-    verify(liveState, times(1)).addTask(any(Protos.TaskID.class),
-        eq(createTestOffer(0).getHostname()), eq(createTestOffer(0).getSlaveId().getValue()));
-  }
-
-  private Protos.TaskID createTaskId(String id) {
-    return Protos.TaskID.newBuilder().setValue(id).build();
-  }
-
-<<<<<<< Updated upstream
-=======
   @Test
   public void removesBadTasksFromLiveState() {
     LiveState liveState = mock(LiveState.class);
@@ -128,7 +108,7 @@ public class TestScheduler {
     LiveState liveState = mock(LiveState.class);
     Scheduler scheduler = new Scheduler(schedulerConf, liveState, persistentState);
 
-    liveState.addStagingTask();
+    liveState.addStagingTask(createTaskInfo("0"));
     scheduler.statusUpdate(driver, createTaskStatus(createTaskId("0"), Protos.TaskState.TASK_RUNNING));
 
     verify(liveState, times(1)).removeStagingTask(createTaskId("0"));
@@ -155,7 +135,6 @@ public class TestScheduler {
 //    );
 //  }
 
->>>>>>> Stashed changes
   @Before
   public void initializeMocks() {
     MockitoAnnotations.initMocks(this);
@@ -182,7 +161,6 @@ public class TestScheduler {
   private Protos.OfferID createTestOfferId(int instanceNumber) {
     return Protos.OfferID.newBuilder().setValue("offer" + instanceNumber).build();
   }
-
   private Protos.Offer createTestOffer(int instanceNumber) {
     return Protos.Offer.newBuilder()
         .setId(createTestOfferId(instanceNumber))
