@@ -20,7 +20,7 @@ public class LiveState {
   private final Map<Protos.TaskID, String> taskSlaveMap;
   private final Set<String> journalNodeHosts;
   private final Set<String> nameNodeHosts;
-  private final HashSet<Protos.TaskID> stagingTasks;
+  private final Set<Protos.TaskID> stagingTasks;
 
   public LiveState() {
     taskHostMap = new HashMap<>();
@@ -56,9 +56,7 @@ public class LiveState {
     return nameNodeHosts;
   }
 
-  public Set<Protos.TaskID> getStagingTasks() {
-    return stagingTasks;
-  }
+  public Set<Protos.TaskID> getStagingTasks() { return stagingTasks; }
 
   public boolean notInDfsHosts(String slaveId) {
     return !taskSlaveMap.values().contains(slaveId);
@@ -93,8 +91,8 @@ public class LiveState {
     taskSlaveMap.remove(taskId);
   }
 
-  public void addStagingTask(Protos.TaskID taskId) {
-    stagingTasks.add(taskId);
+  public void addStagingTask(Protos.TaskInfo taskInfo) {
+    stagingTasks.add(taskInfo.getTaskId());
   }
 
   public void removeStagingTask(Protos.TaskID taskId) {

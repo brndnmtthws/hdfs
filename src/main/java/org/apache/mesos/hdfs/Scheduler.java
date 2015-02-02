@@ -108,7 +108,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           .build();
       tasks.add(task);
 
-      liveState.addStagingTask(taskId);
+      liveState.addStagingTask(task);
       liveState.addTask(taskId, offer.getHostname(), offer.getSlaveId().getValue());
     }
     driver.launchTasks(Arrays.asList(offer.getId()), tasks);
@@ -234,7 +234,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     log.info(String.format("Received %d offers", offers.size()));
     //TODO(elingg) all datanodes can be launched together after the other nodes have initialized.
     //Remove this waiting period for datanodes.
-    if (!liveState.getStagingTasks().isEmpty()) {
+    if (!getStagingTasks().isEmpty()) {
       log.info("Declining offers because tasks are currently staging");
       for (Offer offer : offers) {
         driver.declineOffer(offer.getId());
@@ -310,13 +310,11 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         status.getMessage(),
         liveState.getStagingTasks().size()));
 
-    if (status.getState().equals(TaskState.TASK_FAILED)
-        || status.getState().equals(TaskState.TASK_FINISHED)
-        || status.getState().equals(TaskState.TASK_KILLED)
-        || status.getState().equals(TaskState.TASK_LOST)) {
+
+    if (isTerminalState(status)) {
       liveState.removeStagingTask(status.getTaskId());
       liveState.removeTask(status);
-    } else if (status.getState().equals(TaskState.TASK_RUNNING)) {
+    } else if (isRunningState(status)) {
         liveState.removeStagingTask(status.getTaskId());
         liveState.updateTask(status);
 
@@ -329,7 +327,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
             for (TaskID taskId : liveState.getStagingTasks()) {
               if (taskId.getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
                 sendMessageTo(driver, taskId, HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE);
-                break;
+                break; //why is there a break here?
               }
             }
           }
@@ -340,7 +338,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
             for (TaskID taskId : liveState.getStagingTasks()) {
               if (taskId.getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
                 sendMessageTo(driver, taskId, HDFSConstants.NAME_NODE_INIT_MESSAGE);
-                break;
+                break; //why is there a break here?
               }
             }
          }
@@ -382,4 +380,18 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         message.getBytes());
   }
 
+  private boolean isTerminalState(TaskStatus taskStatus) {
+    return (taskStatus.getState().equals(TaskState.TASK_FAILED)
+        || taskStatus.getState().equals(TaskState.TASK_FINISHED)
+        || taskStatus.getState().equals(TaskState.TASK_KILLED)
+        || taskStatus.getState().equals(TaskState.TASK_LOST));
+  }
+
+  private boolean isRunningState(TaskStatus taskStatus) {
+    return (taskStatus.getState().equals(TaskState.TASK_RUNNING));
+  }
+
+  private boolean isStagingState(TaskStatus taskStatus) {
+    return (taskStatus.getState().equals(TaskState.TASK_STAGING));
+  }
 }
