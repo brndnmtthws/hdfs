@@ -191,7 +191,7 @@
 
   <property>
     <name>dfs.domain.socket.path</name>
-    <value>/var/run/hadoop-hdfs/dn._PORT</value>
+    <value>${mesos.hdfs.secondary.data.dir}/dn._PORT</value>
   </property>
 
   <property>
