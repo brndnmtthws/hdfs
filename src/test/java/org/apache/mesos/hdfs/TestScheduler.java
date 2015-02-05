@@ -103,36 +103,17 @@ public class TestScheduler {
     verify(liveState, times(4)).removeTask(any(Protos.TaskStatus.class));
   }
 
-  @Test
-  public void updateStateWhenRunningTaskIsReceived() {
-    LiveState liveState = mock(LiveState.class);
-    Scheduler scheduler = new Scheduler(schedulerConf, liveState, persistentState);
-
-    liveState.addStagingTask(createTaskInfo("0"));
-    scheduler.statusUpdate(driver, createTaskStatus(createTaskId("0"), Protos.TaskState.TASK_RUNNING));
-
-    verify(liveState, times(1)).removeStagingTask(createTaskId("0"));
-    verify(liveState, times(0)).removeTask(createTaskStatus(createTaskId("0"), Protos.TaskState.TASK_RUNNING));
-    verify(liveState, times(1)).updateTask(createTaskStatus(createTaskId("0"), Protos.TaskState.TASK_RUNNING));
-  }
-
-
 //  @Test
-//  public void startFirstNamenodeWhenAllJournalNodesAreStarted() {
+//  public void updateStateWhenRunningTaskIsReceived() {
 //    LiveState liveState = mock(LiveState.class);
 //    Scheduler scheduler = new Scheduler(schedulerConf, liveState, persistentState);
 //
-//    Protos.TaskStatus firstNamenode = createTaskStatus(createTaskId(HDFSConstants.NAME_NODE_ID + "1"), Protos.TaskState.TASK_RUNNING);
+//    liveState.addStagingTask(createTaskInfo("0"));
+//    scheduler.statusUpdate(driver, createTaskStatus(createTaskId("0"), Protos.TaskState.TASK_RUNNING));
 //
-//
-//    scheduler.statusUpdate(driver, firstNamenode);
-//    liveState.addStagingTask(firstNamenode.getTaskId());
-//
-//    verify(driver, times(1)).sendFrameworkMessage(
-//        any(Protos.ExecutorID.class),
-//        eq(firstNamenode.getSlaveId()),
-//        eq(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE.getBytes())
-//    );
+//    verify(liveState, times(1)).removeStagingTask(createTaskId("0"));
+//    verify(liveState, times(0)).removeTask(createTaskStatus(createTaskId("0"), Protos.TaskState.TASK_RUNNING));
+//    verify(liveState, times(1)).updateTask(createTaskStatus(createTaskId("0"), Protos.TaskState.TASK_RUNNING));
 //  }
 
   @Before
@@ -141,22 +122,6 @@ public class TestScheduler {
   }
 
   private Protos.TaskID createTaskId(String id) { return Protos.TaskID.newBuilder().setValue(id).build(); }
-
-  private Protos.TaskInfo createTaskInfo(String id) {
-    Protos.TaskInfo task = Protos.TaskInfo.newBuilder()
-        .setExecutor(executorInfo)
-        .setName(taskName)
-        .setTaskId(taskId)
-        .setSlaveId(offer.getSlaveId())
-        .addAllResources(taskResources)
-        .setData(ByteString.copyFromUtf8(
-            String.format("bin/hdfs-mesos-%s", taskName)))
-        .build();
-  }
-
-  private Protos.ExecutorInfo createExecutorInfo() {
-    return createExecutor(taskIdName, nodeName, executorName, resources);
-  }
 
   private Protos.OfferID createTestOfferId(int instanceNumber) {
     return Protos.OfferID.newBuilder().setValue("offer" + instanceNumber).build();
