@@ -56,7 +56,9 @@ public class LiveState {
     return nameNodeHosts;
   }
 
-  public Set<Protos.TaskID> getStagingTasks() { return stagingTasks; }
+  public Set<Protos.TaskID> getStagingTasks() {
+    return stagingTasks;
+  }
 
   public boolean notInDfsHosts(String slaveId) {
     return !taskSlaveMap.values().contains(slaveId);
