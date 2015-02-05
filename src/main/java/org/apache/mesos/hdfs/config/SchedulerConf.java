@@ -26,8 +26,12 @@ public class SchedulerConf extends Configured {
     setConf(configuration);
   }
 
+  public String getConfigPath() {
+    return getConf().get("mesos.hdfs.config.path", "etc/hadoop/hdfs-site.xml");
+  }
+
   public int getHadoopHeapSize() {
-    return getConf().getInt("mesos.hdfs.hadoop.heap.size", 512);
+    return getConf().getInt("mesos.hdfs.hadoop.heap.size", 256);
   }
 
   public int getDataNodeHeapSize() {
@@ -39,11 +43,30 @@ public class SchedulerConf extends Configured {
   }
 
   public int getNameNodeHeapSize() {
-    return getConf().getInt("mesos.hdfs.namenode.heap.size", 2048);
+    return getConf().getInt("mesos.hdfs.namenode.heap.size", 1024);
+  }
+
+  public int getExecutorHeap() {
+    return getConf().getInt("mesos.hdfs.executor.heap.size", 256);
   }
 
   public int getZkfcHeapSize() {
     return getHadoopHeapSize();
+  }
+
+  public int getTaskHeapSize(String taskName) {
+    switch (taskName) {
+      case "zkfc" :
+        return getZkfcHeapSize();
+      case "namenode" :
+        return getNameNodeHeapSize();
+      case "datanode" :
+        return getDataNodeHeapSize();
+      case "journalnode" :
+        return getJournalNodeHeapSize();
+      default :
+        throw new RuntimeException("Invalid taskName=" + taskName);
+    }
   }
 
   public double getJvmOverhead() {
@@ -74,34 +97,15 @@ public class SchedulerConf extends Configured {
     return getExecutorCpus();
   }
 
-  public int getExecutorHeap() {
-    return getConf().getInt("mesos.hdfs.executor.heap.size", 256);
-  }
-
   public double getNameNodeCpus() {
-    return getConf().getDouble("mesos.hdfs.namenode.cpus", 0.5);
+    return getConf().getDouble("mesos.hdfs.namenode.cpus", 1);
   }
   public double getJournalNodeCpus() {
-    return getConf().getDouble("mesos.hdfs.journalnode.cpus", 0.5);
+    return getConf().getDouble("mesos.hdfs.journalnode.cpus", 1);
   }
 
   public double getDataNodeCpus() {
-    return getConf().getDouble("mesos.hdfs.datanode.cpus", 1.5);
-  }
-
-  public int getTaskHeapSize(String taskName) {
-    switch (taskName) {
-      case "zkfc" :
-        return getZkfcHeapSize();
-      case "namenode" :
-        return getNameNodeHeapSize();
-      case "datanode" :
-        return getDataNodeHeapSize();
-      case "journalnode" :
-        return getJournalNodeHeapSize();
-      default :
-        throw new RuntimeException("Invalid taskName=" + taskName);
-    }
+    return getConf().getDouble("mesos.hdfs.datanode.cpus", 1);
   }
 
   public double getTaskCpus(String taskName) {
@@ -123,7 +127,7 @@ public class SchedulerConf extends Configured {
     return getConf().getInt("mesos.hdfs.journalnode.count", 1);
   }
 
-  // TODO(elingg) use different path for executor
+  // TODO(elingg) This will be removed once https://github.com/mesosphere/hdfs/pull/44 is merged
   public String getExecUri() {
     return getConf().get("mesos.hdfs.executor.uri",
         "https://s3-us-west-1.amazonaws.com/mesosphere-executors-public/hdfs-mesos-0.0.2.tgz");
@@ -133,14 +137,17 @@ public class SchedulerConf extends Configured {
     return getConf().get("mesos.hdfs.cluster.name", "mesos-ha");
   }
 
+  // TODO(elingg) This needs to be increased.
   public long getFailoverTimeout() {
     return getConf().getLong("mesos.failover.timeout.sec", 0);
   }
 
+  // TODO(elingg) Most likely this user name will change to HDFS
   public String getHdfsUser() {
     return getConf().get("mesos.hdfs.user", "root");
   }
 
+  // TODO(elingg) This role needs to be updated.
   public String getHdfsRole() {
     return getConf().get("mesos.hdfs.role", "*");
   }
@@ -157,14 +164,6 @@ public class SchedulerConf extends Configured {
     return getConf().get("mesos.hdfs.secondary.data.dir", "/var/run/hadoop-hdfs");
   }
 
-  public String getFrameworkMountPath() {
-    return getConf().get("mesos.hdfs.framework.mnt.path", "/opt/mesosphere/");
-  }
-
-  public String getConfigPath() {
-    return getConf().get("mesos.hdfs.config.path", "etc/hadoop/hdfs-site.xml");
-  }
-
   public String getHaZookeeperQuorum() {
     return getConf().get("mesos.hdfs.zkfc.ha.zookeeper.quorum", "localhost:2181");
   }
@@ -179,6 +178,10 @@ public class SchedulerConf extends Configured {
 
   public String getNativeLibrary() {
     return getConf().get("mesos.native.library", "/usr/local/lib/libmesos.so");
+  }
+
+  public String getFrameworkMountPath() {
+    return getConf().get("mesos.hdfs.framework.mnt.path", "/opt/mesosphere");
   }
 
   public String getFrameworkHostAddress() {
