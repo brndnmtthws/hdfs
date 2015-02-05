@@ -45,7 +45,7 @@ public class TestScheduler {
             createTestOffer(0),
             createTestOffer(1),
             createTestOffer(2)
-        ));
+            ));
 
     verify(driver, times(3)).launchTasks(anyList(), taskInfosCapture.capture());
     assertEquals(3, taskInfosCapture.getValue().size());
@@ -61,7 +61,7 @@ public class TestScheduler {
             createTestOffer(1),
             createTestOffer(2),
             createTestOffer(3)
-        ));
+            ));
 
     verify(driver, times(1)).declineOffer(any(Protos.OfferID.class));
   }
@@ -78,8 +78,8 @@ public class TestScheduler {
     scheduler.resourceOffers(driver,
         Lists.newArrayList(
             createTestOffer(0)
-        )
-    );
+            )
+        );
 
     verify(driver, times(1)).launchTasks(anyList(), taskInfosCapture.capture());
     Protos.TaskInfo taskInfo = taskInfosCapture.getValue().iterator().next();
@@ -94,13 +94,16 @@ public class TestScheduler {
     scheduler.resourceOffers(driver,
         Lists.newArrayList(
             createTestOffer(0)
-        )
-    );
+            )
+        );
 
-    verify(liveState, times(1)).addTask(any(Protos.TaskID.class), eq(createTestOffer(0).getHostname()), eq(createTestOffer(0).getSlaveId().getValue()));
+    verify(liveState, times(1)).addTask(any(Protos.TaskID.class),
+        eq(createTestOffer(0).getHostname()), eq(createTestOffer(0).getSlaveId().getValue()));
   }
 
-  private Protos.TaskID createTaskId(String id) { return Protos.TaskID.newBuilder().setValue(id).build(); }
+  private Protos.TaskID createTaskId(String id) {
+    return Protos.TaskID.newBuilder().setValue(id).build();
+  }
 
   @Before
   public void initializeMocks() {
@@ -110,7 +113,6 @@ public class TestScheduler {
   private Protos.OfferID createTestOfferId(int instanceNumber) {
     return Protos.OfferID.newBuilder().setValue("offer" + instanceNumber).build();
   }
-
 
   private Protos.Offer createTestOffer(int instanceNumber) {
     return Protos.Offer.newBuilder()
