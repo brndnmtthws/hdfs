@@ -1,101 +1,78 @@
 package org.apache.mesos.hdfs.state;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.Sets;
 import com.google.inject.Singleton;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.Protos;
-import org.apache.mesos.hdfs.util.HDFSConstants;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 @Singleton
 public class LiveState {
-  private static final Log log = LogFactory.getLog(LiveState.class);
-  private final Map<Protos.TaskID, String> taskHostMap;
-  private final Set<Protos.TaskID> journalNodes;
-  private final Set<Protos.TaskID> nameNodes;
-  private final Map<Protos.TaskID, String> taskSlaveMap;
-  private final Set<String> journalNodeHosts;
-  private final Set<String> nameNodeHosts;
-  private final Set<Protos.TaskID> stagingTasks;
-
-  public LiveState() {
-    taskHostMap = new HashMap<>();
-    taskSlaveMap = new HashMap<>();
-    journalNodes = new HashSet<>();
-    nameNodes = new HashSet<>();
-    journalNodeHosts = new HashSet<>();
-    nameNodeHosts = new HashSet<>();
-    stagingTasks = new HashSet<>();
-  }
-
-  public Map<Protos.TaskID, String> getTaskHostMap() {
-    return taskHostMap;
-  }
-
-  public Map<Protos.TaskID, String> getTaskSlaveMap() {
-    return taskSlaveMap;
-  }
-
-  public Set<Protos.TaskID> getJournalNodes() {
-    return journalNodes;
-  }
-
-  public Set<Protos.TaskID> getNameNodes() {
-    return nameNodes;
-  }
-
-  public Set<String> getJournalNodeHosts() {
-    return journalNodeHosts;
-  }
-
-  public Set<String> getNameNodeHosts() {
-    return nameNodeHosts;
-  }
-
-  public Set<Protos.TaskID> getStagingTasks() { return stagingTasks; }
-
-  public boolean notInDfsHosts(String slaveId) {
-    return !taskSlaveMap.values().contains(slaveId);
-  }
-
-  public void addTask(Protos.TaskID taskId, String hostname, String slaveId) {
-    taskHostMap.put(taskId, hostname);
-    taskSlaveMap.put(taskId, slaveId);
-    if (taskId.getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
-      nameNodeHosts.add(hostname);
-    } else if (taskId.getValue().contains(HDFSConstants.JOURNAL_NODE_ID)) {
-      journalNodeHosts.add(hostname);
-    }
-  }
-
-  public void updateTask(Protos.TaskStatus taskStatus) {
-    if (taskStatus.getTaskId().getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
-      nameNodes.add(taskStatus.getTaskId());
-    } else if (taskStatus.getTaskId().getValue()
-        .contains(HDFSConstants.JOURNAL_NODE_ID)) {
-      journalNodes.add(taskStatus.getTaskId());
-    }
-  }
-
-  public void removeTask(Protos.TaskStatus taskStatus) {
-    Protos.TaskID taskId = taskStatus.getTaskId();
-    journalNodeHosts.remove(taskHostMap.get(taskId));
-    nameNodeHosts.remove(taskHostMap.get(taskId));
-    taskHostMap.remove(taskId);
-    nameNodes.remove(taskId);
-    journalNodes.remove(taskId);
-    taskSlaveMap.remove(taskId);
-  }
+  private Set<Protos.TaskInfo> stagingTasks = new HashSet<>();
+  private AcquisitionPhase currentAcquisitionPhase = AcquisitionPhase.JOURNAL_NODES;
+  private Map<Protos.TaskID, Protos.TaskStatus> lastKnownStatuses = new TreeMap<>();
 
   public void addStagingTask(Protos.TaskInfo taskInfo) {
-    stagingTasks.add(taskInfo.getTaskId());
+    stagingTasks.add(taskInfo);
   }
 
-  public void removeStagingTask(Protos.TaskID taskId) {
-    stagingTasks.remove(taskId);
+  public int getStagingTasksSize() {
+    return stagingTasks.size();
+  }
+
+  public void removeStagingTask(final Protos.TaskID taskID) {
+    Sets.filter(stagingTasks, new Predicate<Protos.TaskInfo>() {
+      @Override
+      public boolean apply(Protos.TaskInfo taskInfo) {
+        return taskInfo.getTaskId().equals(taskID);
+      }
+    });
+  }
+
+  public void removeTask(Protos.TaskID taskId) {
+    lastKnownStatuses.remove(taskId);
+  }
+
+  // TODO(rubbish): how do we get hostnames from the status, where do we look that up? the initial offer?
+  // should we use a Map<TaskInfo,String> for the stagingTasks?
+  // do we just keep a map of slave id to hostname for all the offers
+  public void updateTaskForStatus(Protos.TaskStatus status) {
+    lastKnownStatuses.put(status.getTaskId(), status);
+  }
+
+  public AcquisitionPhase getCurrentAcquisitionPhase() {
+    return currentAcquisitionPhase;
+  }
+
+  public void transitionTo(AcquisitionPhase phase) {
+    this.currentAcquisitionPhase = phase;
+  }
+
+  public int getJournalNodeSize() {
+    return 0;
+  }
+
+  public int getNameNodeSize() {
+    return 0;
+  }
+
+  public Protos.TaskID getFirstNameNodeTaskId() {
+    return null;
+  }
+
+  public Protos.TaskID getSecondNameNodeTaskId() {
+    return null;
+  }
+
+  public Protos.SlaveID getFirstNameNodeSlaveId() {
+    return null;
+  }
+
+  public Protos.SlaveID getSecondNameNodeSlaveId() {
+    return null;
   }
 }

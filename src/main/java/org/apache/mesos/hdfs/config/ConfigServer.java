@@ -51,11 +51,13 @@ public class ConfigServer {
       String content = new String(Files.readAllBytes(Paths.get(confFile.getPath())));
 
       Set<String> nameNodes = new TreeSet<>();
-      nameNodes.addAll(liveState.getNameNodeHosts());
+      // TODO(rubbish) fix this to use slaveid -> host lookup
+      // nameNodes.addAll(liveState.getNameNodeHosts());
 
       Set<String> journalNodes = new TreeSet<>();
       journalNodes.addAll(nameNodes);
-      journalNodes.addAll(liveState.getJournalNodeHosts());
+      // TODO(rubbish) fix this to use slaveid -> host lookup
+//      journalNodes.addAll(liveState.getJournalNodeHosts());
 
       Map<String, Object> model = new HashMap<>();
       Iterator<String> iter = nameNodes.iterator();

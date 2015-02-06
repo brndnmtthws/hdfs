@@ -123,6 +123,7 @@ public class SchedulerConf extends Configured {
     }
   }
 
+  // TODO(rubbish) this really is the standalone journal node count
   public int getJournalNodeCount() {
     return getConf().getInt("mesos.hdfs.journalnode.count", 1);
   }

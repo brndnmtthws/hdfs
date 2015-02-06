@@ -1,12 +1,10 @@
 package org.apache.mesos.hdfs;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import com.google.protobuf.ByteString;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.mesos.Protos;
 import org.apache.mesos.SchedulerDriver;
 import org.apache.mesos.hdfs.config.SchedulerConf;
+import org.apache.mesos.hdfs.state.AcquisitionPhase;
 import org.apache.mesos.hdfs.state.LiveState;
 import org.apache.mesos.hdfs.state.PersistentState;
 import org.apache.mesos.hdfs.util.HDFSConstants;
@@ -19,10 +17,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.Collection;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyList;
 import static org.mockito.Mockito.*;
 
 public class TestScheduler {
@@ -35,73 +30,169 @@ public class TestScheduler {
   @Mock
   PersistentState persistentState;
 
+  @Mock
+  LiveState liveState;
+
   @Captor
   ArgumentCaptor<Collection<Protos.TaskInfo>> taskInfosCapture;
 
+  Scheduler scheduler;
+
   @Test
-  public void acceptsAllTheResourceOffersItCanUntilItHasEnoughToStart() {
-    Scheduler scheduler = new Scheduler(schedulerConf, new LiveState(), persistentState);
+  public void statusUpdateWasStagingNowRunning() {
+    when(liveState.getCurrentAcquisitionPhase()).thenReturn(AcquisitionPhase.JOURNAL_NODES);
 
-    scheduler.resourceOffers(driver,
-        Lists.newArrayList(
-            createTestOffer(0),
-            createTestOffer(1),
-            createTestOffer(2)
-            ));
+    Protos.TaskID taskId = createTaskId("1");
 
-    verify(driver, times(3)).launchTasks(anyList(), taskInfosCapture.capture());
-    assertEquals(3, taskInfosCapture.getValue().size());
+    scheduler.statusUpdate(driver, createTaskStatus(taskId, Protos.TaskState.TASK_RUNNING));
+
+    verify(liveState).removeStagingTask(taskId);
   }
 
   @Test
-  public void declinesAnyOffersPastWhatItNeeds() {
-    Scheduler scheduler = new Scheduler(schedulerConf, new LiveState(), persistentState);
+  public void statusUpdateTransitionFromAcquiringJournalNodesToNameNode1() {
+    Protos.TaskID taskId = createTaskId("1");
 
-    scheduler.resourceOffers(driver,
-        Lists.newArrayList(
-            createTestOffer(0),
-            createTestOffer(1),
-            createTestOffer(2),
-            createTestOffer(3)
-            ));
+    when(liveState.getCurrentAcquisitionPhase()).thenReturn(AcquisitionPhase.JOURNAL_NODES);
+    when(liveState.getJournalNodeSize()).thenReturn(3);
 
-    verify(driver, times(1)).declineOffer(any(Protos.OfferID.class));
+    scheduler.statusUpdate(driver,
+        createTaskStatus(taskId, Protos.TaskState.TASK_RUNNING));
+
+    verify(liveState).transitionTo(AcquisitionPhase.NAME_NODE_1);
   }
 
   @Test
-  public void acceptsTasksForDataNodesIfClusterInitialized() {
-    LiveState state = mock(LiveState.class);
-    Scheduler scheduler = new Scheduler(schedulerConf, state, persistentState);
+  public void statusUpdateAcquiringJournalNodesNotEnoughYet() {
+    Protos.TaskID taskId = createTaskId("1");
 
-    when(state.getNameNodes()).thenReturn(Sets.newHashSet(createTaskId("1")));
-    when(state.getJournalNodes()).thenReturn(Sets.newHashSet(createTaskId("2")));
-    when(state.notInDfsHosts(anyString())).thenReturn(true);
+    when(liveState.getCurrentAcquisitionPhase()).thenReturn(AcquisitionPhase.JOURNAL_NODES);
+    when(liveState.getJournalNodeSize()).thenReturn(2);
 
-    scheduler.resourceOffers(driver,
-        Lists.newArrayList(
-            createTestOffer(0)
-            )
-        );
+    scheduler.statusUpdate(driver,
+        createTaskStatus(taskId, Protos.TaskState.TASK_RUNNING));
 
-    verify(driver, times(1)).launchTasks(anyList(), taskInfosCapture.capture());
-    Protos.TaskInfo taskInfo = taskInfosCapture.getValue().iterator().next();
-    assertTrue(taskInfo.getName().contains("datanode"));
+    verify(liveState, never()).transitionTo(AcquisitionPhase.NAME_NODE_1);
+  }
+
+  @Test
+  public void statusUpdateTransitionFromAcquiringNameNode1ToNameNode2() {
+    Protos.TaskID taskId = createTaskId(HDFSConstants.NAME_NODE_TASKID + "1");
+    Protos.SlaveID slaveId = createSlaveId("1");
+    Protos.ExecutorID executorId = createExecutorId("executor.namenode.1");
+
+    when(liveState.getCurrentAcquisitionPhase()).thenReturn(AcquisitionPhase.NAME_NODE_1);
+    when(liveState.getNameNodeSize()).thenReturn(1);
+    when(liveState.getFirstNameNodeTaskId()).thenReturn(taskId);
+    when(liveState.getFirstNameNodeSlaveId()).thenReturn(slaveId);
+
+    scheduler.statusUpdate(driver,
+        createTaskStatus(taskId, Protos.TaskState.TASK_RUNNING));
+
+    verify(driver).sendFrameworkMessage(executorId, slaveId,
+        HDFSConstants.NAME_NODE_INIT_MESSAGE.getBytes());
+
+    verify(liveState).transitionTo(AcquisitionPhase.NAME_NODE_2);
   }
 
 
   @Test
-  public void removesBadTasksFromLiveState() {
-    LiveState liveState = mock(LiveState.class);
-    Scheduler scheduler = new Scheduler(schedulerConf, liveState, persistentState);
+  public void statusUpdateTransitionFromAcquiringNameNode2ToDataNode() {
+    Protos.TaskID taskId = createTaskId(HDFSConstants.NAME_NODE_TASKID + "1");
+    Protos.SlaveID slaveId = createSlaveId("1");
+    Protos.ExecutorID executorId = createExecutorId("executor.namenode.1");
 
-    scheduler.statusUpdate(driver, createTaskStatus(createTaskId("0"), Protos.TaskState.TASK_FAILED));
-    scheduler.statusUpdate(driver, createTaskStatus(createTaskId("1"), Protos.TaskState.TASK_FINISHED));
-    scheduler.statusUpdate(driver, createTaskStatus(createTaskId("2"), Protos.TaskState.TASK_KILLED));
-    scheduler.statusUpdate(driver, createTaskStatus(createTaskId("3"), Protos.TaskState.TASK_LOST));
+    when(liveState.getCurrentAcquisitionPhase()).thenReturn(AcquisitionPhase.NAME_NODE_2);
+    when(liveState.getNameNodeSize()).thenReturn(2);
+    when(liveState.getSecondNameNodeTaskId()).thenReturn(taskId);
+    when(liveState.getSecondNameNodeSlaveId()).thenReturn(slaveId);
 
-    verify(liveState, times(4)).removeStagingTask(any(Protos.TaskID.class));
-    verify(liveState, times(4)).removeTask(any(Protos.TaskStatus.class));
+    scheduler.statusUpdate(driver,
+        createTaskStatus(taskId, Protos.TaskState.TASK_RUNNING));
+
+    verify(driver).sendFrameworkMessage(executorId, slaveId,
+        HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE.getBytes());
+
+    verify(liveState).transitionTo(AcquisitionPhase.DATA_NODES);
   }
+
+  @Test
+  public void statusUpdateAquiringDataNodesJustStays() {
+    Protos.TaskID taskId = createTaskId("1");
+
+    when(liveState.getCurrentAcquisitionPhase()).thenReturn(AcquisitionPhase.DATA_NODES);
+
+    scheduler.statusUpdate(driver,
+        createTaskStatus(taskId, Protos.TaskState.TASK_RUNNING));
+
+    verify(liveState, never()).transitionTo(any(AcquisitionPhase.class));
+
+  }
+
+//  @Test
+//  public void acceptsAllTheResourceOffersItCanUntilItHasEnoughToStart() {
+//    Scheduler scheduler = new Scheduler(schedulerConf, new LiveState(), persistentState);
+//
+//    scheduler.resourceOffers(driver,
+//        Lists.newArrayList(
+//            createTestOffer(0),
+//            createTestOffer(1),
+//            createTestOffer(2)
+//        ));
+//
+//    verify(driver, times(3)).launchTasks(anyList(), taskInfosCapture.capture());
+//    assertEquals(3, taskInfosCapture.getValue().size());
+//  }
+//
+//  @Test
+//  public void declinesAnyOffersPastWhatItNeeds() {
+//    Scheduler scheduler = new Scheduler(schedulerConf, new LiveState(), persistentState);
+//
+//    scheduler.resourceOffers(driver,
+//        Lists.newArrayList(
+//            createTestOffer(0),
+//            createTestOffer(1),
+//            createTestOffer(2),
+//            createTestOffer(3)
+//        ));
+//
+//    verify(driver, times(1)).declineOffer(any(Protos.OfferID.class));
+//  }
+//
+//  @Test
+//  public void acceptsTasksForDataNodesIfClusterInitialized() {
+//    LiveState state = mock(LiveState.class);
+//    Scheduler scheduler = new Scheduler(schedulerConf, state, persistentState);
+//
+//    when(state.getNameNodes()).thenReturn(Sets.newHashSet(createTaskId("1")));
+//    when(state.getJournalNodes()).thenReturn(Sets.newHashSet(createTaskId("2")));
+//    when(state.notInDfsHosts(anyString())).thenReturn(true);
+//
+//    scheduler.resourceOffers(driver,
+//        Lists.newArrayList(
+//            createTestOffer(0)
+//        )
+//    );
+//
+//    verify(driver, times(1)).launchTasks(anyList(), taskInfosCapture.capture());
+//    Protos.TaskInfo taskInfo = taskInfosCapture.getValue().iterator().next();
+//    assertTrue(taskInfo.getName().contains("datanode"));
+//  }
+//
+//
+//  @Test
+//  public void removesBadTasksFromLiveState() {
+//    LiveState liveState = mock(LiveState.class);
+//    Scheduler scheduler = new Scheduler(schedulerConf, liveState, persistentState);
+//
+//    scheduler.statusUpdate(driver, createTaskStatus(createTaskId("0"), Protos.TaskState.TASK_FAILED));
+//    scheduler.statusUpdate(driver, createTaskStatus(createTaskId("1"), Protos.TaskState.TASK_FINISHED));
+//    scheduler.statusUpdate(driver, createTaskStatus(createTaskId("2"), Protos.TaskState.TASK_KILLED));
+//    scheduler.statusUpdate(driver, createTaskStatus(createTaskId("3"), Protos.TaskState.TASK_LOST));
+//
+//    verify(liveState, times(4)).removeStagingTask(any(Protos.TaskID.class));
+//    verify(liveState, times(4)).removeTask(any(Protos.TaskStatus.class));
+//  }
 
 //  @Test
 //  public void updateStateWhenRunningTaskIsReceived() {
@@ -117,8 +208,9 @@ public class TestScheduler {
 //  }
 
   @Before
-  public void initializeMocks() {
+  public void setup() {
     MockitoAnnotations.initMocks(this);
+    this.scheduler = new Scheduler(schedulerConf, liveState, persistentState);
   }
 
   private Protos.TaskID createTaskId(String id) { return Protos.TaskID.newBuilder().setValue(id).build(); }
@@ -126,6 +218,15 @@ public class TestScheduler {
   private Protos.OfferID createTestOfferId(int instanceNumber) {
     return Protos.OfferID.newBuilder().setValue("offer" + instanceNumber).build();
   }
+
+  private Protos.SlaveID createSlaveId(String slaveId) {
+    return Protos.SlaveID.newBuilder().setValue(slaveId).build();
+  }
+
+  private Protos.ExecutorID createExecutorId(String executorId) {
+    return Protos.ExecutorID.newBuilder().setValue(executorId).build();
+  }
+
   private Protos.Offer createTestOffer(int instanceNumber) {
     return Protos.Offer.newBuilder()
         .setId(createTestOfferId(instanceNumber))
