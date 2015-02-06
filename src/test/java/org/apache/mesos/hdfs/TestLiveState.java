@@ -1,8 +1,49 @@
 package org.apache.mesos.hdfs;
 
+import org.apache.mesos.Protos;
+import org.apache.mesos.hdfs.state.LiveState;
+import org.junit.Before;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+
 public class TestLiveState {
 
-//  @Test
+  private LiveState liveState;
+
+  @Test
+  public void getsJournalNodeSize() {
+    liveState.updateTaskForStatus(createTaskStatus("journalnode.2"));
+    liveState.updateTaskForStatus(createTaskStatus("journalnode.1"));
+    liveState.updateTaskForStatus(createTaskStatus("datanode1"));
+
+    assertEquals(2, liveState.getJournalNodeSize());
+  }
+
+  @Test
+  public void getsNameNodeSize() {
+    liveState.updateTaskForStatus(createTaskStatus("journalnode.1"));
+    liveState.updateTaskForStatus(createTaskStatus("namenode.2"));
+    liveState.updateTaskForStatus(createTaskStatus("namenode.1"));
+    liveState.updateTaskForStatus(createTaskStatus("datanode1"));
+
+    assertEquals(2, liveState.getNameNodeSize());
+  }
+
+  @Before
+  public void setup() {
+    liveState = new LiveState();
+  }
+
+  private Protos.TaskStatus createTaskStatus(String taskId) {
+    return Protos.TaskStatus.newBuilder()
+        .setSlaveId(Protos.SlaveID.newBuilder().setValue("slave1"))
+        .setTaskId(Protos.TaskID.newBuilder().setValue(taskId))
+        .setState(Protos.TaskState.TASK_RUNNING)
+        .build();
+  }
+
+  //  @Test
 //  public void testNameNodeTask() {
 //    LiveState clusterState = new LiveState();
 //
