@@ -108,19 +108,27 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           }
           break;
         case NAME_NODE_1:
-          if (liveState.getNameNodeSize() == 1) {
-            sendMessageTo(driver,
+          if (liveState.getNameNodeSize() == 1 && liveState.getFirstNameNodeTaskId() != null) {
+            sendMessageTo(
+                driver,
                 liveState.getFirstNameNodeTaskId(), liveState.getFirstNameNodeSlaveId(),
-                HDFSConstants.NAME_NODE_INIT_MESSAGE);
+                HDFSConstants.NAME_NODE_INIT_MESSAGE
+            );
             liveState.transitionTo(AcquisitionPhase.NAME_NODE_2);
+          } else {
+            log.info("Cannot locate first namenode task id");
           }
           break;
         case NAME_NODE_2:
-          if (liveState.getNameNodeSize() == HDFSConstants.TOTAL_NAME_NODES) {
-            sendMessageTo(driver,
+          if (liveState.getNameNodeSize() == HDFSConstants.TOTAL_NAME_NODES && liveState.getSecondNameNodeTaskId() != null) {
+            sendMessageTo(
+                driver,
                 liveState.getSecondNameNodeTaskId(), liveState.getSecondNameNodeSlaveId(),
-                HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE);
+                HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE
+            );
             liveState.transitionTo(AcquisitionPhase.DATA_NODES);
+          } else {
+            log.info("Cannot locate second namenode task id");
           }
           break;
         case DATA_NODES:

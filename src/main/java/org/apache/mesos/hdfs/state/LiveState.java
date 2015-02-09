@@ -6,16 +6,13 @@ import com.google.inject.Singleton;
 import org.apache.mesos.Protos;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Singleton
 public class LiveState {
   private Set<Protos.TaskInfo> stagingTasks = new HashSet<>();
   private AcquisitionPhase currentAcquisitionPhase = AcquisitionPhase.JOURNAL_NODES;
-  private Map<Protos.TaskID, Protos.TaskStatus> runningTasks = new HashMap<>();
+  private LinkedHashMap<Protos.TaskID, Protos.TaskStatus> runningTasks = new LinkedHashMap<>();
 
   public void addStagingTask(Protos.TaskInfo taskInfo) {
     stagingTasks.add(taskInfo);
@@ -62,19 +59,56 @@ public class LiveState {
   }
 
   public Protos.TaskID getFirstNameNodeTaskId() {
-    return null;
+    if (getNameNodeSize() >= 1) {
+      return getNamenodeTaskIds().get(0);
+    } else {
+      return null;
+    }
   }
 
   public Protos.TaskID getSecondNameNodeTaskId() {
-    return null;
+    if (getNameNodeSize() == 2) {
+      return getNamenodeTaskIds().get(1);
+    } else {
+      return null;
+    }
   }
 
+
   public Protos.SlaveID getFirstNameNodeSlaveId() {
-    return null;
+    if (getNameNodeSize() >= 1) {
+      return getNamenodeSlaveIds().get(0);
+    } else {
+      return null;
+    }
   }
 
   public Protos.SlaveID getSecondNameNodeSlaveId() {
-    return null;
+    if (getNameNodeSize() == 2) {
+      return getNamenodeSlaveIds().get(1);
+    } else {
+      return null;
+    }
+  }
+
+  private ArrayList<Protos.TaskID> getNamenodeTaskIds() {
+    ArrayList<Protos.TaskID> namenodes = new ArrayList();
+    for (Protos.TaskStatus taskStatus : runningTasks.values()) {
+      if (taskStatus.getTaskId().getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
+        namenodes.add(taskStatus.getTaskId());
+      }
+    }
+    return namenodes;
+  }
+
+  private ArrayList<Protos.SlaveID> getNamenodeSlaveIds() {
+    ArrayList<Protos.SlaveID> namenodes = new ArrayList();
+    for (Protos.TaskStatus taskStatus : runningTasks.values()) {
+      if (taskStatus.getTaskId().getValue().contains(HDFSConstants.NAME_NODE_ID)) {
+        namenodes.add(taskStatus.getSlaveId());
+      }
+    }
+    return namenodes;
   }
 
   private int countOfRunningTasksWith(final String nodeId) {
