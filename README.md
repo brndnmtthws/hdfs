@@ -42,7 +42,7 @@ Resource Reservation Instructions (Optional)
 <br>`sudo service mesos-slave stop`</br>.
 6. On each slave with the new settings, remove the old slave state by running
 <br>`rm -f /tmp/mesos/meta/slaves/latest`</br>. 
-<br>Note: this will also remove task state, so you will want to manually kill any running tasks as a precaution.</br>.
+<br>Note: this will also remove task state, so you will want to manually kill any running tasks as a precaution.</br>
 7. On each slave with the new settings, start the mesos slave by running
 <br>`sudo service mesos-slave start`</br>.
 
