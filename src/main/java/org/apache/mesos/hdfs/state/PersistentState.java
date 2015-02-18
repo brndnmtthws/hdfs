@@ -1,23 +1,28 @@
 package org.apache.mesos.hdfs.state;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.MesosNativeLibrary;
+import org.apache.mesos.Protos;
 import org.apache.mesos.Protos.FrameworkID;
 import org.apache.mesos.hdfs.config.SchedulerConf;
+import org.apache.mesos.hdfs.util.HDFSConstants;
 import org.apache.mesos.state.Variable;
 import org.apache.mesos.state.ZooKeeperState;
 
 import java.io.*;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 public class PersistentState {
   private static String FRAMEWORK_ID_KEY = "frameworkId";
-  private static String NODES_KEY = "nodes";
-  private static String NAMENODE_KEY = "namenode";
+  private static String NAMENODES_KEY = "namenodes";
+  private static String JOURNALNODES_KEY = "journalnodes";
+  private static String DATANODES_KEY = "datanodes";
   private ZooKeeperState zkState;
+  public static final Log log = LogFactory.getLog(PersistentState.class);
 
   public PersistentState(SchedulerConf conf) {
     MesosNativeLibrary.load(conf.getNativeLibrary());
@@ -42,27 +47,93 @@ public class PersistentState {
     zkState.store(value).get();
   }
 
-  public Node getNamenode() throws ClassNotFoundException, InterruptedException,
-      ExecutionException, IOException {
-    return get(NAMENODE_KEY);
+  // TODO (nicgrayson) add tests with in memory zookeeper
+  public HashMap<String, String> getNamenodes() {
+    return getHashMap(NAMENODES_KEY);
   }
 
-  public void setNamenode(Node node) throws InterruptedException, ExecutionException, IOException {
-    set(NAMENODE_KEY, node);
+  private void setNamenodes(HashMap<String, String> namenodes) {
+    try {
+      set(NAMENODES_KEY, namenodes);
+    } catch (Exception e) {
+      log.error("Error while setting namenodes in persistent state", e);
+    }
   }
 
-  public Set<Node> getNodes() throws InterruptedException, ExecutionException, IOException,
-      ClassNotFoundException {
-    Set<Node> nodes = get(NODES_KEY);
-    if (nodes == null)
-      nodes = new HashSet<Node>();
-    return nodes;
+  public void addNode(Protos.TaskID taskId, String hostname, String taskName) {
+    switch (taskName) {
+      case HDFSConstants.NAME_NODE_ID :
+        getNamenodes().put(taskId.getValue(), hostname);
+        break;
+      case HDFSConstants.JOURNAL_NODE_ID :
+        getJournalnodes().put(taskId.getValue(), hostname);
+        break;
+      case HDFSConstants.DATA_NODE_ID :
+        getDatanodes().put(taskId.getValue(), hostname);
+        break;
+      default :
+        log.error("Task name unknown");
+    }
   }
 
-  public void setNodes(Set<Node> nodes) throws InterruptedException, ExecutionException,
-      IOException {
-    set(NODES_KEY, nodes);
+  public HashMap<String, String> getJournalnodes() {
+    return getHashMap(JOURNALNODES_KEY);
   }
+
+  private void setJournalnodes(HashMap<String, String> journalnodes) {
+    try {
+      set(JOURNALNODES_KEY, journalnodes);
+    } catch (Exception e) {
+      log.error("Error while setting journalnodes in persistent state", e);
+    }
+  }
+
+  public HashMap<String, String> getDatanodes() {
+    return getHashMap(DATANODES_KEY);
+  }
+
+  private void setDatanodes(HashMap<String, String> datanodes) {
+    try {
+      set(DATANODES_KEY, datanodes);
+    } catch (Exception e) {
+      log.error("Error while setting datanodes in persistent state", e);
+    }
+  }
+
+  private HashMap<String, String> getHashMap(String key) {
+    try {
+      HashMap<String, String> nodesMap = get(key);
+      if (nodesMap == null) {
+        return new HashMap<>();
+      }
+      return nodesMap;
+    } catch (Exception e) {
+      log.error(String.format("Error while getting %s in persistent state", key), e);
+      return new HashMap<>();
+    }
+  }
+  // public Node getNamenode() throws ClassNotFoundException, InterruptedException,
+  // ExecutionException, IOException {
+  // return get(NAMENODE_KEY);
+  // }
+  //
+  // public void setNamenode(Node node) throws InterruptedException, ExecutionException, IOException
+  // {
+  // set(NAMENODE_KEY, node);
+  // }
+  //
+  // public Set<Node> getNodes() throws InterruptedException, ExecutionException, IOException,
+  // ClassNotFoundException {
+  // Set<Node> nodes = get(NODES_KEY);
+  // if (nodes == null)
+  // nodes = new HashSet<Node>();
+  // return nodes;
+  // }
+  //
+  // public void setNodes(Set<Node> nodes) throws InterruptedException, ExecutionException,
+  // IOException {
+  // set(NODES_KEY, nodes);
+  // }
 
   /**
    * Get serializable object from store.
@@ -125,12 +196,12 @@ public class PersistentState {
     }
   }
 
-  public static class Node implements Serializable {
-    private static final long serialVersionUID = 1L;
-
-    public String hostname;
-    public String taskId;
-    public String slaveId;
-  }
+  // public static class Node implements Serializable {
+  // private static final long serialVersionUID = 1L;
+  //
+  // public String hostname;
+  // public String taskId;
+  // public String slaveId;
+  // }
 
 }

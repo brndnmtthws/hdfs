@@ -154,7 +154,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       }
 
       switch (liveState.getCurrentAcquisitionPhase()) {
-        case JOURNAL_NODES :
+        case JOURNAL_NODES:
           if (liveState.getJournalNodeSize() < conf.getJournalNodeCount()) {
             launchJournalNode(driver);
           }
@@ -165,7 +165,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         case NAME_NODE_2:
           launchNameNode(driver);
           break;
-        case DATA_NODES :
+        case DATA_NODES:
           for (Offer offer : offers) {
             launchDataNode(driver, offer);
           }
@@ -232,6 +232,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       tasks.add(task);
 
       liveState.addStagingTask(task);
+      persistentState.addNode(taskId, offer.getHostname(), taskName);
     }
     driver.launchTasks(Arrays.asList(offer.getId()), tasks);
   }

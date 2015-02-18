@@ -122,7 +122,7 @@ public class SchedulerConf extends Configured {
         throw new RuntimeException("Invalid taskName=" + taskName);
     }
   }
-  
+
   public int getJournalNodeCount() {
     return getConf().getInt("mesos.hdfs.journalnode.count", 1);
   }
