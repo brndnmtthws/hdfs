@@ -23,12 +23,13 @@ public class LiveState {
   }
 
   public void removeStagingTask(final Protos.TaskID taskID) {
-    Sets.filter(stagingTasks, new Predicate<Protos.TaskInfo>() {
-      @Override
-      public boolean apply(Protos.TaskInfo taskInfo) {
-        return taskInfo.getTaskId().equals(taskID);
+    Set<Protos.TaskInfo> toRemove = new HashSet<>();
+    for (Protos.TaskInfo taskInfo : stagingTasks ) {
+      if (taskInfo.getTaskId().equals(taskID)) {
+        toRemove.add(taskInfo);
       }
-    });
+    }
+    stagingTasks.removeAll(toRemove);
   }
 
   public void removeTask(Protos.TaskID taskId) {
