@@ -56,7 +56,7 @@ public class LiveState {
   }
 
   public int getNameNodeSize() {
-    return countOfRunningTasksWith(HDFSConstants.NAME_NODE_ID);
+    return countOfRunningTasksWith(HDFSConstants.NAME_NODE_TASKID);
   }
 
   public Protos.TaskID getFirstNameNodeTaskId() {
