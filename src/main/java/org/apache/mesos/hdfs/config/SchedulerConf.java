@@ -26,6 +26,10 @@ public class SchedulerConf extends Configured {
     setConf(configuration);
   }
 
+  public String getExecutorPath() {
+    return getConf().get("mesos.hdfs.executor.config.path", "..");
+  }
+
   public String getConfigPath() {
     return getConf().get("mesos.hdfs.config.path", "etc/hadoop/hdfs-site.xml");
   }
@@ -125,12 +129,6 @@ public class SchedulerConf extends Configured {
 
   public int getJournalNodeCount() {
     return getConf().getInt("mesos.hdfs.journalnode.count", 1);
-  }
-
-  // TODO(elingg) This will be removed once https://github.com/mesosphere/hdfs/pull/44 is merged
-  public String getExecUri() {
-    return getConf().get("mesos.hdfs.executor.uri",
-        "https://s3-us-west-1.amazonaws.com/mesosphere-executors-public/hdfs-mesos-0.0.2.tgz");
   }
 
   public String getClusterName() {
