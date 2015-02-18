@@ -3,6 +3,7 @@ package org.apache.mesos.hdfs.config;
 import com.floreysoft.jmte.Engine;
 import com.google.inject.Inject;
 import org.apache.mesos.hdfs.state.LiveState;
+import org.apache.mesos.hdfs.util.HDFSConstants;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;

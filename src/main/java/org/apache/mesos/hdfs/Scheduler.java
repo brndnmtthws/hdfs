@@ -128,8 +128,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
                     HDFSConstants.HDFS_BINARY_FILE_NAME))
                 .build(),
             CommandInfo.URI.newBuilder().setValue(
-                String.format("http://%s:%d/%s", conf.getFrameworkHostAddress(), confServerPort),
-                    HDFSConstants.HDFS_CONFIG_FILE_NAME)
+                String.format("http://%s:%d/%s", conf.getFrameworkHostAddress(), confServerPort,
+                    HDFSConstants.HDFS_CONFIG_FILE_NAME))
                 .build()))
             .setEnvironment(Environment.newBuilder()
                 .addAllVariables(Arrays.asList(
