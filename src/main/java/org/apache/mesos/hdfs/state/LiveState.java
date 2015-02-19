@@ -32,6 +32,10 @@ public class LiveState {
     stagingTasks.removeAll(toRemove);
   }
 
+  public LinkedHashMap<Protos.TaskID, Protos.TaskStatus> getRunningTasks() {
+    return runningTasks;
+  }
+
   public void removeTask(Protos.TaskID taskId) {
     runningTasks.remove(taskId);
   }
@@ -74,7 +78,6 @@ public class LiveState {
       return null;
     }
   }
-
 
   public Protos.SlaveID getFirstNameNodeSlaveId() {
     if (getNameNodeSize() >= 1) {

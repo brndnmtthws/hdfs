@@ -92,7 +92,8 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
 
   @Override
   public void frameworkMessage(ExecutorDriver driver, byte[] msg) {
-    log.info("Executor received framework message of length: " + msg.length + " bytes");
+    reloadConfig();
+    // super.frameworkMessage(driver, msg);
     String messageStr = new String(msg);
     if (messageStr.equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)
         || messageStr.equals(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE)) {

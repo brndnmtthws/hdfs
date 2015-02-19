@@ -6,6 +6,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.MesosSchedulerDriver;
+import org.apache.mesos.Protos;
 import org.apache.mesos.Protos.*;
 import org.apache.mesos.SchedulerDriver;
 import org.apache.mesos.hdfs.config.SchedulerConf;
@@ -109,10 +110,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           break;
         case NAME_NODE_1 :
           if (liveState.getNameNodeSize() == 1 && liveState.getFirstNameNodeTaskId() != null) {
-            sendMessageTo(
-                driver,
-                liveState.getFirstNameNodeTaskId(), liveState.getFirstNameNodeSlaveId(),
-                HDFSConstants.NAME_NODE_INIT_MESSAGE);
+
             liveState.transitionTo(AcquisitionPhase.NAME_NODE_2);
           } else {
             log.info("Cannot locate first namenode task id");
@@ -121,6 +119,11 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         case NAME_NODE_2 :
           if (liveState.getNameNodeSize() == HDFSConstants.TOTAL_NAME_NODES
               && liveState.getSecondNameNodeTaskId() != null) {
+            reloadConfigsOnAllRunningTasks(driver);
+            sendMessageTo(
+                driver,
+                liveState.getFirstNameNodeTaskId(), liveState.getFirstNameNodeSlaveId(),
+                HDFSConstants.NAME_NODE_INIT_MESSAGE);
             sendMessageTo(
                 driver,
                 liveState.getSecondNameNodeTaskId(), liveState.getSecondNameNodeSlaveId(),
@@ -378,5 +381,11 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     Offer offer = pendingOffers.values().iterator().next();
     pendingOffers.remove(offer.getId());
     return offer;
+  }
+
+  private void reloadConfigsOnAllRunningTasks(SchedulerDriver driver) {
+    for (Protos.TaskStatus taskStatus : liveState.getRunningTasks().values()) {
+      sendMessageTo(driver, taskStatus.getTaskId(), taskStatus.getSlaveId(), HDFSConstants.RELOAD_CONFIG);
+    }
   }
 }
