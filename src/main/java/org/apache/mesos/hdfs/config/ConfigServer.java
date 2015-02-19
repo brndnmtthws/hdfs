@@ -2,8 +2,6 @@ package org.apache.mesos.hdfs.config;
 
 import com.floreysoft.jmte.Engine;
 import com.google.inject.Inject;
-import org.apache.mesos.hdfs.Scheduler;
-import org.apache.mesos.hdfs.state.LiveState;
 import org.apache.mesos.hdfs.state.PersistentState;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -59,14 +57,13 @@ public class ConfigServer {
 
       Set<String> nameNodes = new TreeSet<>();
       // TODO(rubbish) fix this to use slaveid -> host lookup
-      // nameNodes.addAll(liveState.getNameNodeHosts());
-      nameNodes.addAll(persistentState.getNamenodes().keySet());
+      // nameNodes.addAll(liveState.getNameNodeHosts());k
+      nameNodes.addAll(persistentState.getNameNodes().keySet());
 
       Set<String> journalNodes = new TreeSet<>();
-      journalNodes.addAll(nameNodes);
       // TODO(rubbish) fix this to use slaveid -> host lookup
 //      journalNodes.addAll(liveState.getJournalNodeHosts());
-      journalNodes.addAll(persistentState.getJournalnodes().keySet());
+      journalNodes.addAll(persistentState.getJournalNodes().keySet());
 
       Map<String, Object> model = new HashMap<>();
       Iterator<String> iter = nameNodes.iterator();
