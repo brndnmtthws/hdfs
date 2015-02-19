@@ -18,9 +18,9 @@ import java.util.concurrent.TimeUnit;
 
 public class PersistentState {
   private static String FRAMEWORK_ID_KEY = "frameworkId";
-  private static String NAMENODES_KEY = "namenodes";
-  private static String JOURNALNODES_KEY = "journalnodes";
-  private static String DATANODES_KEY = "datanodes";
+  private static String NAMENODES_KEY = "nameNodes";
+  private static String JOURNALNODES_KEY = "journalNodes";
+  private static String DATANODES_KEY = "dataNodes";
   private ZooKeeperState zkState;
   public static final Log log = LogFactory.getLog(PersistentState.class);
 
@@ -48,13 +48,13 @@ public class PersistentState {
   }
 
   // TODO (nicgrayson) add tests with in memory zookeeper
-  public HashMap<String, String> getNamenodes() {
+  public HashMap<String, String> getNameNodes() {
     return getHashMap(NAMENODES_KEY);
   }
 
-  private void setNamenodes(HashMap<String, String> namenodes) {
+  private void setNameNodes(HashMap<String, String> nameNodes) {
     try {
-      set(NAMENODES_KEY, namenodes);
+      set(NAMENODES_KEY, nameNodes);
     } catch (Exception e) {
       log.error("Error while setting namenodes in persistent state", e);
     }
@@ -63,38 +63,46 @@ public class PersistentState {
   public void addNode(Protos.TaskID taskId, String hostname, String taskName) {
     switch (taskName) {
       case HDFSConstants.NAME_NODE_ID :
-        getNamenodes().put(taskId.getValue(), hostname);
+        HashMap<String, String> nameNodes = getNameNodes();
+        nameNodes.put(hostname, taskId.getValue());
+        System.out.println("Saving the name node " + hostname + " " + taskId.getValue());
+        setNameNodes(nameNodes);
         break;
       case HDFSConstants.JOURNAL_NODE_ID :
-        getJournalnodes().put(taskId.getValue(), hostname);
+        HashMap<String, String> journalNodes = getJournalNodes();
+        journalNodes.put(hostname, taskId.getValue());
+        setJournalNodes(journalNodes);
         break;
       case HDFSConstants.DATA_NODE_ID :
-        getDatanodes().put(taskId.getValue(), hostname);
+        HashMap<String, String> dataNodes = getDataNodes();
+        dataNodes.put(hostname, taskId.getValue());
+        setDataNodes(dataNodes);
+        break;
+      case HDFSConstants.ZKFC_NODE_ID :
         break;
       default :
         log.error("Task name unknown");
     }
   }
-
-  public HashMap<String, String> getJournalnodes() {
+  public HashMap<String, String> getJournalNodes() {
     return getHashMap(JOURNALNODES_KEY);
   }
 
-  private void setJournalnodes(HashMap<String, String> journalnodes) {
+  private void setJournalNodes(HashMap<String, String> journalNodes) {
     try {
-      set(JOURNALNODES_KEY, journalnodes);
+      set(JOURNALNODES_KEY, journalNodes);
     } catch (Exception e) {
       log.error("Error while setting journalnodes in persistent state", e);
     }
   }
 
-  public HashMap<String, String> getDatanodes() {
+  public HashMap<String, String> getDataNodes() {
     return getHashMap(DATANODES_KEY);
   }
 
-  private void setDatanodes(HashMap<String, String> datanodes) {
+  private void setDataNodes(HashMap<String, String> dataNodes) {
     try {
-      set(DATANODES_KEY, datanodes);
+      set(DATANODES_KEY, dataNodes);
     } catch (Exception e) {
       log.error("Error while setting datanodes in persistent state", e);
     }
@@ -112,29 +120,6 @@ public class PersistentState {
       return new HashMap<>();
     }
   }
-  // public Node getNamenode() throws ClassNotFoundException, InterruptedException,
-  // ExecutionException, IOException {
-  // return get(NAMENODE_KEY);
-  // }
-  //
-  // public void setNamenode(Node node) throws InterruptedException, ExecutionException, IOException
-  // {
-  // set(NAMENODE_KEY, node);
-  // }
-  //
-  // public Set<Node> getNodes() throws InterruptedException, ExecutionException, IOException,
-  // ClassNotFoundException {
-  // Set<Node> nodes = get(NODES_KEY);
-  // if (nodes == null)
-  // nodes = new HashSet<Node>();
-  // return nodes;
-  // }
-  //
-  // public void setNodes(Set<Node> nodes) throws InterruptedException, ExecutionException,
-  // IOException {
-  // set(NODES_KEY, nodes);
-  // }
-
   /**
    * Get serializable object from store.
    * 
@@ -195,13 +180,4 @@ public class PersistentState {
       }
     }
   }
-
-  // public static class Node implements Serializable {
-  // private static final long serialVersionUID = 1L;
-  //
-  // public String hostname;
-  // public String taskId;
-  // public String slaveId;
-  // }
-
 }
