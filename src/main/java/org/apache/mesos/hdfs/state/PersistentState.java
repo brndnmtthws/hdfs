@@ -48,16 +48,16 @@ public class PersistentState {
   }
 
   // TODO (nicgrayson) add tests with in memory zookeeper
+  public HashMap<String, String> getJournalNodes() {
+    return getHashMap(JOURNALNODES_KEY);
+  }
+
   public HashMap<String, String> getNameNodes() {
     return getHashMap(NAMENODES_KEY);
   }
 
-  private void setNameNodes(HashMap<String, String> nameNodes) {
-    try {
-      set(NAMENODES_KEY, nameNodes);
-    } catch (Exception e) {
-      log.error("Error while setting namenodes in persistent state", e);
-    }
+  public HashMap<String, String> getDataNodes() {
+    return getHashMap(DATANODES_KEY);
   }
 
   public void addNode(Protos.TaskID taskId, String hostname, String taskName) {
@@ -84,8 +84,25 @@ public class PersistentState {
         log.error("Task name unknown");
     }
   }
-  public HashMap<String, String> getJournalNodes() {
-    return getHashMap(JOURNALNODES_KEY);
+
+  public boolean JournalNodeRunningOnSlave(String hostname) {
+    return getJournalNodes().keySet().contains(hostname);
+  }
+
+  public boolean NameNodeRunningOnSlave(String hostname) {
+    return getNameNodes().keySet().contains(hostname);
+  }
+
+  public boolean DataNodeRunningOnSlave(String hostname) {
+    return getNameNodes().keySet().contains(hostname);
+  }
+
+  private void setNameNodes(HashMap<String, String> nameNodes) {
+    try {
+      set(NAMENODES_KEY, nameNodes);
+    } catch (Exception e) {
+      log.error("Error while setting namenodes in persistent state", e);
+    }
   }
 
   private void setJournalNodes(HashMap<String, String> journalNodes) {
@@ -94,10 +111,6 @@ public class PersistentState {
     } catch (Exception e) {
       log.error("Error while setting journalnodes in persistent state", e);
     }
-  }
-
-  public HashMap<String, String> getDataNodes() {
-    return getHashMap(DATANODES_KEY);
   }
 
   private void setDataNodes(HashMap<String, String> dataNodes) {
@@ -120,6 +133,7 @@ public class PersistentState {
       return new HashMap<>();
     }
   }
+
   /**
    * Get serializable object from store.
    * 
