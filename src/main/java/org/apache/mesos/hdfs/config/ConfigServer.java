@@ -3,9 +3,13 @@ package org.apache.mesos.hdfs.config;
 import com.floreysoft.jmte.Engine;
 import com.google.inject.Inject;
 import org.apache.mesos.hdfs.state.LiveState;
+import org.apache.mesos.hdfs.util.HDFSConstants;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.server.handler.ResourceHandler;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -29,7 +33,12 @@ public class ConfigServer {
     this.liveState = liveState;
     engine = new Engine();
     server = new Server(schedulerConf.getConfigServerPort());
-    server.setHandler(new ServeHdfsConfigHandler());
+    ResourceHandler resourceHandler = new ResourceHandler();
+    resourceHandler.setResourceBase(schedulerConf.getExecutorPath());
+    HandlerList handlers = new HandlerList();
+    handlers.setHandlers(new Handler[]{
+        resourceHandler, new ServeHdfsConfigHandler()});
+    server.setHandler(handlers);
     server.start();
   }
 
@@ -84,8 +93,8 @@ public class ConfigServer {
       content = engine.transform(content, model);
 
       response.setContentType("application/octet-stream;charset=utf-8");
-      response
-          .setHeader("Content-Disposition", "attachment; filename=\"" + "hdfs-site.xml" + "\" ");
+      response.setHeader("Content-Disposition", "attachment; filename=\"" +
+          HDFSConstants.HDFS_CONFIG_FILE_NAME + "\" ");
       response.setHeader("Content-Transfer-Encoding", "binary");
       response.setHeader("Content-Length", Integer.toString(content.length()));
 
