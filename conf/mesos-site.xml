@@ -19,27 +19,37 @@
 <configuration>
   <property>
     <name>mesos.hdfs.data.dir</name>
-    <value>/var/lib/data</value>
+    <value>/tmp/hdfs/data</value>
+  </property>
+  
+  <property>
+    <name>mesos.hdfs.secondary.data.dir</name>
+    <value>/var/run/hadoop-hdfs</value>
+  </property>
+  
+  <property>
+    <name>mesos.hdfs.framework.mnt.path</name>
+    <value>/opt/mesosphere</value>
   </property>
 
   <property>
     <name>mesos.hdfs.state.zk</name>
-    <value>localhost:2181</value>
-  </property>
-
-  <property>
-    <name>mesos.master.uri</name>
-    <value>zk://localhost:2181/mesos</value>
-  </property>
-
-  <property>
-    <name>mesos.hdfs.zkfc.ha.zookeeper.quorum</name>
-    <value>localhost:2181</value>
+    <value>int.srv3.hw.ca1.mesosphere.com:2181</value>
   </property>
 
   <property>
     <name>mesos.hdfs.executor.uri</name>
-    <value>http://path/to/executor</value>
+    <value>https://dl.dropboxusercontent.com/s/v4937cr9d7h0l7f/hdfs-mesos-0.0.2.tgz</value>
+  </property>
+
+  <property>
+    <name>mesos.master.uri</name>
+    <value>zk://int.srv3.hw.ca1.mesosphere.com:2181/mesos</value>
+  </property>
+
+  <property>
+    <name>mesos.hdfs.zkfc.ha.zookeeper.quorum</name>
+    <value>int.srv3.hw.ca1.mesosphere.com:2181</value>
   </property>
 
   <property>
@@ -49,66 +59,63 @@
 
   <property>
     <name>mesos.native.library</name>
-    <value>/usr/lib/libmesos.so</value>
+    <value>/usr/local/lib/libmesos.so</value>
   </property>
 
   <property>
     <name>mesos.hdfs.hadoop.heap.size</name>
-    <value>256</value>
+    <value>128</value>
   </property>
 
   <property>
     <name>mesos.hdfs.namenode.heap.size</name>
-    <value>1024</value>
+    <value>128</value>
   </property>
 
   <property>
     <name>mesos.hdfs.datanode.heap.size</name>
-    <value>1024</value>
+    <value>128</value>
   </property>
 
   <property>
     <name>mesos.hdfs.executor.heap.size</name>
-    <value>256</value>
+    <value>128</value>
   </property>
 
   <property>
     <name>mesos.hdfs.executor.cpus</name>
-    <value>0.5</value>
+    <value>0.1</value>
   </property>
 
   <property>
     <name>mesos.hdfs.namenode.cpus</name>
-    <value>1</value>
+    <value>0.1</value>
   </property>
 
   <property>
     <name>mesos.hdfs.journalnode.cpus</name>
-    <value>1</value>
+    <value>0.1</value>
   </property>
 
   <property>
     <name>mesos.hdfs.datanode.cpus</name>
-    <value>1</value>
-  </property>
-
-  <property>
-    <name>mesos.hdfs.reconciliation.startup.delay</name>
-    <value>120</value>
+    <value>0.1</value>
   </property>
 
   <property>
     <name>mesos.hdfs.user</name>
-    <value>hdfs</value>
+    <value>root</value>
   </property>
 
   <property>
     <name>mesos.hdfs.role</name>
-    <value>hdfs</value>
+    <value>*</value>
   </property>
 
+  <!-- The number of journal nodes in addition to the two journal nodes that are part
+   of the two NN machines. This needs to be an odd number to create a quorum. -->
   <property>
     <name>mesos.hdfs.journalnode.count</name>
-    <value>3</value>
+    <value>1</value>
   </property>
 </configuration>

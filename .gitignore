@@ -1,3 +1,6 @@
 target/
 *.iml
 .idea/
+hadoop-*
+hdfs-mesos-*
+native/

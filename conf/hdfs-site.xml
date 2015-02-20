@@ -104,7 +104,12 @@
 
   <property>
     <name>dfs.datanode.dns.interface</name>
-    <value>eth0</value>
+    <value>br1</value>
+  </property>
+
+  <property>
+    <name>dfs.datanode.dns.nameserver</name>
+    <value>172.16.0.12</value>
   </property>
 
   <property>
@@ -167,6 +172,12 @@
     <name>dfs.namenode.replication.work.multiplier.per.iteration</name>
     <value>4</value>
   </property>
+  
+  <!-- This property allows us to use IP's directly for communication instead of hostnames. -->
+  <property>
+    <name>dfs.namenode.datanode.registration.ip-hostname-check</name>
+    <value>false</value>
+  </property>
 
   <property>
     <name>dfs.client.read.shortcircuit</name>
@@ -178,12 +189,12 @@
     <value>1000</value>
   </property>
 
-
   <property>
     <name>dfs.client.read.shortcircuit.streams.cache.size.expiry.ms</name>
     <value>1000</value>
   </property>
 
+  <!-- This property needs to be consistent with mesos.hdfs.secondary.data.dir -->
   <property>
     <name>dfs.domain.socket.path</name>
     <value>/var/run/hadoop-hdfs/dn._PORT</value>
