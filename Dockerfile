@@ -10,7 +10,7 @@ RUN echo "deb http://repos.mesosphere.io/ubuntu/ trusty main" > /etc/apt/sources
     apt-get update && \
     apt-get install -y mesos
 
-
+COPY hdfs-mesos-$HDFS_MESOS_VERSION.tgz /
 ADD hdfs-mesos-$HDFS_MESOS_VERSION.tgz /
 
 WORKDIR /hdfs-mesos-$HDFS_MESOS_VERSION

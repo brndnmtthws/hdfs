@@ -37,9 +37,6 @@
     <value>int.srv3.hw.ca1.mesosphere.com:2181</value>
   </property>
 
-  <property>
-    <name>mesos.hdfs.executor.uri</name>
-    <value>https://dl.dropboxusercontent.com/s/v4937cr9d7h0l7f/hdfs-mesos-0.0.2.tgz</value>
   </property>
 
   <property>
@@ -54,7 +51,7 @@
 
   <property>
     <name>mesos.hdfs.cluster.name</name>
-    <value>hdfs-super-available</value>
+    <value>hdfs</value>
   </property>
 
   <property>

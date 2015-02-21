@@ -1,5 +1,5 @@
 {
-    "id": "hdfs-dry-run",
+    "id": "hdfs",
     "container": {
         "docker": {
             "image": "abhayagarwal/hdfs-dry-run:ovh15"
