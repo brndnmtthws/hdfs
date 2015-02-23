@@ -85,16 +85,16 @@ public class PersistentState {
     }
   }
 
-  public boolean JournalNodeRunningOnSlave(String hostname) {
+  public boolean journalNodeRunningOnSlave(String hostname) {
     return getJournalNodes().keySet().contains(hostname);
   }
 
-  public boolean NameNodeRunningOnSlave(String hostname) {
+  public boolean nameNodeRunningOnSlave(String hostname) {
     return getNameNodes().keySet().contains(hostname);
   }
 
-  public boolean DataNodeRunningOnSlave(String hostname) {
-    return getNameNodes().keySet().contains(hostname);
+  public boolean dataNodeRunningOnSlave(String hostname) {
+    return getDataNodes().keySet().contains(hostname);
   }
 
   private void setNameNodes(HashMap<String, String> nameNodes) {
@@ -133,7 +133,6 @@ public class PersistentState {
       return new HashMap<>();
     }
   }
-
   /**
    * Get serializable object from store.
    * 
