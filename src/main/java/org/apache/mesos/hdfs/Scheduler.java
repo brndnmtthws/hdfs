@@ -25,7 +25,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   private final SchedulerConf conf;
   private final LiveState liveState;
   private PersistentState persistentState;
-  private Map<OfferID, Offer> pendingOffers = new ConcurrentHashMap<>();
 
   @Inject
   public Scheduler(SchedulerConf conf, LiveState liveState) {
@@ -100,7 +99,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       liveState.updateTaskForStatus(status); // TODO(rubbish) could terminal/running get pushed to
                                              // this
 
-      log.info(String.format("Current Acquisition Phase: %s", liveState.getCurrentAcquisitionPhase().toString()));
+      log.info(String.format("Current Acquisition Phase: %s", liveState
+          .getCurrentAcquisitionPhase().toString()));
 
       switch (liveState.getCurrentAcquisitionPhase()) {
         case JOURNAL_NODES :
@@ -152,32 +152,37 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         driver.declineOffer(offer.getId());
       }
     } else {
-      for (Offer offer: offers) {
-        pendingOffers.put(offer.getId(), offer);
-      }
-
-      switch (liveState.getCurrentAcquisitionPhase()) {
-        case JOURNAL_NODES:
-          if (liveState.getJournalNodeSize() < conf.getJournalNodeCount()) {
-            launchJournalNode(driver);
+      boolean acceptedOffer = false;
+      for (Offer offer : offers) {
+        if (acceptedOffer) {
+          driver.declineOffer(offer.getId());
+        } else {
+          switch (liveState.getCurrentAcquisitionPhase()) {
+            case JOURNAL_NODES :
+              if (liveState.getJournalNodeSize() < conf.getJournalNodeCount()) {
+                if (maybeLaunchJournalNode(driver, offer)) {
+                  acceptedOffer = true;
+                }
+              }
+              break;
+            case NAME_NODE_1 :
+              if (maybeLaunchNameNode(driver, offer)) {
+                acceptedOffer = true;
+              }
+              break;
+            case NAME_NODE_2 :
+              if (maybeLaunchNameNode(driver, offer)) {
+                acceptedOffer = true;
+              }
+              break;
+            case DATA_NODES :
+              if (maybeLaunchDataNode(driver, offer)) {
+                acceptedOffer = true;
+              }
+              break;
           }
-          break;
-        case NAME_NODE_1:
-          launchNameNode(driver);
-          break;
-        case NAME_NODE_2:
-          launchNameNode(driver);
-          break;
-        case DATA_NODES:
-          for (Offer offer : offers) {
-            launchDataNode(driver, offer);
-          }
-          break;
+        }
       }
-      for (OfferID offerID : pendingOffers.keySet()) {
-        driver.declineOffer(offerID);
-      }
-      pendingOffers.clear();
     }
   }
 
@@ -208,7 +213,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         conf.getMesosMasterUri());
     driver.run().getValueDescriptor().getFullName();
   }
-
   private void launchNode(SchedulerDriver driver, Offer offer,
                           String nodeName, List<String> taskNames, String executorName) {
     log.info(String.format("Launching node of type %s with tasks %s", nodeName,
@@ -321,32 +325,50 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
             .build());
   }
 
-  private void launchDataNode(SchedulerDriver driver, Offer offer) {
-    launchNode(
-        driver,
-        offer,
-        HDFSConstants.DATA_NODE_ID,
-        Arrays.asList(HDFSConstants.DATA_NODE_ID),
-        HDFSConstants.NODE_EXECUTOR_ID);
-  }
-
-  private void launchJournalNode(SchedulerDriver driver) {
-    launchNode(
-        driver,
-        getNextPendingOffer(),
-        HDFSConstants.JOURNAL_NODE_ID,
-        Arrays.asList(HDFSConstants.JOURNAL_NODE_ID),
-        HDFSConstants.NODE_EXECUTOR_ID);
-  }
-
-  private void launchNameNode(SchedulerDriver driver) {
-    if (pendingOffers.values().size() >= 2) {
+  private boolean maybeLaunchJournalNode(SchedulerDriver driver, Offer offer) {
+    if (persistentState.journalNodeRunningOnSlave(offer.getHostname())) {
+      log.info(String.format("Already running journalnode on %s", offer.getHostname()));
+      return false;
+    } else {
       launchNode(
           driver,
-          getNextPendingOffer(),
+          offer,
+          HDFSConstants.JOURNAL_NODE_ID,
+          Arrays.asList(HDFSConstants.JOURNAL_NODE_ID),
+          HDFSConstants.NODE_EXECUTOR_ID);
+      return true;
+    }
+  }
+
+  private boolean maybeLaunchNameNode(SchedulerDriver driver, Offer offer) {
+    if (persistentState.nameNodeRunningOnSlave(offer.getHostname())) {
+      log.info(String.format("Already running namenode on %s", offer.getHostname()));
+      return false;
+    } else {
+      launchNode(
+          driver,
+          offer,
           HDFSConstants.NAME_NODE_ID,
           Arrays.asList(HDFSConstants.NAME_NODE_ID, HDFSConstants.ZKFC_NODE_ID),
           HDFSConstants.NAME_NODE_EXECUTOR_ID);
+      return true;
+    }
+  }
+
+  private boolean maybeLaunchDataNode(SchedulerDriver driver, Offer offer) {
+    if (persistentState.dataNodeRunningOnSlave(offer.getHostname()) ||
+        persistentState.nameNodeRunningOnSlave(offer.getHostname()) ||
+        persistentState.journalNodeRunningOnSlave(offer.getHostname())) {
+      log.info(String.format("Already running hdfs task on %s", offer.getHostname()));
+      return false;
+    } else {
+      launchNode(
+          driver,
+          offer,
+          HDFSConstants.DATA_NODE_ID,
+          Arrays.asList(HDFSConstants.DATA_NODE_ID),
+          HDFSConstants.NODE_EXECUTOR_ID);
+      return true;
     }
   }
 
@@ -377,15 +399,10 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     return (taskStatus.getState().equals(TaskState.TASK_STAGING));
   }
 
-  private Offer getNextPendingOffer() {
-    Offer offer = pendingOffers.values().iterator().next();
-    pendingOffers.remove(offer.getId());
-    return offer;
-  }
-
   private void reloadConfigsOnAllRunningTasks(SchedulerDriver driver) {
     for (Protos.TaskStatus taskStatus : liveState.getRunningTasks().values()) {
-      sendMessageTo(driver, taskStatus.getTaskId(), taskStatus.getSlaveId(), HDFSConstants.RELOAD_CONFIG);
+      sendMessageTo(driver, taskStatus.getTaskId(), taskStatus.getSlaveId(),
+          HDFSConstants.RELOAD_CONFIG);
     }
   }
 }
