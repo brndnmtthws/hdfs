@@ -13,7 +13,5 @@ This is the nameserver (must be in IPv4) that the nodes use to discover each oth
 
 mesos-site.xml
 --------------------------
-### mesos.hdfs.executor.uri
-Override this with a link to a tarball of your (personalized) code after it compiles via `./bin/build-hdfs`
 
 ... more documentation to come
