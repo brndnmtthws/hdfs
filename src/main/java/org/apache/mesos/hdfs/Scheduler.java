@@ -124,6 +124,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
                 driver,
                 liveState.getFirstNameNodeTaskId(), liveState.getFirstNameNodeSlaveId(),
                 HDFSConstants.NAME_NODE_INIT_MESSAGE);
+            //TODO(nicgrayson) should we wait before sending the bootstrap message?
             sendMessageTo(
                 driver,
                 liveState.getSecondNameNodeTaskId(), liveState.getSecondNameNodeSlaveId(),
