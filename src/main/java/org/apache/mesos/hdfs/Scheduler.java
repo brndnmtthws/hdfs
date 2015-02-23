@@ -16,7 +16,6 @@ import org.apache.mesos.hdfs.state.PersistentState;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
 public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
@@ -25,9 +24,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   private final SchedulerConf conf;
   private final LiveState liveState;
   private PersistentState persistentState;
-
-  private Map<OfferID, Offer> pendingOffers = new ConcurrentHashMap<>();
-  private boolean initializingCluster = false;
 
   @Inject
   public Scheduler(SchedulerConf conf, LiveState liveState) {
