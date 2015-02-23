@@ -22,8 +22,7 @@ public class PersistentState {
   public PersistentState(SchedulerConf conf) {
     MesosNativeLibrary.load(conf.getNativeLibrary());
     this.zkState = new ZooKeeperState(conf.getStateZkServers(),
-        conf.getStateZkTimeout(), TimeUnit.MILLISECONDS, "/hdfs-mesos/" + conf.getClusterName()
-            + System.currentTimeMillis());
+        conf.getStateZkTimeout(), TimeUnit.MILLISECONDS, "/hdfs-mesos/" + conf.getClusterName());
   }
 
   public FrameworkID getFrameworkID() throws InterruptedException, ExecutionException,
