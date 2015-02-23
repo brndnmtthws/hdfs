@@ -34,19 +34,17 @@
 
   <property>
     <name>mesos.hdfs.state.zk</name>
-    <value>int.srv3.hw.ca1.mesosphere.com:2181</value>
-  </property>
-
+    <value>localhost:2181</value>
   </property>
 
   <property>
     <name>mesos.master.uri</name>
-    <value>zk://int.srv3.hw.ca1.mesosphere.com:2181/mesos</value>
+    <value>zk://localhost:2181/mesos</value>
   </property>
 
   <property>
     <name>mesos.hdfs.zkfc.ha.zookeeper.quorum</name>
-    <value>int.srv3.hw.ca1.mesosphere.com:2181</value>
+    <value>localhost:2181</value>
   </property>
 
   <property>
@@ -61,42 +59,42 @@
 
   <property>
     <name>mesos.hdfs.hadoop.heap.size</name>
-    <value>128</value>
+    <value>256</value>
   </property>
 
   <property>
     <name>mesos.hdfs.namenode.heap.size</name>
-    <value>128</value>
+    <value>1024</value>
   </property>
 
   <property>
     <name>mesos.hdfs.datanode.heap.size</name>
-    <value>128</value>
+    <value>1024</value>
   </property>
 
   <property>
     <name>mesos.hdfs.executor.heap.size</name>
-    <value>128</value>
+    <value>256</value>
   </property>
 
   <property>
     <name>mesos.hdfs.executor.cpus</name>
-    <value>0.1</value>
+    <value>0.5</value>
   </property>
 
   <property>
     <name>mesos.hdfs.namenode.cpus</name>
-    <value>0.1</value>
+    <value>1</value>
   </property>
 
   <property>
     <name>mesos.hdfs.journalnode.cpus</name>
-    <value>0.1</value>
+    <value>1</value>
   </property>
 
   <property>
     <name>mesos.hdfs.datanode.cpus</name>
-    <value>0.1</value>
+    <value>1</value>
   </property>
 
   <property>

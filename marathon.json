@@ -2,7 +2,7 @@
     "id": "hdfs",
     "container": {
         "docker": {
-            "image": "abhayagarwal/hdfs-dry-run:ovh15"
+            "image": ""
         },
         "type": "DOCKER",
         "volumes": []
