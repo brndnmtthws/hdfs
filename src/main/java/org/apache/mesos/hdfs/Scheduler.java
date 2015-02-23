@@ -113,7 +113,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           break;
         case NAME_NODE_1 :
           if (liveState.getNameNodeSize() == 1 && liveState.getFirstNameNodeTaskId() != null) {
-
             liveState.transitionTo(AcquisitionPhase.NAME_NODE_2);
           } else {
             log.info("Cannot locate first namenode task id");
@@ -127,7 +126,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
                 driver,
                 liveState.getFirstNameNodeTaskId(), liveState.getFirstNameNodeSlaveId(),
                 HDFSConstants.NAME_NODE_INIT_MESSAGE);
-            //TODO(nicgrayson) should we wait before sending the bootstrap message?
+            blockUntilNameNode1Healthy();
             sendMessageTo(
                 driver,
                 liveState.getSecondNameNodeTaskId(), liveState.getSecondNameNodeSlaveId(),
@@ -166,22 +165,30 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
               if (liveState.getJournalNodeSize() < conf.getJournalNodeCount()) {
                 if (maybeLaunchJournalNode(driver, offer)) {
                   acceptedOffer = true;
+                } else {
+                  driver.declineOffer(offer.getId());
                 }
               }
               break;
             case NAME_NODE_1 :
               if (maybeLaunchNameNode(driver, offer)) {
                 acceptedOffer = true;
+              } else {
+                driver.declineOffer(offer.getId());
               }
               break;
             case NAME_NODE_2 :
               if (maybeLaunchNameNode(driver, offer)) {
                 acceptedOffer = true;
+              } else {
+                driver.declineOffer(offer.getId());
               }
               break;
             case DATA_NODES :
               if (maybeLaunchDataNode(driver, offer)) {
                 acceptedOffer = true;
+              } else {
+                driver.declineOffer(offer.getId());
               }
               break;
           }
@@ -403,6 +410,15 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     for (Protos.TaskStatus taskStatus : liveState.getRunningTasks().values()) {
       sendMessageTo(driver, taskStatus.getTaskId(), taskStatus.getSlaveId(),
           HDFSConstants.RELOAD_CONFIG);
+    }
+  }
+
+  private void blockUntilNameNode1Healthy() {
+    //TODO need to implement this method
+    try {
+      Thread.sleep(30000L);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
     }
   }
 }
