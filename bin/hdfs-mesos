@@ -4,7 +4,7 @@ if [ -z "$PORT0" ] ; then
   PORT0="8765"
 fi
 
-if [ -z "JAVA_HOME" ]; then
+if [ -z "$JAVA_HOME" ]; then
   JAVA=java
 else
   JAVA=$JAVA_HOME/bin/java
