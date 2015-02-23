@@ -19,7 +19,17 @@
 <configuration>
   <property>
     <name>mesos.hdfs.data.dir</name>
-    <value>/var/lib/data</value>
+    <value>/tmp/hdfs/data</value>
+  </property>
+  
+  <property>
+    <name>mesos.hdfs.secondary.data.dir</name>
+    <value>/var/run/hadoop-hdfs</value>
+  </property>
+  
+  <property>
+    <name>mesos.hdfs.framework.mnt.path</name>
+    <value>/opt/mesosphere</value>
   </property>
 
   <property>
@@ -38,18 +48,13 @@
   </property>
 
   <property>
-    <name>mesos.hdfs.executor.uri</name>
-    <value>http://path/to/executor</value>
-  </property>
-
-  <property>
     <name>mesos.hdfs.cluster.name</name>
-    <value>hdfs-super-available</value>
+    <value>hdfs</value>
   </property>
 
   <property>
     <name>mesos.native.library</name>
-    <value>/usr/lib/libmesos.so</value>
+    <value>/usr/local/lib/libmesos.so</value>
   </property>
 
   <property>
@@ -93,22 +98,19 @@
   </property>
 
   <property>
-    <name>mesos.hdfs.reconciliation.startup.delay</name>
-    <value>120</value>
-  </property>
-
-  <property>
     <name>mesos.hdfs.user</name>
-    <value>hdfs</value>
+    <value>root</value>
   </property>
 
   <property>
     <name>mesos.hdfs.role</name>
-    <value>hdfs</value>
+    <value>*</value>
   </property>
 
+  <!-- The number of journal nodes in addition to the two journal nodes that are part
+   of the two NN machines. This needs to be an odd number to create a quorum. -->
   <property>
     <name>mesos.hdfs.journalnode.count</name>
-    <value>3</value>
+    <value>1</value>
   </property>
 </configuration>
