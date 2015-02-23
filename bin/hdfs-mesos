@@ -5,9 +5,9 @@ if [ -z "$PORT0" ] ; then
 fi
 
 if [ -z "JAVA_HOME" ]; then
-	JAVA=$JAVA_HOME/bin/java
+  JAVA=java
 else
-	JAVA=java
+  JAVA=$JAVA_HOME/bin/java
 elif
 
 exec $JAVA -cp lib/*.jar -Dmesos.conf.path=etc/hadoop/mesos-site.xml -Dmesos.hdfs.config.server.port=$PORT0 org.apache.mesos.hdfs.Main
