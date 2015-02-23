@@ -40,9 +40,6 @@ public class LiveState {
     runningTasks.remove(taskId);
   }
 
-  // TODO(rubbish): how do we get hostnames from the status, where do we look that up? the initial offer?
-  // should we use a Map<TaskInfo,String> for the stagingTasks?
-  // do we just keep a map of slave id to hostname for all the offers
   public void updateTaskForStatus(Protos.TaskStatus status) {
     runningTasks.put(status.getTaskId(), status);
   }
