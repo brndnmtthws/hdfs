@@ -251,7 +251,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           pendingOffers.put(offer.getId(), offer);
       }
         
-      if (!initializingCluster && pendingOffers.size() >= 3) {
+      if ( !initializingCluster && pendingOffers.size() >= (HDFSConstants.TOTAL_NAME_NODES + conf.getJournalNodeCount()) ) {
         log.info(String.format("Launching initial nodes with %d pending offers",
             pendingOffers.size()));
         initializingCluster = true;
