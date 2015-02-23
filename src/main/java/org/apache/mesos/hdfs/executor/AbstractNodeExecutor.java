@@ -173,10 +173,10 @@ public abstract class AbstractNodeExecutor implements Executor {
    * Reloads the cluster configuration so the executor has the correct configuration info.
    **/
   protected void reloadConfig() {
-    if (!reloadLimiter.tryAcquire()) {
-      log.info("Limiting reload rate");
-      return;
-    }
+//    if (!reloadLimiter.tryAcquire()) {
+//      log.info("Limiting reload rate");
+//      return;
+//    }
     // Find config URI
     String configUri = "";
     for (CommandInfo.URI uri : executorInfo.getCommand().getUrisList()) {
@@ -193,6 +193,7 @@ public abstract class AbstractNodeExecutor implements Executor {
       String cfgCmd[] = new String[]{"sh", "-c",
           String.format("curl -o hdfs-site.xml %s ; cp hdfs-site.xml etc/hadoop/", configUri)};
       Process process = Runtime.getRuntime().exec(cfgCmd);
+      //TODO(nicgrayson) check if the config has changed
       redirectProcess(process);
       int exitCode = process.waitFor();
       log.info("Finished reloading hdfs-site.xml, exited with status " + exitCode);
