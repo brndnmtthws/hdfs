@@ -1,6 +1,5 @@
 package org.apache.mesos.hdfs.executor;
 
-import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -26,8 +25,6 @@ public abstract class AbstractNodeExecutor implements Executor {
 
   public static final Log log = LogFactory.getLog(AbstractNodeExecutor.class);
   protected ExecutorInfo executorInfo;
-  // reload config no more than once every 60 sec
-  protected RateLimiter reloadLimiter = RateLimiter.create(1 / 60.);
   protected SchedulerConf schedulerConf;
 
   /**
@@ -170,10 +167,6 @@ public abstract class AbstractNodeExecutor implements Executor {
    * Reloads the cluster configuration so the executor has the correct configuration info.
    **/
   protected void reloadConfig() {
-//    if (!reloadLimiter.tryAcquire()) {
-//      log.info("Limiting reload rate");
-//      return;
-//    }
     // Find config URI
     String configUri = "";
     for (CommandInfo.URI uri : executorInfo.getCommand().getUrisList()) {
@@ -198,6 +191,7 @@ public abstract class AbstractNodeExecutor implements Executor {
       log.error("Caught exception", e);
     }
   }
+
   /**
    * Redirects a process to STDERR and STDOUT for logging and debugging purposes.
    **/
