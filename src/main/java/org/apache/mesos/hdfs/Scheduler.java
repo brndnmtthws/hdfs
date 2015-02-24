@@ -149,9 +149,11 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
                     .setName("EXECUTOR_OPTS")
                     .setValue("-Xmx" + conf.getExecutorHeap() + "m").build())))
                     .setValue(
-                        "env ; cd hdfs-mesos-* && exec java $HADOOP_OPTS $EXECUTOR_OPTS " +
-                        "-cp lib/*.jar org.apache.mesos.hdfs.executor." + executorName)
-                        .build())
+                        "env ; cd hdfs-mesos-* && " +
+                          "exec `if [ -z \"$JAVA_HOME\" ]; then echo java; else echo $JAVA_HOME/bin/java; fi` " +
+                            "$HADOOP_OPTS " +
+                            "$EXECUTOR_OPTS " +
+                            "-cp lib/*.jar org.apache.mesos.hdfs.executor." + executorName).build())
                     .build();
     }
     
@@ -251,7 +253,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           pendingOffers.put(offer.getId(), offer);
       }
         
-      if ( !initializingCluster && pendingOffers.size() >= (HDFSConstants.TOTAL_NAME_NODES + conf.getJournalNodeCount()) ) {
+      if (!initializingCluster && pendingOffers.size() >= (HDFSConstants.TOTAL_NAME_NODES + conf.getJournalNodeCount())) {
         log.info(String.format("Launching initial nodes with %d pending offers",
             pendingOffers.size()));
         initializingCluster = true;
