@@ -81,7 +81,7 @@ public class LiveState {
   }
 
   public Protos.TaskID getSecondNameNodeTaskId() {
-    if (getNameNodeSize() == 2) {
+    if (getNameNodeSize() == HDFSConstants.TOTAL_NAME_NODES) {
       return getNamenodeTaskIds().get(1);
     } else {
       return null;
@@ -97,7 +97,7 @@ public class LiveState {
   }
 
   public Protos.SlaveID getSecondNameNodeSlaveId() {
-    if (getNameNodeSize() == 2) {
+    if (getNameNodeSize() == HDFSConstants.TOTAL_NAME_NODES) {
       return getNamenodeSlaveIds().get(1);
     } else {
       return null;
