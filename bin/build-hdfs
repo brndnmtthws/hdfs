@@ -4,6 +4,9 @@ HADOOP_VER=2.5.0-cdh5.3.1
 HADOOP_DIR=hadoop-$HADOOP_VER
 HADOOP_ZIP=$HADOOP_DIR.tar.gz
 HADOOP_URL=http://archive.cloudera.com/cdh5/cdh/5/$HADOOP_ZIP
+IMPALA_VER=cdh5.3.1-release
+IMPALA_ZIP=$IMPALA_VER.zip
+IMPALA_URL=https://github.com/cloudera/Impala/archive/$IMPALA_ZIP
 NATIVE=native
 DIST=hdfs-mesos-0.0.2
 
@@ -42,8 +45,7 @@ fi
 # Get native libraries
 if [ ! -d $NATIVE ]; then
     echo "Downloading and unpacking native libs"
-    IMPALA_VER=cdh5.3.1-release
-    wget https://github.com/cloudera/Impala/archive/$IMPALA_VER.zip || exit
+    wget $IMPALA_URL || exit
     unzip -q $IMPALA_VER.zip
     mkdir -p $NATIVE
     cp Impala-$IMPALA_VER/thirdparty/$HADOOP_DIR/lib/native/lib* $NATIVE

@@ -48,7 +48,7 @@
   </property>
 
   <property>
-    <name>mesos.hdfs.cluster.name</name>
+    <name>mesos.hdfs.framework.name</name>
     <value>hdfs</value>
   </property>
 
