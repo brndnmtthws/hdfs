@@ -1,6 +1,6 @@
 #!/bin/bash
 
-HADOOP_VER=2.3.0-cdh5.1.0
+HADOOP_VER=2.5.0-cdh5.3.1
 HADOOP_DIR=hadoop-$HADOOP_VER
 HADOOP_ZIP=$HADOOP_DIR.tar.gz
 HADOOP_URL=http://archive.cloudera.com/cdh5/cdh/5/$HADOOP_ZIP
@@ -42,11 +42,12 @@ fi
 # Get native libraries
 if [ ! -d $NATIVE ]; then
     echo "Downloading and unpacking native libs"
-    wget https://github.com/cloudera/Impala/archive/cdh5-1.4_5.1.0.zip || exit
-    unzip -q cdh5-1.4_5.1.0.zip
+    IMPALA_VER=cdh5.3.1-release
+    wget https://github.com/cloudera/Impala/archive/$IMPALA_VER.zip || exit
+    unzip -q $IMPALA_VER.zip
     mkdir -p $NATIVE
-    cp Impala-cdh5-1.4_5.1.0/thirdparty/hadoop-2.3.0-cdh5.1.0/lib/native/lib* $NATIVE
-    rm -rf cdh5-1* Impala*
+    cp Impala-$IMPALA_VER/thirdparty/$HADOOP_DIR/lib/native/lib* $NATIVE
+    rm -rf $IMPALA_VER* Impala*
 else
     echo "($NATIVE libs already exist, skipping dl)"
 fi
