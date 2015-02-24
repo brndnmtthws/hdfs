@@ -221,7 +221,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     driver.run().getValueDescriptor().getFullName();
   }
   private void launchNode(SchedulerDriver driver, Offer offer,
-                          String nodeName, List<String> taskNames, String executorName) {
+        String nodeName, List<String> taskNames, String executorName) {
     log.info(String.format("Launching node of type %s with tasks %s", nodeName,
         taskNames.toString()));
     String taskIdName = String.format("%s.%s.%d", nodeName, executorName,
@@ -251,7 +251,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     driver.launchTasks(Arrays.asList(offer.getId()), tasks);
   }
   private ExecutorInfo createExecutor(String taskIdName, String nodeName, String executorName,
-      List<Resource> resources) {
+        List<Resource> resources) {
     int confServerPort = conf.getConfigServerPort();
     return ExecutorInfo
         .newBuilder()
