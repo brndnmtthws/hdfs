@@ -3,16 +3,28 @@ package org.apache.mesos.hdfs.state;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Sets;
 import com.google.inject.Singleton;
+import org.apache.commons.lang.time.DateUtils;
 import org.apache.mesos.Protos;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 
+import java.sql.Timestamp;
 import java.util.*;
 
 @Singleton
 public class LiveState {
   private Set<Protos.TaskInfo> stagingTasks = new HashSet<>();
-  private AcquisitionPhase currentAcquisitionPhase = AcquisitionPhase.JOURNAL_NODES;
+  private AcquisitionPhase currentAcquisitionPhase = AcquisitionPhase.RECONCILING_TASKS;
   private LinkedHashMap<Protos.TaskID, Protos.TaskStatus> runningTasks = new LinkedHashMap<>();
+  private Timestamp ReconciliationTimestamp;
+
+  public boolean reconciliationComplete() {
+    return ReconciliationTimestamp.before(new Date());
+  }
+
+  public void updateReconciliationTimestamp() {
+    Date date = DateUtils.addSeconds(new Date(), 30); //TODO(nicgrayson) add config for this value
+    ReconciliationTimestamp = new Timestamp(date.getTime());
+  }
 
   public void addStagingTask(Protos.TaskInfo taskInfo) {
     stagingTasks.add(taskInfo);

@@ -73,10 +73,14 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       throw new RuntimeException(e);
     }
     log.info("Registered framework frameworkId=" + frameworkId.getValue());
+    liveState.updateReconciliationTimestamp();
+    driver.reconcileTasks(Collections.<Protos.TaskStatus>emptyList());
   }
   @Override
   public void reregistered(SchedulerDriver driver, MasterInfo masterInfo) {
-    log.info("Reregistered framework.");
+    log.info("Reregistered framework: starting task reconcile");
+    liveState.updateReconciliationTimestamp();
+    driver.reconcileTasks(Collections.<Protos.TaskStatus> emptyList());
   }
 
   @Override
@@ -95,13 +99,19 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     if (isTerminalState(status)) {
       liveState.removeTask(status.getTaskId());
     } else if (isRunningState(status)) {
-      liveState.updateTaskForStatus(status); // TODO(rubbish) could terminal/running get pushed to
-                                             // this
+      liveState.updateTaskForStatus(status);
 
       log.info(String.format("Current Acquisition Phase: %s", liveState
           .getCurrentAcquisitionPhase().toString()));
 
       switch (liveState.getCurrentAcquisitionPhase()) {
+        case RECONCILING_TASKS :
+          log.info(String.format("Reconcile timeout complete is: %b",
+              liveState.reconciliationComplete()));
+          if (liveState.reconciliationComplete()) {
+            correctCurrentPhase();
+          }
+          break;
         case JOURNAL_NODES :
           if (liveState.getJournalNodeSize() == conf.getJournalNodeCount()) {
             liveState.transitionTo(AcquisitionPhase.NAME_NODE_1);
@@ -142,7 +152,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   }
 
   @Override
-  synchronized public void resourceOffers(SchedulerDriver driver, List<Offer> offers) {
+  public void resourceOffers(SchedulerDriver driver, List<Offer> offers) {
     log.info(String.format("Received %d offers", offers.size()));
 
     if (liveState.getStagingTasksSize() != 0) {
@@ -157,6 +167,17 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           driver.declineOffer(offer.getId());
         } else {
           switch (liveState.getCurrentAcquisitionPhase()) {
+            case RECONCILING_TASKS :
+              log.info(String.format("Reconcile timeout complete is: %b",
+                  liveState.reconciliationComplete()));
+              if (liveState.reconciliationComplete()) {
+                correctCurrentPhase();
+                resourceOffers(driver, offers);
+              } else {
+                log.info("Declining offers while reconciling tasks");
+                driver.declineOffer(offer.getId());
+                break;
+              }
             case JOURNAL_NODES :
               if (liveState.getJournalNodeSize() < conf.getJournalNodeCount()) {
                 if (maybeLaunchJournalNode(driver, offer)) {
@@ -258,40 +279,49 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         .setName(nodeName + " executor")
         .setExecutorId(ExecutorID.newBuilder().setValue("executor." + taskIdName).build())
         .addAllResources(resources)
-        .setCommand(CommandInfo.newBuilder()
-        .addAllUris(Arrays.asList(
-            CommandInfo.URI.newBuilder().setValue(
-                String.format("http://%s:%d/%s", conf.getFrameworkHostAddress(), confServerPort,
-                    HDFSConstants.HDFS_BINARY_FILE_NAME))
-                .build(),
-            CommandInfo.URI.newBuilder().setValue(
-                String.format("http://%s:%d/%s", conf.getFrameworkHostAddress(), confServerPort,
-                    HDFSConstants.HDFS_CONFIG_FILE_NAME))
-                .build()))
-            .setEnvironment(Environment.newBuilder()
-                .addAllVariables(Arrays.asList(
-                Environment.Variable.newBuilder()
-                    .setName("HADOOP_OPTS")
-                    .setValue(conf.getJvmOpts()).build(),
-                Environment.Variable.newBuilder()
-                    .setName("HADOOP_HEAPSIZE")
-                    .setValue(String.format("%d", conf.getHadoopHeapSize())).build(),
-                Environment.Variable.newBuilder()
-                    .setName("HADOOP_NAMENODE_OPTS")
-                    .setValue("-Xmx" + conf.getNameNodeHeapSize() + "m").build(),
-                Environment.Variable.newBuilder()
-                    .setName("HADOOP_DATANODE_OPTS")
-                    .setValue("-Xmx" + conf.getDataNodeHeapSize() + "m").build(),
-                Environment.Variable.newBuilder()
-                    .setName("EXECUTOR_OPTS")
-                    .setValue("-Xmx" + conf.getExecutorHeap() + "m").build())))
-                    .setValue(
-                        "env ; cd hdfs-mesos-* && exec java $HADOOP_OPTS $EXECUTOR_OPTS " +
+        .setCommand(
+            CommandInfo
+                .newBuilder()
+                .addAllUris(
+                    Arrays.asList(
+                        CommandInfo.URI
+                            .newBuilder()
+                            .setValue(
+                                String.format("http://%s:%d/%s", conf.getFrameworkHostAddress(),
+                                    confServerPort,
+                                    HDFSConstants.HDFS_BINARY_FILE_NAME))
+                            .build(),
+                        CommandInfo.URI
+                            .newBuilder()
+                            .setValue(
+                                String.format("http://%s:%d/%s", conf.getFrameworkHostAddress(),
+                                    confServerPort,
+                                    HDFSConstants.HDFS_CONFIG_FILE_NAME))
+                            .build()))
+                .setEnvironment(Environment.newBuilder()
+                    .addAllVariables(Arrays.asList(
+                        Environment.Variable.newBuilder()
+                            .setName("HADOOP_OPTS")
+                            .setValue(conf.getJvmOpts()).build(),
+                        Environment.Variable.newBuilder()
+                            .setName("HADOOP_HEAPSIZE")
+                            .setValue(String.format("%d", conf.getHadoopHeapSize())).build(),
+                        Environment.Variable.newBuilder()
+                            .setName("HADOOP_NAMENODE_OPTS")
+                            .setValue("-Xmx" + conf.getNameNodeHeapSize() + "m").build(),
+                        Environment.Variable.newBuilder()
+                            .setName("HADOOP_DATANODE_OPTS")
+                            .setValue("-Xmx" + conf.getDataNodeHeapSize() + "m").build(),
+                        Environment.Variable.newBuilder()
+                            .setName("EXECUTOR_OPTS")
+                            .setValue("-Xmx" + conf.getExecutorHeap() + "m").build())))
+                .setValue(
+                    "env ; cd hdfs-mesos-* && exec java $HADOOP_OPTS $EXECUTOR_OPTS " +
                         "-cp lib/*.jar org.apache.mesos.hdfs.executor." + executorName)
-                        .build())
-                    .build();
-    }
-    
+                .build())
+        .build();
+  }
+
   private List<Resource> getExecutorResources() {
     return Arrays.asList(
         Resource.newBuilder()
@@ -309,7 +339,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
             .setRole("*")
             .build());
   }
-    
+
   private List<Resource> getTaskResources(String taskName) {
     return Arrays.asList(
         Resource.newBuilder()
@@ -415,6 +445,20 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       Thread.sleep(30000L);
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
+    }
+  }
+
+  private void correctCurrentPhase() {
+    if (liveState.getJournalNodeSize() < conf.getJournalNodeCount()) {
+      liveState.transitionTo(AcquisitionPhase.JOURNAL_NODES);
+    } else if (liveState.getNameNodeSize() == 0) {
+      liveState.transitionTo(AcquisitionPhase.NAME_NODE_1);
+    } else if (liveState.getNameNodeSize() == 1) {
+      liveState.transitionTo(AcquisitionPhase.NAME_NODE_2);
+    } else if (liveState.getNameNodeSize() == HDFSConstants.TOTAL_NAME_NODES) {
+      liveState.transitionTo(AcquisitionPhase.DATA_NODES);
+    } else {
+      log.error("Framework is in an unstable state, attention is required");
     }
   }
 }

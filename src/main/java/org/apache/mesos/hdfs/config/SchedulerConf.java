@@ -137,7 +137,7 @@ public class SchedulerConf extends Configured {
 
   // TODO(elingg) This needs to be increased.
   public long getFailoverTimeout() {
-    return getConf().getLong("mesos.failover.timeout.sec", 0);
+    return getConf().getLong("mesos.failover.timeout.sec", 300);
   }
 
   // TODO(elingg) Most likely this user name will change to HDFS
@@ -202,5 +202,9 @@ public class SchedulerConf extends Configured {
       configServerPortString = getConf().get("mesos.hdfs.config.server.port", "8765");
     }
     return Integer.valueOf(configServerPortString);
+  }
+
+  public int getReconciliationTimeout() {
+    return getConf().getInt("mesos.reconciliation.timeout.seconds", 30);
   }
 }
