@@ -19,6 +19,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -136,7 +137,6 @@ public class TestScheduler {
         createTaskStatus(taskId, Protos.TaskState.TASK_RUNNING));
 
     verify(liveState, never()).transitionTo(any(AcquisitionPhase.class));
-
   }
 
   @Test
@@ -189,20 +189,20 @@ public class TestScheduler {
     assertTrue(taskInfo.getName().contains(HDFSConstants.NAME_NODE_ID));
   }
 
-  // @Test
-  // public void declinesAnyOffersPastWhatItNeeds() {
-  // Scheduler scheduler = new Scheduler(schedulerConf, new LiveState(), persistentState);
-  //
-  // scheduler.resourceOffers(driver,
-  // Lists.newArrayList(
-  // createTestOffer(0),
-  // createTestOffer(1),
-  // createTestOffer(2),
-  // createTestOffer(3)
-  // ));
-  //
-  // verify(driver, times(2)).declineOffer(any(Protos.OfferID.class));
-  // }
+  @Test
+  public void declinesAnyOffersPastWhatItNeeds() {
+    when(liveState.getCurrentAcquisitionPhase()).thenReturn(AcquisitionPhase.DATA_NODES);
+
+    scheduler.resourceOffers(driver,
+        Lists.newArrayList(
+            createTestOffer(0),
+            createTestOffer(1),
+            createTestOffer(2),
+            createTestOffer(3)
+        ));
+
+    verify(driver, times(3)).declineOffer(any(Protos.OfferID.class));
+  }
 
   @Test
   public void launchesDataNodesWhenInDatanodesPhase() {
@@ -211,8 +211,8 @@ public class TestScheduler {
     scheduler.resourceOffers(driver,
         Lists.newArrayList(
             createTestOffer(0)
-            )
-        );
+        )
+    );
 
     verify(driver, times(1)).launchTasks(anyList(), taskInfosCapture.capture());
     Protos.TaskInfo taskInfo = taskInfosCapture.getValue().iterator().next();
@@ -232,6 +232,16 @@ public class TestScheduler {
 
     verify(liveState, times(4)).removeStagingTask(any(Protos.TaskID.class));
     verify(liveState, times(4)).removeTask(any(Protos.TaskID.class));
+  }
+
+  @Test
+  public void declinesOffersWithNotEnoughResources() {
+    when(liveState.getCurrentAcquisitionPhase()).thenReturn(AcquisitionPhase.DATA_NODES);
+    Protos.Offer offer = createTestOfferWithResources(0, 0.1, 64);
+
+    scheduler.resourceOffers(driver, Lists.newArrayList(offer));
+
+    verify(driver, times(1)).declineOffer(offer.getId());
   }
 
   @Before
@@ -262,6 +272,30 @@ public class TestScheduler {
         .setFrameworkId(Protos.FrameworkID.newBuilder().setValue("framework1").build())
         .setSlaveId(Protos.SlaveID.newBuilder().setValue("slave" + instanceNumber).build())
         .setHostname("host" + instanceNumber)
+        .build();
+  }
+
+  private Protos.Offer createTestOfferWithResources(int instanceNumber, double cpus, int mem) {
+    return Protos.Offer.newBuilder()
+        .setId(createTestOfferId(instanceNumber))
+        .setFrameworkId(Protos.FrameworkID.newBuilder().setValue("framework1").build())
+        .setSlaveId(Protos.SlaveID.newBuilder().setValue("slave" + instanceNumber).build())
+        .setHostname("host" + instanceNumber)
+        .addAllResources(Arrays.asList(
+            Protos.Resource.newBuilder()
+                .setName("cpus")
+                .setType(Protos.Value.Type.SCALAR)
+                .setScalar(Protos.Value.Scalar.newBuilder()
+                    .setValue(cpus).build())
+                .setRole("*")
+                .build(),
+            Protos.Resource.newBuilder()
+                .setName("mem")
+                .setType(Protos.Value.Type.SCALAR)
+                .setScalar(Protos.Value.Scalar.newBuilder()
+                    .setValue(mem).build())
+                .setRole("*")
+                .build()))
         .build();
   }
 

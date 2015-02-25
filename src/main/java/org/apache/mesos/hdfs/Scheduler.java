@@ -98,6 +98,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
     if (isTerminalState(status)) {
       liveState.removeTask(status.getTaskId());
+      correctCurrentPhase();
     } else if (isRunningState(status)) {
       liveState.updateTaskForStatus(status);
 
@@ -241,6 +242,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         conf.getMesosMasterUri());
     driver.run().getValueDescriptor().getFullName();
   }
+
   private void launchNode(SchedulerDriver driver, Offer offer,
         String nodeName, List<String> taskNames, String executorName) {
     log.info(String.format("Launching node of type %s with tasks %s", nodeName,
@@ -361,7 +363,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   private boolean maybeLaunchJournalNode(SchedulerDriver driver, Offer offer) {
     if (persistentState.journalNodeRunningOnSlave(offer.getHostname())) {
       log.info(String.format("Already running journalnode on %s", offer.getHostname()));
-      return false;
+    } else if (offerNotEnoughResources(offer, conf.getJournalNodeCpus(), conf.getJournalNodeHeapSize())) {
+      log.info("Offer does not have enough resources");
     } else {
       launchNode(
           driver,
@@ -371,12 +374,16 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           HDFSConstants.NODE_EXECUTOR_ID);
       return true;
     }
+    return false;
   }
 
   private boolean maybeLaunchNameNode(SchedulerDriver driver, Offer offer) {
     if (persistentState.nameNodeRunningOnSlave(offer.getHostname())) {
       log.info(String.format("Already running namenode on %s", offer.getHostname()));
-      return false;
+    } else if (offerNotEnoughResources(offer,
+        (conf.getNameNodeCpus() + conf.getZkfcCpus()),
+        (conf.getNameNodeHeapSize() + conf.getZkfcHeapSize()))) {
+      log.info("Offer does not have enough resources");
     } else {
       launchNode(
           driver,
@@ -386,6 +393,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           HDFSConstants.NAME_NODE_EXECUTOR_ID);
       return true;
     }
+    return false;
   }
 
   private boolean maybeLaunchDataNode(SchedulerDriver driver, Offer offer) {
@@ -393,7 +401,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         persistentState.nameNodeRunningOnSlave(offer.getHostname()) ||
         persistentState.journalNodeRunningOnSlave(offer.getHostname())) {
       log.info(String.format("Already running hdfs task on %s", offer.getHostname()));
-      return false;
+    } else if (offerNotEnoughResources(offer, conf.getDataNodeCpus(), conf.getDataNodeHeapSize())) {
+      log.info("Offer does not have enough resources");
     } else {
       launchNode(
           driver,
@@ -403,6 +412,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           HDFSConstants.NODE_EXECUTOR_ID);
       return true;
     }
+    return false;
   }
 
   private void sendMessageTo(SchedulerDriver driver, TaskID taskId, SlaveID slaveID, String message) {
@@ -460,5 +470,19 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     } else {
       log.error("Framework is in an unstable state, attention is required");
     }
+  }
+
+  private boolean offerNotEnoughResources(Offer offer, double cpus, int mem) {
+    for (Resource offerResource : offer.getResourcesList()) {
+      if (offerResource.getName().equals("cpus") &&
+          cpus > offerResource.getScalar().getValue()) {
+        return true;
+      }
+      if (offerResource.getName().equals("mem") &&
+          mem > offerResource.getScalar().getValue()) {
+        return true;
+      }
+    }
+    return false;
   }
 }
