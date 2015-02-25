@@ -135,9 +135,8 @@ public class SchedulerConf extends Configured {
     return getConf().get("mesos.hdfs.cluster.name", "mesos-ha");
   }
 
-  // TODO(elingg) This needs to be increased.
   public long getFailoverTimeout() {
-    return getConf().getLong("mesos.failover.timeout.sec", 300);
+    return getConf().getLong("mesos.failover.timeout.sec", 604800);
   }
 
   // TODO(elingg) Most likely this user name will change to HDFS
