@@ -51,7 +51,6 @@ public abstract class AbstractNodeExecutor implements Executor {
   @Override
   public void registered(ExecutorDriver driver, ExecutorInfo executorInfo,
       FrameworkInfo frameworkInfo, SlaveInfo slaveInfo) {
-    executorInfo = executorInfo;
     // Set up data dir
     setUpDataDir();
     createSymbolicLink();
@@ -64,11 +63,9 @@ public abstract class AbstractNodeExecutor implements Executor {
   private void setUpDataDir() {
     // Create primary data dir if it does not exist
     File dataDir = new File(schedulerConf.getDataDir());
-    // TODO(elingg) Need to actually recover the data instead of getting rid of it.
-    if (dataDir.exists()) {
-      deleteFile(dataDir);
+    if (!dataDir.exists()) {
+      dataDir.mkdirs();
     }
-    dataDir.mkdirs();
 
     // Create secondary data dir if it does not exist
     File secondaryDataDir = new File(schedulerConf.getSecondaryDataDir());
@@ -191,7 +188,6 @@ public abstract class AbstractNodeExecutor implements Executor {
       log.error("Caught exception", e);
     }
   }
-
   /**
    * Redirects a process to STDERR and STDOUT for logging and debugging purposes.
    **/
