@@ -98,6 +98,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
     if (isTerminalState(status)) {
       liveState.removeTask(status.getTaskId());
+      persistentState.removeTaskId(status.getTaskId().getValue());
       correctCurrentPhase();
     } else if (isRunningState(status)) {
       liveState.updateTaskForStatus(status);
@@ -107,9 +108,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
       switch (liveState.getCurrentAcquisitionPhase()) {
         case RECONCILING_TASKS :
-          log.info(String.format("Reconcile timeout complete is: %b",
-              liveState.reconciliationComplete()));
           if (liveState.reconciliationComplete()) {
+            reconcilePersistentState();
             correctCurrentPhase();
           }
           break;
@@ -129,6 +129,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           if (liveState.getNameNodeSize() == HDFSConstants.TOTAL_NAME_NODES
               && liveState.getSecondNameNodeTaskId() != null) {
             reloadConfigsOnAllRunningTasks(driver);
+            //TODO(nicgrayson) need to check if we should format the NN
             sendMessageTo(
                 driver,
                 liveState.getFirstNameNodeTaskId(), liveState.getFirstNameNodeSlaveId(),
@@ -169,9 +170,12 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         } else {
           switch (liveState.getCurrentAcquisitionPhase()) {
             case RECONCILING_TASKS :
-              log.info(String.format("Reconcile timeout complete is: %b",
-                  liveState.reconciliationComplete()));
               if (liveState.reconciliationComplete()) {
+                reconcilePersistentState();
+                log.info("Current persistent state:");
+                log.info(String.format("JournalNodes: %s", persistentState.getJournalNodes()));
+                log.info(String.format("NameNodes: %s", persistentState.getNameNodes()));
+                log.info(String.format("DataNodes: %s", persistentState.getDataNodes()));
                 correctCurrentPhase();
                 resourceOffers(driver, offers);
               } else {
@@ -242,7 +246,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         conf.getMesosMasterUri());
     driver.run().getValueDescriptor().getFullName();
   }
-
   private void launchNode(SchedulerDriver driver, Offer offer,
         String nodeName, List<String> taskNames, String executorName) {
     log.info(String.format("Launching node of type %s with tasks %s", nodeName,
@@ -363,7 +366,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   private boolean maybeLaunchJournalNode(SchedulerDriver driver, Offer offer) {
     if (persistentState.journalNodeRunningOnSlave(offer.getHostname())) {
       log.info(String.format("Already running journalnode on %s", offer.getHostname()));
-    } else if (offerNotEnoughResources(offer, conf.getJournalNodeCpus(), conf.getJournalNodeHeapSize())) {
+    } else if (offerNotEnoughResources(offer, conf.getJournalNodeCpus(),
+        conf.getJournalNodeHeapSize())) {
       log.info("Offer does not have enough resources");
     } else {
       launchNode(
@@ -484,5 +488,13 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       }
     }
     return false;
+  }
+
+  private void reconcilePersistentState() {
+    for (String taskId : persistentState.getAllTaskIds()) {
+      if (!liveState.getRunningTasks().keySet().contains(taskId)) {
+        persistentState.removeTaskId(taskId);
+      }
+    }
   }
 }

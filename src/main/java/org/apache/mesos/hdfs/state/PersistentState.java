@@ -12,7 +12,9 @@ import org.apache.mesos.state.Variable;
 import org.apache.mesos.state.ZooKeeperState;
 
 import java.io.*;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -60,6 +62,13 @@ public class PersistentState {
     return getHashMap(DATANODES_KEY);
   }
 
+  public Collection<String> getAllTaskIds() {
+    HashMap<String, String> allTasksIds = getJournalNodes();
+    allTasksIds.putAll(getNameNodes());
+    allTasksIds.putAll(getDataNodes());
+    return allTasksIds.values();
+  }
+
   public void addNode(Protos.TaskID taskId, String hostname, String taskName) {
     switch (taskName) {
       case HDFSConstants.NAME_NODE_ID :
@@ -82,6 +91,39 @@ public class PersistentState {
         break;
       default :
         log.error("Task name unknown");
+    }
+  }
+
+  public void removeTaskId(String taskId) {
+    HashMap<String, String> journalNodes = getJournalNodes();
+    if (journalNodes.values().contains(taskId)) {
+      for (Map.Entry<String, String> entry : journalNodes.entrySet()) {
+        if (entry.getValue().equals(taskId)) {
+          journalNodes.put(entry.getKey(), "");
+          setJournalNodes(journalNodes);
+          return;
+        }
+      }
+    }
+    HashMap<String, String> nameNodes = getNameNodes();
+    if (nameNodes.values().contains(taskId)) {
+      for (Map.Entry<String, String> entry : nameNodes.entrySet()) {
+        if (entry.getValue().equals(taskId)) {
+          nameNodes.put(entry.getKey(), "");
+          setNameNodes(nameNodes);
+          return;
+        }
+      }
+    }
+    HashMap<String, String> dataNodes = getDataNodes();
+    if (dataNodes.values().contains(taskId)) {
+      for (Map.Entry<String, String> entry : dataNodes.entrySet()) {
+        if (entry.getValue().equals(taskId)) {
+          dataNodes.put(entry.getKey(), "");
+          setDataNodes(dataNodes);
+          return;
+        }
+      }
     }
   }
 
