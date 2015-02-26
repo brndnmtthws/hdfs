@@ -76,6 +76,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     liveState.updateReconciliationTimestamp();
     driver.reconcileTasks(Collections.<Protos.TaskStatus>emptyList());
   }
+
   @Override
   public void reregistered(SchedulerDriver driver, MasterInfo masterInfo) {
     log.info("Reregistered framework: starting task reconcile");
@@ -130,15 +131,17 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           if (liveState.getNameNodeSize() == HDFSConstants.TOTAL_NAME_NODES
               && liveState.getSecondNameNodeTaskId() != null) {
             reloadConfigsOnAllRunningTasks(driver);
-            //TODO(nicgrayson) need to check if we should format the NN
+            // TODO(nicgrayson) need to check if we should format the NN
             sendMessageTo(
                 driver,
-                liveState.getFirstNameNodeTaskId(), liveState.getFirstNameNodeSlaveId(),
+                liveState.getFirstNameNodeTaskId(),
+                liveState.getFirstNameNodeSlaveId(),
                 HDFSConstants.NAME_NODE_INIT_MESSAGE);
             blockUntilNameNode1Healthy();
             sendMessageTo(
                 driver,
-                liveState.getSecondNameNodeTaskId(), liveState.getSecondNameNodeSlaveId(),
+                liveState.getSecondNameNodeTaskId(),
+                liveState.getSecondNameNodeSlaveId(),
                 HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE);
             liveState.transitionTo(AcquisitionPhase.DATA_NODES);
           } else {
@@ -247,6 +250,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         conf.getMesosMasterUri());
     driver.run().getValueDescriptor().getFullName();
   }
+
   private void launchNode(SchedulerDriver driver, Offer offer,
         String nodeName, List<String> taskNames, String executorName) {
     log.info(String.format("Launching node of type %s with tasks %s", nodeName,
@@ -278,7 +282,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     driver.launchTasks(Arrays.asList(offer.getId()), tasks);
   }
   private ExecutorInfo createExecutor(String taskIdName, String nodeName, String executorName,
-        List<Resource> resources) {
+      List<Resource> resources) {
     int confServerPort = conf.getConfigServerPort();
     return ExecutorInfo
         .newBuilder()
@@ -337,7 +341,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
                 .setValue(conf.getExecutorCpus()).build())
             .setRole("*")
             .build(),
-         Resource.newBuilder()
+        Resource.newBuilder()
             .setName("mem")
             .setType(Value.Type.SCALAR)
             .setScalar(Value.Scalar.newBuilder()
@@ -460,7 +464,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   }
 
   private void blockUntilNameNode1Healthy() {
-    //TODO need to implement this method
+    // TODO need to implement this method
     try {
       Thread.sleep(30000L);
     } catch (InterruptedException e) {

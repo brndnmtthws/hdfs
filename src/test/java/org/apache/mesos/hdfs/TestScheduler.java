@@ -199,7 +199,7 @@ public class TestScheduler {
             createTestOffer(1),
             createTestOffer(2),
             createTestOffer(3)
-        ));
+            ));
 
     verify(driver, times(3)).declineOffer(any(Protos.OfferID.class));
   }
@@ -211,8 +211,8 @@ public class TestScheduler {
     scheduler.resourceOffers(driver,
         Lists.newArrayList(
             createTestOffer(0)
-        )
-    );
+            )
+        );
 
     verify(driver, times(1)).launchTasks(anyList(), taskInfosCapture.capture());
     Protos.TaskInfo taskInfo = taskInfosCapture.getValue().iterator().next();

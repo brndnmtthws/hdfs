@@ -139,6 +139,7 @@ public abstract class AbstractNodeExecutor implements Executor {
     bufferedWriter.close();
     Runtime.getRuntime().exec("chmod a+x " + pathEnvVarLocation);
   }
+
   /**
    * Starts a task's process so it goes into running state.
    **/
