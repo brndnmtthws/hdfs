@@ -11,6 +11,8 @@ import org.apache.mesos.Protos.*;
 import org.apache.mesos.hdfs.config.SchedulerConf;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 
+import java.io.File;
+
 /**
  * The executor for the Primary Name Node Machine.
  **/
@@ -94,9 +96,14 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
   public void frameworkMessage(ExecutorDriver driver, byte[] msg) {
     super.frameworkMessage(driver, msg);
     String messageStr = new String(msg);
+    File dataDir = new File(schedulerConf.getDataDir() + "/name");
     if (messageStr.equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)
         || messageStr.equals(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE)) {
-      runCommand(driver, nameNodeTask, "bin/hdfs-mesos-namenode " + messageStr);
+      if (dataDir.exists()) {
+        log.info(String.format("NameNode data directory %s already exists, not formatting", dataDir));
+      } else {
+        runCommand(driver, nameNodeTask, "bin/hdfs-mesos-namenode " + messageStr);
+      }
     }
   }
 }
