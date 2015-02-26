@@ -366,6 +366,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   private boolean maybeLaunchJournalNode(SchedulerDriver driver, Offer offer) {
     if (persistentState.journalNodeRunningOnSlave(offer.getHostname())) {
       log.info(String.format("Already running journalnode on %s", offer.getHostname()));
+    } else if (persistentState.dataNodeRunningOnSlave(offer.getHostname())) {
+      log.info(String.format("Cannot colocate journalnode and datanode on %s", offer.getHostname()));
     } else if (offerNotEnoughResources(offer, conf.getJournalNodeCpus(),
         conf.getJournalNodeHeapSize())) {
       log.info("Offer does not have enough resources");
@@ -384,7 +386,10 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   private boolean maybeLaunchNameNode(SchedulerDriver driver, Offer offer) {
     if (persistentState.nameNodeRunningOnSlave(offer.getHostname())) {
       log.info(String.format("Already running namenode on %s", offer.getHostname()));
+    } else if (persistentState.dataNodeRunningOnSlave(offer.getHostname())) {
+      log.info(String.format("Cannot colocate namenode and datanode on %s", offer.getHostname()));
     } else if (offerNotEnoughResources(offer,
+
         (conf.getNameNodeCpus() + conf.getZkfcCpus()),
         (conf.getNameNodeHeapSize() + conf.getZkfcHeapSize()))) {
       log.info("Offer does not have enough resources");
