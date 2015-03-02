@@ -93,9 +93,7 @@ public class TestScheduler {
 
     scheduler.resourceOffers(driver,
         Lists.newArrayList(
-            createTestOffer(0),
-            createTestOffer(1),
-            createTestOffer(2)
+            createTestOffer(0)
             )
         );
 
