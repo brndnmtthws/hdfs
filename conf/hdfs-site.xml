@@ -109,7 +109,7 @@
 
   <property>
     <name>dfs.datanode.dns.nameserver</name>
-    <value>mesos-dns.mesos</value>
+    <value>default</value>
   </property>
 
   <property>

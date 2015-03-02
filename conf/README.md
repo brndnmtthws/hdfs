@@ -9,7 +9,7 @@ hdfs-site.xml
 Sets the internal interface (e.g. eth0) for your nodes to communicate.
 
 ###dfs.datanode.dns.nameserver
-This is the nameserver (must be in IPv4) that the nodes use to discover each other. For example, if you use mesos-dns, this can be set to `mesos-dns.mesos`.
+This is the nameserver (must be in IPv4) that the nodes use to discover each other. For example, if you use [mesos-dns](https://github.com/mesosphere/mesos-dns), this can be set to `mesos-dns.mesos`.
 
 mesos-site.xml
 --------------------------

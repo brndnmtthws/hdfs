@@ -1,6 +1,6 @@
 {
     "id": "hdfs",
-    "cmd": "cd hdfs* && ./bin/hdfs-mesos",
+    "cmd": "cd hdfs-mesos-* && ./bin/hdfs-mesos",
     "uris": [
         ""
     ],
