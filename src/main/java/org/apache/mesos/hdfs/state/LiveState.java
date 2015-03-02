@@ -31,7 +31,7 @@ public class LiveState {
     nameNodeHosts = new HashSet<>();
     stagingTasks = new HashSet<>();
   }
-
+  
   public Map<Protos.TaskID, String> getTaskHostMap() {
     return taskHostMap;
   }
