@@ -99,8 +99,8 @@ public class TestScheduler {
             )
         );
 
-    verify(liveState, times(1)).addTask(any(Protos.TaskID.class),
-        eq(createTestOffer(0).getHostname()), eq(createTestOffer(0).getSlaveId().getValue()));
+    verify(liveState, times(7)).addTask(any(Protos.TaskID.class),
+        anyString(), anyString());
   }
 
   private Protos.TaskID createTaskId(String id) {
