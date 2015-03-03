@@ -234,7 +234,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   @Override
   public void run() {
     FrameworkInfo.Builder frameworkInfo = FrameworkInfo.newBuilder()
-        .setName("HDFS " + conf.getFrameworkName())
+        .setName(conf.getFrameworkName())
         .setFailoverTimeout(conf.getFailoverTimeout())
         .setUser(conf.getHdfsUser())
         .setRole(conf.getHdfsRole())
