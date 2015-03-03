@@ -279,7 +279,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       tasks.add(task);
 
       liveState.addStagingTask(task);
-      persistentState.addNode(taskId, offer.getHostname(), taskName);
+      persistentState.addHdfsNode(taskId, offer.getHostname(), taskName);
     }
     driver.launchTasks(Arrays.asList(offer.getId()), tasks);
   }

@@ -103,7 +103,7 @@ public class PersistentState {
     return allTasksIds.values();
   }
 
-  public void addNode(Protos.TaskID taskId, String hostname, String taskName) {
+  public void addHdfsNode(Protos.TaskID taskId, String hostname, String taskName) {
     switch (taskName) {
       case HDFSConstants.NAME_NODE_ID :
         HashMap<String, String> nameNodes = getNameNodes();
