@@ -12,9 +12,7 @@ import org.apache.mesos.state.Variable;
 import org.apache.mesos.state.ZooKeeperState;
 
 import java.io.*;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -29,7 +27,7 @@ public class PersistentState {
   public PersistentState(SchedulerConf conf) {
     MesosNativeLibrary.load(conf.getNativeLibrary());
     this.zkState = new ZooKeeperState(conf.getStateZkServers(),
-        conf.getStateZkTimeout(), TimeUnit.MILLISECONDS, "/hdfs-mesos/" + conf.getClusterName());
+        conf.getStateZkTimeout(), TimeUnit.MILLISECONDS, "/hdfs-mesos/" + conf.getFrameworkName());
   }
 
   public FrameworkID getFrameworkID() throws InterruptedException, ExecutionException,
@@ -49,6 +47,42 @@ public class PersistentState {
     zkState.store(value).get();
   }
 
+  public List<String> getDeadJournalNodes() {
+    HashMap<String, String> journalNodes = getJournalNodes();
+    Set<String> journalHosts = journalNodes.keySet();
+    List<String> deadJournalHosts = new ArrayList<>();
+
+    for (String journalHost: journalHosts) {
+      if (journalNodes.get(journalHost) == null) {
+        deadJournalHosts.add(journalHost);
+      }
+    }
+    return deadJournalHosts;
+  }
+  public List<String> getDeadNameNodes() {
+    HashMap<String, String> nameNodes = getNameNodes();
+    Set<String> nameHosts = nameNodes.keySet();
+    List<String> deadNameHosts = new ArrayList<>();
+
+    for (String nameHost : nameHosts) {
+      if (nameNodes.get(nameHost) == null) {
+        deadNameHosts.add(nameHost);
+      }
+    }
+    return deadNameHosts;
+  }
+  public List<String> getDeadDataNodes() {
+    HashMap<String, String> dataNodes = getDataNodes();
+    Set<String> dataHosts = dataNodes.keySet();
+    List<String> deadDataHosts = new ArrayList<>();
+
+    for (String dataHost : dataHosts) {
+      if (dataNodes.get(dataHost) == null) {
+        deadDataHosts.add(dataHost);
+      }
+    }
+    return deadDataHosts;
+  }
   // TODO (nicgrayson) add tests with in memory zookeeper
   public HashMap<String, String> getJournalNodes() {
     return getHashMap(JOURNALNODES_KEY);

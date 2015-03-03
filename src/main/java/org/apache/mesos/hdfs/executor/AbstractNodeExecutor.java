@@ -67,6 +67,12 @@ public abstract class AbstractNodeExecutor implements Executor {
       dataDir.mkdirs();
     }
 
+    File nameDir = new File(schedulerConf.getDataDir() + "/name");
+    if (nameDir.exists()) {
+      deleteFile(nameDir);
+    }
+    // nameDir.mkdirs();
+
     // Create secondary data dir if it does not exist
     File secondaryDataDir = new File(schedulerConf.getSecondaryDataDir());
     if (!secondaryDataDir.exists()) {
@@ -247,7 +253,9 @@ public abstract class AbstractNodeExecutor implements Executor {
 
   @Override
   public void frameworkMessage(ExecutorDriver driver, byte[] msg) {
-    log.info("Executor received framework message of length: " + msg.length + " bytes");
+    reloadConfig();
+    String messageStr = new String(msg);
+    log.info("Executor received framework message: " + messageStr);
   }
 
   @Override

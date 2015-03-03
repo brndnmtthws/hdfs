@@ -16,13 +16,23 @@ public class LiveState {
   private AcquisitionPhase currentAcquisitionPhase = AcquisitionPhase.RECONCILING_TASKS;
   private LinkedHashMap<Protos.TaskID, Protos.TaskStatus> runningTasks = new LinkedHashMap<>();
   private Timestamp ReconciliationTimestamp;
+  private Protos.TaskID nameNode1TaskId = null;
+  private Protos.TaskID nameNode2TaskId = null;
 
   public boolean reconciliationComplete() {
     return ReconciliationTimestamp.before(new Date());
   }
 
+  public boolean isNameNode1Initialized() {
+    return nameNode1TaskId != null;
+  }
+
+  public boolean isNameNode2Initialized() {
+    return nameNode2TaskId != null;
+  }
+
   public void updateReconciliationTimestamp() {
-    Date date = DateUtils.addSeconds(new Date(), 30); //TODO(nicgrayson) add config for this value
+    Date date = DateUtils.addSeconds(new Date(), 10); //TODO(nicgrayson) add config for this value
     ReconciliationTimestamp = new Timestamp(date.getTime());
   }
 
@@ -49,10 +59,20 @@ public class LiveState {
   }
 
   public void removeTask(Protos.TaskID taskId) {
+    if (isNameNode1Initialized() && nameNode1TaskId.equals(taskId)) {
+      nameNode1TaskId = null;
+    } else if (isNameNode2Initialized() && nameNode2TaskId.equals(taskId)) {
+      nameNode2TaskId = null;
+    }
     runningTasks.remove(taskId);
   }
 
   public void updateTaskForStatus(Protos.TaskStatus status) {
+    if (status.getMessage().equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)) {
+      nameNode1TaskId = status.getTaskId();
+    } else if (status.getMessage().equals(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE)) {
+      nameNode2TaskId = status.getTaskId();
+    }
     runningTasks.put(status.getTaskId(), status);
   }
 
@@ -117,7 +137,7 @@ public class LiveState {
   private ArrayList<Protos.SlaveID> getNamenodeSlaveIds() {
     ArrayList<Protos.SlaveID> namenodes = new ArrayList();
     for (Protos.TaskStatus taskStatus : runningTasks.values()) {
-      if (taskStatus.getTaskId().getValue().contains(HDFSConstants.NAME_NODE_ID)) {
+      if (taskStatus.getTaskId().getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
         namenodes.add(taskStatus.getSlaveId());
       }
     }
