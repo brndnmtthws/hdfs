@@ -132,16 +132,15 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           if (liveState.getNameNodeSize() == HDFSConstants.TOTAL_NAME_NODES
               && liveState.getSecondNameNodeTaskId() != null) {
             reloadConfigsOnAllRunningTasks(driver);
-            // TODO(nicgrayson) need to check if we should format the NN
-            if (!status.getMessage().equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)
-                && !status.getMessage().equals(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE)) {
+            if (!liveState.isNameNode1Initialized()) {
               sendMessageTo(
                   driver,
                   liveState.getFirstNameNodeTaskId(),
                   liveState.getFirstNameNodeSlaveId(),
                   HDFSConstants.NAME_NODE_INIT_MESSAGE);
             }
-            if (status.getMessage().equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)) {
+            if (liveState.isNameNode1Initialized()
+                && !liveState.isNameNode2Initialized()) {
               sendMessageTo(
                   driver,
                   liveState.getSecondNameNodeTaskId(), liveState.getSecondNameNodeSlaveId(),
