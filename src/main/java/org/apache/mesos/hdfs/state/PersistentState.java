@@ -133,7 +133,7 @@ public class PersistentState {
     if (journalNodes.values().contains(taskId)) {
       for (Map.Entry<String, String> entry : journalNodes.entrySet()) {
         if (entry.getValue().equals(taskId)) {
-          journalNodes.put(entry.getKey(), "");
+          journalNodes.put(entry.getKey(), null);
           setJournalNodes(journalNodes);
           return;
         }
@@ -143,7 +143,7 @@ public class PersistentState {
     if (nameNodes.values().contains(taskId)) {
       for (Map.Entry<String, String> entry : nameNodes.entrySet()) {
         if (entry.getValue().equals(taskId)) {
-          nameNodes.put(entry.getKey(), "");
+          nameNodes.put(entry.getKey(), null);
           setNameNodes(nameNodes);
           return;
         }
@@ -153,7 +153,7 @@ public class PersistentState {
     if (dataNodes.values().contains(taskId)) {
       for (Map.Entry<String, String> entry : dataNodes.entrySet()) {
         if (entry.getValue().equals(taskId)) {
-          dataNodes.put(entry.getKey(), "");
+          dataNodes.put(entry.getKey(), null);
           setDataNodes(dataNodes);
           return;
         }
