@@ -132,7 +132,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           if (liveState.getNameNodeSize() == HDFSConstants.TOTAL_NAME_NODES
               && liveState.getSecondNameNodeTaskId() != null) {
             reloadConfigsOnAllRunningTasks(driver);
-            if (!liveState.isNameNode1Initialized()) {
+            if (!liveState.isNameNode1Initialized()
+                && !status.getMessage().equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)) {
               sendMessageTo(
                   driver,
                   liveState.getFirstNameNodeTaskId(),
