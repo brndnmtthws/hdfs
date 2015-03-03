@@ -132,7 +132,7 @@ public class SchedulerConf extends Configured {
   }
 
   public String getFrameworkName() {
-    return getConf().get("mesos.hdfs.framework.name", "mesos-ha");
+    return getConf().get("mesos.hdfs.framework.name", "hdfs");
   }
 
   public long getFailoverTimeout() {
