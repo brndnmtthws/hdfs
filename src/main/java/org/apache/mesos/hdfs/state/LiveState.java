@@ -99,18 +99,30 @@ public class LiveState {
   }
 
   public Protos.TaskID getFirstNameNodeTaskId() {
+    if (nameNode1TaskStatus == null) {
+      return null;
+    }
     return nameNode1TaskStatus.getTaskId();
   }
 
   public Protos.TaskID getSecondNameNodeTaskId() {
+    if (nameNode2TaskStatus == null) {
+      return null;
+    }
     return nameNode2TaskStatus.getTaskId();
   }
 
   public Protos.SlaveID getFirstNameNodeSlaveId() {
+    if (nameNode1TaskStatus == null) {
+      return null;
+    }
     return nameNode1TaskStatus.getSlaveId();
   }
 
   public Protos.SlaveID getSecondNameNodeSlaveId() {
+    if (nameNode2TaskStatus == null) {
+      return null;
+    }
     return nameNode2TaskStatus.getSlaveId();
   }
 

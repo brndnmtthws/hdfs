@@ -16,19 +16,19 @@ public class TestLiveState {
 
   @Test
   public void getsJournalNodeSize() {
-    liveState.updateTaskForStatus(createTaskStatus("journalnode", 2));
-    liveState.updateTaskForStatus(createTaskStatus("journalnode", 1));
-    liveState.updateTaskForStatus(createTaskStatus("datanode", 1));
+    liveState.updateTaskForStatus(createTaskStatus("journalnode", 2, ""));
+    liveState.updateTaskForStatus(createTaskStatus("journalnode", 1, ""));
+    liveState.updateTaskForStatus(createTaskStatus("datanode", 1, ""));
 
     assertEquals(2, liveState.getJournalNodeSize());
   }
 
   @Test
   public void getsNameNodeSize() {
-    liveState.updateTaskForStatus(createTaskStatus("journalnode", 1));
-    liveState.updateTaskForStatus(createTaskStatus(HDFSConstants.NAME_NODE_TASKID, 2));
-    liveState.updateTaskForStatus(createTaskStatus(HDFSConstants.NAME_NODE_TASKID, 1));
-    liveState.updateTaskForStatus(createTaskStatus("datanode", 1));
+    liveState.updateTaskForStatus(createTaskStatus("journalnode", 1, ""));
+    liveState.updateTaskForStatus(createTaskStatus(HDFSConstants.NAME_NODE_TASKID, 1, HDFSConstants.NAME_NODE_INIT_MESSAGE));
+    liveState.updateTaskForStatus(createTaskStatus(HDFSConstants.NAME_NODE_TASKID, 2, HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE));
+    liveState.updateTaskForStatus(createTaskStatus("datanode", 1, ""));
 
     assertEquals(2, liveState.getNameNodeSize());
   }
@@ -36,9 +36,9 @@ public class TestLiveState {
   @Test
   public void getsFirstNamenodeTaskId() {
     assertEquals(null, liveState.getFirstNameNodeTaskId());
-    liveState.updateTaskForStatus(createTaskStatus("journalnode", 1));
-    liveState.updateTaskForStatus(createTaskStatus(HDFSConstants.NAME_NODE_TASKID, 1));
-    liveState.updateTaskForStatus(createTaskStatus(HDFSConstants.NAME_NODE_TASKID, 2));
+    liveState.updateTaskForStatus(createTaskStatus("journalnode", 1, ""));
+    liveState.updateTaskForStatus(createTaskStatus(HDFSConstants.NAME_NODE_TASKID, 1, HDFSConstants.NAME_NODE_INIT_MESSAGE));
+    liveState.updateTaskForStatus(createTaskStatus(HDFSConstants.NAME_NODE_TASKID, 2, HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE));
     assertEquals(
         Protos.TaskID.newBuilder().setValue(HDFSConstants.NAME_NODE_TASKID + ".1").build(),
         liveState.getFirstNameNodeTaskId());
@@ -47,10 +47,10 @@ public class TestLiveState {
   @Test
   public void getsSecondNamenodeTaskId() {
     assertEquals(null, liveState.getSecondNameNodeTaskId());
-    liveState.updateTaskForStatus(createTaskStatus("journalnode", 1));
-    liveState.updateTaskForStatus(createTaskStatus(HDFSConstants.NAME_NODE_TASKID, 1));
+    liveState.updateTaskForStatus(createTaskStatus("journalnode", 1, ""));
+    liveState.updateTaskForStatus(createTaskStatus(HDFSConstants.NAME_NODE_TASKID, 1, HDFSConstants.NAME_NODE_INIT_MESSAGE));
     assertEquals(null, liveState.getSecondNameNodeTaskId());
-    liveState.updateTaskForStatus(createTaskStatus(HDFSConstants.NAME_NODE_TASKID, 2));
+    liveState.updateTaskForStatus(createTaskStatus(HDFSConstants.NAME_NODE_TASKID, 2, HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE));
     assertEquals(
         Protos.TaskID.newBuilder().setValue(HDFSConstants.NAME_NODE_TASKID + ".2").build(),
         liveState.getSecondNameNodeTaskId());
@@ -59,19 +59,19 @@ public class TestLiveState {
   @Test
   public void getsFirstNamenodeSlaveId() {
     assertEquals(null, liveState.getFirstNameNodeSlaveId());
-    liveState.updateTaskForStatus(createTaskStatus("journalnode", 1));
-    liveState.updateTaskForStatus(createTaskStatus(HDFSConstants.NAME_NODE_TASKID, 1));
-    liveState.updateTaskForStatus(createTaskStatus(HDFSConstants.NAME_NODE_TASKID, 2));
+    liveState.updateTaskForStatus(createTaskStatus("journalnode", 1, ""));
+    liveState.updateTaskForStatus(createTaskStatus(HDFSConstants.NAME_NODE_TASKID, 1, HDFSConstants.NAME_NODE_INIT_MESSAGE));
+    liveState.updateTaskForStatus(createTaskStatus(HDFSConstants.NAME_NODE_TASKID, 2, HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE));
     assertEquals("slave.1", liveState.getFirstNameNodeSlaveId().getValue());
   }
 
   @Test
   public void getsSecondNamenodeSlaveId() {
     assertEquals(null, liveState.getSecondNameNodeSlaveId());
-    liveState.updateTaskForStatus(createTaskStatus("journalnode", 2));
-    liveState.updateTaskForStatus(createTaskStatus(HDFSConstants.NAME_NODE_TASKID, 1));
+    liveState.updateTaskForStatus(createTaskStatus("journalnode", 2, ""));
+    liveState.updateTaskForStatus(createTaskStatus(HDFSConstants.NAME_NODE_TASKID, 1, HDFSConstants.NAME_NODE_INIT_MESSAGE));
     assertEquals(null, liveState.getSecondNameNodeSlaveId());
-    liveState.updateTaskForStatus(createTaskStatus(HDFSConstants.NAME_NODE_TASKID, 2));
+    liveState.updateTaskForStatus(createTaskStatus(HDFSConstants.NAME_NODE_TASKID, 2, HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE));
     assertEquals("slave.2", liveState.getSecondNameNodeSlaveId().getValue());
   }
 
@@ -89,11 +89,12 @@ public class TestLiveState {
     liveState = new LiveState(schedulerConf);
   }
 
-  private Protos.TaskStatus createTaskStatus(String taskId, Integer taskNumber) {
+  private Protos.TaskStatus createTaskStatus(String taskId, Integer taskNumber, String message) {
     return Protos.TaskStatus.newBuilder()
         .setSlaveId(Protos.SlaveID.newBuilder().setValue("slave." + taskNumber.toString()))
         .setTaskId(Protos.TaskID.newBuilder().setValue(taskId + "." + taskNumber.toString()))
         .setState(Protos.TaskState.TASK_RUNNING)
+        .setMessage(message)
         .build();
   }
 
