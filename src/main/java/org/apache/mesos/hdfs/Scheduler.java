@@ -195,7 +195,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
               break;
             case JOURNAL_NODES :
               if (liveState.getJournalNodeSize() < conf.getJournalNodeCount()) {
-                if (maybeLaunchJournalNode(driver, offer)) {
+                if (tryToLaunchJournalNode(driver, offer)) {
                   acceptedOffer = true;
                 } else {
                   driver.declineOffer(offer.getId());
@@ -203,21 +203,21 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
               }
               break;
             case NAME_NODE_1 :
-              if (maybeLaunchNameNode(driver, offer)) {
+              if (tryToLaunchNameNode(driver, offer)) {
                 acceptedOffer = true;
               } else {
                 driver.declineOffer(offer.getId());
               }
               break;
             case NAME_NODE_2 :
-              if (maybeLaunchNameNode(driver, offer)) {
+              if (tryToLaunchNameNode(driver, offer)) {
                 acceptedOffer = true;
               } else {
                 driver.declineOffer(offer.getId());
               }
               break;
             case DATA_NODES :
-              if (maybeLaunchDataNode(driver, offer)) {
+              if (tryToLaunchDataNode(driver, offer)) {
                 acceptedOffer = true;
               } else {
                 driver.declineOffer(offer.getId());
@@ -373,7 +373,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
             .build());
   }
 
-  private boolean maybeLaunchJournalNode(SchedulerDriver driver, Offer offer) {
+  private boolean tryToLaunchJournalNode(SchedulerDriver driver, Offer offer) {
     if (offerNotEnoughResources(offer, conf.getJournalNodeCpus(), conf.getJournalNodeHeapSize())) {
       log.info("Offer does not have enough resources");
       return false;
@@ -408,7 +408,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     return false;
   }
 
-  private boolean maybeLaunchNameNode(SchedulerDriver driver, Offer offer) {
+  private boolean tryToLaunchNameNode(SchedulerDriver driver, Offer offer) {
     if (offerNotEnoughResources(offer,
         (conf.getNameNodeCpus() + conf.getZkfcCpus()),
         (conf.getNameNodeHeapSize() + conf.getZkfcHeapSize()))) {
@@ -444,7 +444,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     return false;
   }
 
-  private boolean maybeLaunchDataNode(SchedulerDriver driver, Offer offer) {
+  private boolean tryToLaunchDataNode(SchedulerDriver driver, Offer offer) {
     if (persistentState.dataNodeRunningOnSlave(offer.getHostname()) ||
         persistentState.nameNodeRunningOnSlave(offer.getHostname()) ||
         persistentState.journalNodeRunningOnSlave(offer.getHostname())) {
