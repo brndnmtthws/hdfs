@@ -448,13 +448,26 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   }
 
   private boolean tryToLaunchDataNode(SchedulerDriver driver, Offer offer) {
-    if (persistentState.dataNodeRunningOnSlave(offer.getHostname()) ||
-        persistentState.nameNodeRunningOnSlave(offer.getHostname()) ||
-        persistentState.journalNodeRunningOnSlave(offer.getHostname())) {
-      log.info(String.format("Already running hdfs task on %s", offer.getHostname()));
-    } else if (offerNotEnoughResources(offer, conf.getDataNodeCpus(), conf.getDataNodeHeapSize())) {
+    if (offerNotEnoughResources(offer, conf.getDataNodeCpus(), conf.getDataNodeHeapSize())) {
       log.info("Offer does not have enough resources");
-    } else {
+      return false;
+    }
+
+    boolean launch = false;
+    List<String> deadDataNodes = persistentState.getDeadDataNodes();
+
+    if (deadDataNodes.isEmpty()) {
+      if (persistentState.dataNodeRunningOnSlave(offer.getHostname())
+          || persistentState.nameNodeRunningOnSlave(offer.getHostname())
+          || persistentState.journalNodeRunningOnSlave(offer.getHostname())) {
+        log.info(String.format("Already running hdfs task on %s", offer.getHostname()));
+      } else {
+        launch = true;
+      }
+    } else if (deadDataNodes.contains(offer.getHostname())) {
+      launch = true;
+    }
+    if (launch) {
       launchNode(
           driver,
           offer,
