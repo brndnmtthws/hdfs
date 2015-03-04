@@ -18,6 +18,7 @@ import java.util.Set;
 public class LiveState {
   private Set<Protos.TaskInfo> stagingTasks = new HashSet<>();
   private AcquisitionPhase currentAcquisitionPhase = AcquisitionPhase.RECONCILING_TASKS;
+  // TODO (nicgrayson) Might need to split this out to jns, nns, and dns if dns too big
   private LinkedHashMap<Protos.TaskID, Protos.TaskStatus> runningTasks = new LinkedHashMap<>();
   private Timestamp ReconciliationTimestamp;
   private Protos.TaskID nameNode1TaskId = null;
@@ -49,6 +50,7 @@ public class LiveState {
   }
 
   public void removeStagingTask(final Protos.TaskID taskID) {
+    // TODO (nicgrayson) There looks to be a problem the protos equals comparison
     Set<Protos.TaskInfo> toRemove = new HashSet<>();
     for (Protos.TaskInfo taskInfo : stagingTasks ) {
       if (taskInfo.getTaskId().equals(taskID)) {
