@@ -476,7 +476,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     return (taskStatus.getState().equals(TaskState.TASK_FAILED)
         || taskStatus.getState().equals(TaskState.TASK_FINISHED)
         || taskStatus.getState().equals(TaskState.TASK_KILLED)
-        || taskStatus.getState().equals(TaskState.TASK_LOST));
+        || taskStatus.getState().equals(TaskState.TASK_LOST)
+        || taskStatus.getState().equals(TaskState.TASK_ERROR));
   }
 
   private boolean isRunningState(TaskStatus taskStatus) {
