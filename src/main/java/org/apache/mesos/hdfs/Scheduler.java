@@ -125,15 +125,12 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           }
           break;
         case NAME_NODE_1 :
-          if (liveState.getNameNodeSize() == 1 && liveState.getFirstNameNodeTaskId() != null) {
+          if (liveState.getNameNodeSize() == 1) {
             correctCurrentPhase();
-          } else {
-            log.info("Cannot locate first namenode task id");
           }
           break;
         case NAME_NODE_2 :
-          if (liveState.getNameNodeSize() == HDFSConstants.TOTAL_NAME_NODES
-              && liveState.getSecondNameNodeTaskId() != null) {
+          if (liveState.getNameNodeSize() == HDFSConstants.TOTAL_NAME_NODES) {
             reloadConfigsOnAllRunningTasks(driver);
             if (!liveState.isNameNode1Initialized()
                 && !status.getMessage().equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)) {
@@ -281,7 +278,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           .build();
       tasks.add(task);
 
-      liveState.addStagingTask(task);
+      liveState.addStagingTask(task.getTaskId());
       persistentState.addHdfsNode(taskId, offer.getHostname(), taskName);
     }
     driver.launchTasks(Arrays.asList(offer.getId()), tasks);

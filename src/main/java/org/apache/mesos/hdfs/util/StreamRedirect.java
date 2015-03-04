@@ -1,6 +1,5 @@
 package org.apache.mesos.hdfs.util;
 
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;

@@ -5,6 +5,7 @@ import com.google.common.collect.Sets;
 import com.google.inject.Singleton;
 import org.apache.commons.lang.time.DateUtils;
 import org.apache.mesos.Protos;
+import org.apache.mesos.hdfs.config.SchedulerConf;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 
 import java.sql.Timestamp;
@@ -16,33 +17,38 @@ import java.util.Set;
 
 @Singleton
 public class LiveState {
-  private Set<Protos.TaskInfo> stagingTasks = new HashSet<>();
+  private Set<Protos.TaskID> stagingTasks = new HashSet<>();
   private AcquisitionPhase currentAcquisitionPhase = AcquisitionPhase.RECONCILING_TASKS;
   // TODO (nicgrayson) Might need to split this out to jns, nns, and dns if dns too big
   private LinkedHashMap<Protos.TaskID, Protos.TaskStatus> runningTasks = new LinkedHashMap<>();
   private Timestamp ReconciliationTimestamp;
-  private Protos.TaskID nameNode1TaskId = null;
-  private Protos.TaskID nameNode2TaskId = null;
+  private Protos.TaskStatus nameNode1TaskStatus = null;
+  private Protos.TaskStatus nameNode2TaskStatus = null;
+  private SchedulerConf schedulerConf = null;
+    
+  public LiveState(SchedulerConf conf) {
+    schedulerConf = conf;
+  }
 
   public boolean reconciliationComplete() {
     return ReconciliationTimestamp.before(new Date());
   }
 
   public boolean isNameNode1Initialized() {
-    return nameNode1TaskId != null;
+    return nameNode1TaskStatus != null;
   }
 
   public boolean isNameNode2Initialized() {
-    return nameNode2TaskId != null;
+    return nameNode2TaskStatus != null;
   }
 
   public void updateReconciliationTimestamp() {
-    Date date = DateUtils.addSeconds(new Date(), 10); //TODO(nicgrayson) add config for this value
+    Date date = DateUtils.addSeconds(new Date(), schedulerConf.getReconciliationTimeout());
     ReconciliationTimestamp = new Timestamp(date.getTime());
   }
 
-  public void addStagingTask(Protos.TaskInfo taskInfo) {
-    stagingTasks.add(taskInfo);
+  public void addStagingTask(Protos.TaskID taskId) {
+    stagingTasks.add(taskId);
   }
 
   public int getStagingTasksSize() {
@@ -50,14 +56,7 @@ public class LiveState {
   }
 
   public void removeStagingTask(final Protos.TaskID taskID) {
-    // TODO (nicgrayson) There looks to be a problem the protos equals comparison
-    Set<Protos.TaskInfo> toRemove = new HashSet<>();
-    for (Protos.TaskInfo taskInfo : stagingTasks ) {
-      if (taskInfo.getTaskId().equals(taskID)) {
-        toRemove.add(taskInfo);
-      }
-    }
-    stagingTasks.removeAll(toRemove);
+    stagingTasks.remove(taskID);
   }
 
   public LinkedHashMap<Protos.TaskID, Protos.TaskStatus> getRunningTasks() {
@@ -65,19 +64,20 @@ public class LiveState {
   }
 
   public void removeRunningTask(Protos.TaskID taskId) {
-    if (isNameNode1Initialized() && nameNode1TaskId.equals(taskId)) {
-      nameNode1TaskId = null;
-    } else if (isNameNode2Initialized() && nameNode2TaskId.equals(taskId)) {
-      nameNode2TaskId = null;
+    if (isNameNode1Initialized() && nameNode1TaskStatus.getTaskId().equals(taskId)) {
+      nameNode1TaskStatus = null;
+    } else if (isNameNode2Initialized()
+        && nameNode2TaskStatus.getTaskId().equals(taskId)) {
+      nameNode2TaskStatus = null;
     }
     runningTasks.remove(taskId);
   }
 
   public void updateTaskForStatus(Protos.TaskStatus status) {
     if (status.getMessage().equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)) {
-      nameNode1TaskId = status.getTaskId();
+      nameNode1TaskStatus = status;
     } else if (status.getMessage().equals(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE)) {
-      nameNode2TaskId = status.getTaskId();
+      nameNode2TaskStatus = status;
     }
     runningTasks.put(status.getTaskId(), status);
   }
@@ -99,55 +99,19 @@ public class LiveState {
   }
 
   public Protos.TaskID getFirstNameNodeTaskId() {
-    if (getNameNodeSize() >= 1) {
-      return getNamenodeTaskIds().get(0);
-    } else {
-      return null;
-    }
+    return nameNode1TaskStatus.getTaskId();
   }
 
   public Protos.TaskID getSecondNameNodeTaskId() {
-    if (getNameNodeSize() == HDFSConstants.TOTAL_NAME_NODES) {
-      return getNamenodeTaskIds().get(1);
-    } else {
-      return null;
-    }
+    return nameNode2TaskStatus.getTaskId();
   }
 
   public Protos.SlaveID getFirstNameNodeSlaveId() {
-    if (getNameNodeSize() >= 1) {
-      return getNamenodeSlaveIds().get(0);
-    } else {
-      return null;
-    }
+    return nameNode1TaskStatus.getSlaveId();
   }
 
   public Protos.SlaveID getSecondNameNodeSlaveId() {
-    if (getNameNodeSize() == HDFSConstants.TOTAL_NAME_NODES) {
-      return getNamenodeSlaveIds().get(1);
-    } else {
-      return null;
-    }
-  }
-
-  private ArrayList<Protos.TaskID> getNamenodeTaskIds() {
-    ArrayList<Protos.TaskID> namenodes = new ArrayList();
-    for (Protos.TaskStatus taskStatus : runningTasks.values()) {
-      if (taskStatus.getTaskId().getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
-        namenodes.add(taskStatus.getTaskId());
-      }
-    }
-    return namenodes;
-  }
-
-  private ArrayList<Protos.SlaveID> getNamenodeSlaveIds() {
-    ArrayList<Protos.SlaveID> namenodes = new ArrayList();
-    for (Protos.TaskStatus taskStatus : runningTasks.values()) {
-      if (taskStatus.getTaskId().getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
-        namenodes.add(taskStatus.getSlaveId());
-      }
-    }
-    return namenodes;
+    return nameNode2TaskStatus.getSlaveId();
   }
 
   private int countOfRunningTasksWith(final String nodeId) {
