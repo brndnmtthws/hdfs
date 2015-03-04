@@ -48,7 +48,15 @@ public class LiveState {
     return stagingTasks.size();
   }
 
-  public void removeStagingTask(final Protos.TaskID taskID) {stagingTasks.remove(taskID);}
+  public void removeStagingTask(final Protos.TaskID taskID) {
+    Set<Protos.TaskInfo> toRemove = new HashSet<>();
+    for (Protos.TaskInfo taskInfo : stagingTasks ) {
+      if (taskInfo.getTaskId().equals(taskID)) {
+        toRemove.add(taskInfo);
+      }
+    }
+    stagingTasks.removeAll(toRemove);
+  }
 
   public LinkedHashMap<Protos.TaskID, Protos.TaskStatus> getRunningTasks() {
     return runningTasks;
