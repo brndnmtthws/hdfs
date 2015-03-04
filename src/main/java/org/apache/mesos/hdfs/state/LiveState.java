@@ -36,15 +36,11 @@ public class LiveState {
   }
 
   public boolean isNameNode1Initialized() {
-    boolean nameNode1Exists = !nameNode1TaskMap.isEmpty();
-    boolean nameNode1Init = nameNode1TaskMap.values().iterator().next();
-    return nameNode1Exists && nameNode1Init;
+    return !nameNode1TaskMap.isEmpty() && nameNode1TaskMap.values().iterator().next();
   }
 
   public boolean isNameNode2Initialized() {
-    boolean nameNode2Exists = !nameNode2TaskMap.isEmpty();
-    boolean nameNode2Init = nameNode2TaskMap.values().iterator().next();
-    return nameNode2Exists && nameNode2Init;
+    return !nameNode2TaskMap.isEmpty() && nameNode2TaskMap.values().iterator().next();
   }
 
   public void updateReconciliationTimestamp() {
