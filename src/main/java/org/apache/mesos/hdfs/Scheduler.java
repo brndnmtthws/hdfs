@@ -29,8 +29,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   private PersistentState persistentState;
 
   @Inject
-  public Scheduler(SchedulerConf conf, LiveState liveState) {
-    this(conf, liveState, new PersistentState(conf));
+  public Scheduler(SchedulerConf conf) {
+    this(conf, new LiveState(conf), new PersistentState(conf));
   }
 
   public Scheduler(SchedulerConf conf, LiveState liveState, PersistentState persistentState) {
