@@ -426,6 +426,9 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         log.info(String.format("Already running namenode on %s", offer.getHostname()));
       } else if (persistentState.dataNodeRunningOnSlave(offer.getHostname())) {
         log.info(String.format("Cannot colocate namenode and datanode on %s", offer.getHostname()));
+      } else if (!persistentState.journalNodeRunningOnSlave(offer.getHostname())) {
+        log.info(String.format("We need to coloate the namenode with a journalnode and there is"
+            + "no journalnode running on this host. %s", offer.getHostname()));
       } else {
         launch = true;
       }
