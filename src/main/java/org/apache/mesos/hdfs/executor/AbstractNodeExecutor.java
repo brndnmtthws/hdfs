@@ -67,12 +67,6 @@ public abstract class AbstractNodeExecutor implements Executor {
       dataDir.mkdirs();
     }
 
-    File nameDir = new File(schedulerConf.getDataDir() + "/name");
-    if (nameDir.exists()) {
-      deleteFile(nameDir);
-    }
-    // nameDir.mkdirs();
-
     // Create secondary data dir if it does not exist
     File secondaryDataDir = new File(schedulerConf.getSecondaryDataDir());
     if (!secondaryDataDir.exists()) {
