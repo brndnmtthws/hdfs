@@ -20,7 +20,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-
+//TODO remove as much logic as possible from Scheduler to clean up code
 public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
   public static final Log log = LogFactory.getLog(Scheduler.class);
@@ -125,7 +125,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           }
           break;
         case NAME_NODE_1 :
-          if (liveState.getNameNodeSize() == 1) {
+          if (liveState.getNameNodeSize() == (HDFSConstants.TOTAL_NAME_NODES - 1)) {
             correctCurrentPhase();
           }
           break;
