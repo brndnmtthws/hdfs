@@ -11,6 +11,7 @@ import org.apache.mesos.hdfs.util.HDFSConstants;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Set;
@@ -21,9 +22,9 @@ public class LiveState {
   private AcquisitionPhase currentAcquisitionPhase = AcquisitionPhase.RECONCILING_TASKS;
   // TODO (nicgrayson) Might need to split this out to jns, nns, and dns if dns too big
   private LinkedHashMap<Protos.TaskID, Protos.TaskStatus> runningTasks = new LinkedHashMap<>();
+  private HashMap<Protos.TaskStatus, Boolean> nameNode1TaskMap = new HashMap<>();
+  private HashMap<Protos.TaskStatus, Boolean> nameNode2TaskMap = new HashMap<>();
   private Timestamp ReconciliationTimestamp;
-  private Protos.TaskStatus nameNode1TaskStatus = null;
-  private Protos.TaskStatus nameNode2TaskStatus = null;
   private SchedulerConf schedulerConf = null;
     
   public LiveState(SchedulerConf conf) {
@@ -35,11 +36,15 @@ public class LiveState {
   }
 
   public boolean isNameNode1Initialized() {
-    return nameNode1TaskStatus != null;
+    boolean nameNode1Exists = !nameNode1TaskMap.isEmpty();
+    boolean nameNode1Init = nameNode1TaskMap.values().iterator().next();
+    return nameNode1Exists && nameNode1Init;
   }
 
   public boolean isNameNode2Initialized() {
-    return nameNode2TaskStatus != null;
+    boolean nameNode2Exists = !nameNode2TaskMap.isEmpty();
+    boolean nameNode2Init = nameNode2TaskMap.values().iterator().next();
+    return nameNode2Exists && nameNode2Init;
   }
 
   public void updateReconciliationTimestamp() {
@@ -64,20 +69,28 @@ public class LiveState {
   }
 
   public void removeRunningTask(Protos.TaskID taskId) {
-    if (isNameNode1Initialized() && nameNode1TaskStatus.getTaskId().equals(taskId)) {
-      nameNode1TaskStatus = null;
+    if (isNameNode1Initialized()
+        && nameNode1TaskMap.keySet().iterator().next().getTaskId().equals(taskId)) {
+      nameNode1TaskMap.clear();
     } else if (isNameNode2Initialized()
-        && nameNode2TaskStatus.getTaskId().equals(taskId)) {
-      nameNode2TaskStatus = null;
+       && nameNode2TaskMap.keySet().iterator().next().getTaskId().equals(taskId)) {
+      nameNode2TaskMap.clear();
     }
     runningTasks.remove(taskId);
   }
 
   public void updateTaskForStatus(Protos.TaskStatus status) {
-    if (status.getMessage().equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)) {
-      nameNode1TaskStatus = status;
-    } else if (status.getMessage().equals(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE)) {
-      nameNode2TaskStatus = status;
+    //Case of name node, update the task map
+    if (status.getTaskId().contains(HDFSConstants.NAME_NODE_TASKID)) {
+      if (status.getMessage().equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)) {
+        nameNode1TaskMap.put(status, true);
+      } else if (status.getMessage().equals(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE)) {
+        nameNode2TaskMap.put(status, true);
+      } else if (nameNode1TaskMap.isEmpty()) {
+        nameNode1TaskMap.put(status, false);
+      } else if (nameNode2TaskMap.isEmpty()) {
+        nameNode2TaskMap.put(status, false);
+      }
     }
     runningTasks.put(status.getTaskId(), status);
   }
@@ -99,31 +112,31 @@ public class LiveState {
   }
 
   public Protos.TaskID getFirstNameNodeTaskId() {
-    if (nameNode1TaskStatus == null) {
+    if (nameNode1TaskMap.isEmpty()) {
       return null;
     }
-    return nameNode1TaskStatus.getTaskId();
+    return nameNode1TaskMap.get(0).getTaskId();
   }
 
   public Protos.TaskID getSecondNameNodeTaskId() {
     if (nameNode2TaskStatus == null) {
       return null;
     }
-    return nameNode2TaskStatus.getTaskId();
+    return nameNode2TaskStatus.get(0).getTaskId();
   }
 
   public Protos.SlaveID getFirstNameNodeSlaveId() {
     if (nameNode1TaskStatus == null) {
       return null;
     }
-    return nameNode1TaskStatus.getSlaveId();
+    return nameNode1TaskStatus.get(0).getSlaveId();
   }
 
   public Protos.SlaveID getSecondNameNodeSlaveId() {
     if (nameNode2TaskStatus == null) {
       return null;
     }
-    return nameNode2TaskStatus.getSlaveId();
+    return nameNode2TaskStatus.get(0).getSlaveId();
   }
 
   private int countOfRunningTasksWith(final String nodeId) {
