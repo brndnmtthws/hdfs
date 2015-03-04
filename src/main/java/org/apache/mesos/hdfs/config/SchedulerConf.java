@@ -128,7 +128,7 @@ public class SchedulerConf extends Configured {
   }
 
   public int getJournalNodeCount() {
-    return getConf().getInt("mesos.hdfs.journalnode.count", 1);
+    return getConf().getInt("mesos.hdfs.journalnode.count", 3);
   }
 
   public String getFrameworkName() {
