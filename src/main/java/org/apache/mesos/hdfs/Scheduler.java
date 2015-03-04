@@ -113,23 +113,23 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           .getCurrentAcquisitionPhase().toString()));
 
       switch (liveState.getCurrentAcquisitionPhase()) {
-        case RECONCILING_TASKS:
+        case RECONCILING_TASKS :
           if (liveState.reconciliationComplete()) {
             reconcilePersistentState();
             correctCurrentPhase();
           }
           break;
-        case JOURNAL_NODES:
+        case JOURNAL_NODES :
           if (liveState.getJournalNodeSize() == conf.getJournalNodeCount()) {
             correctCurrentPhase();
           }
           break;
-        case START_NAME_NODES:
+        case START_NAME_NODES :
           if (liveState.getNameNodeSize() == (HDFSConstants.TOTAL_NAME_NODES)) {
             correctCurrentPhase();
           }
           break;
-        case FORMAT_NAME_NODES:
+        case FORMAT_NAME_NODES :
           reloadConfigsOnAllRunningTasks(driver);
           if (!liveState.isNameNode1Initialized()
               && !status.getMessage().equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)) {
@@ -151,7 +151,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
             correctCurrentPhase();
           }
           break;
-        case DATA_NODES:
+        case DATA_NODES :
           break;
       }
     } else {
@@ -176,7 +176,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           driver.declineOffer(offer.getId());
         } else {
           switch (liveState.getCurrentAcquisitionPhase()) {
-            case RECONCILING_TASKS:
+            case RECONCILING_TASKS :
               if (liveState.reconciliationComplete()) {
                 reconcilePersistentState();
                 log.info("Current persistent state:");
@@ -190,7 +190,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
                 driver.declineOffer(offer.getId());
               }
               break;
-            case JOURNAL_NODES:
+            case JOURNAL_NODES :
               if (liveState.getJournalNodeSize() < conf.getJournalNodeCount()) {
                 if (tryToLaunchJournalNode(driver, offer)) {
                   acceptedOffer = true;
@@ -199,21 +199,21 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
                 }
               }
               break;
-            case START_NAME_NODES:
+            case START_NAME_NODES :
               if (tryToLaunchNameNode(driver, offer)) {
                 acceptedOffer = true;
               } else {
                 driver.declineOffer(offer.getId());
               }
               break;
-            case FORMAT_NAME_NODES:
+            case FORMAT_NAME_NODES :
               if (tryToLaunchNameNode(driver, offer)) {
                 acceptedOffer = true;
               } else {
                 driver.declineOffer(offer.getId());
               }
               break;
-            case DATA_NODES:
+            case DATA_NODES :
               if (tryToLaunchDataNode(driver, offer)) {
                 acceptedOffer = true;
               } else {
