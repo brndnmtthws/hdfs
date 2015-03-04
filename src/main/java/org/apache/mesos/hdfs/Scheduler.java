@@ -15,7 +15,10 @@ import org.apache.mesos.hdfs.state.LiveState;
 import org.apache.mesos.hdfs.state.PersistentState;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 public class Scheduler implements org.apache.mesos.Scheduler, Runnable {

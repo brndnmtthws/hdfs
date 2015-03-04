@@ -8,7 +8,11 @@ import org.apache.mesos.Protos;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 
 import java.sql.Timestamp;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Set;
 
 @Singleton
 public class LiveState {
