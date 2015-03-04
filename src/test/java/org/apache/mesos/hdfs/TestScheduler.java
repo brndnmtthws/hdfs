@@ -60,7 +60,7 @@ public class TestScheduler {
     Protos.TaskID taskId = createTaskId("1");
 
     when(liveState.getCurrentAcquisitionPhase()).thenReturn(AcquisitionPhase.JOURNAL_NODES);
-    when(liveState.getJournalNodeSize()).thenReturn(1);
+    when(liveState.getJournalNodeSize()).thenReturn(3);
 
     scheduler.statusUpdate(driver,
         createTaskStatus(taskId, Protos.TaskState.TASK_RUNNING));
@@ -152,12 +152,9 @@ public class TestScheduler {
   @Test
   public void launchesOnlyNeededNumberOfJournalNodes() {
     when(liveState.getCurrentAcquisitionPhase()).thenReturn(AcquisitionPhase.JOURNAL_NODES);
-    when(liveState.getJournalNodeSize()).thenReturn(1);
+    when(liveState.getJournalNodeSize()).thenReturn(3);
 
-    scheduler.resourceOffers(driver,
-        Lists.newArrayList(
-            createTestOffer(0)
-            ));
+    scheduler.resourceOffers(driver, Lists.newArrayList(createTestOffer(0)));
 
     verify(driver, never()).launchTasks(anyList(), anyList());
   }
@@ -165,6 +162,7 @@ public class TestScheduler {
   @Test
   public void launchesNamenodeWhenInNamenode1Phase() {
     when(liveState.getCurrentAcquisitionPhase()).thenReturn(AcquisitionPhase.NAME_NODE_1);
+    when(persistentState.journalNodeRunningOnSlave("host0")).thenReturn(true);
 
     scheduler.resourceOffers(driver, Lists.newArrayList(createTestOffer(0)));
 
@@ -176,6 +174,7 @@ public class TestScheduler {
   @Test
   public void launchesNamenodeWhenInNamenode2Phase() {
     when(liveState.getCurrentAcquisitionPhase()).thenReturn(AcquisitionPhase.NAME_NODE_2);
+    when(persistentState.journalNodeRunningOnSlave("host0")).thenReturn(true);
 
     scheduler.resourceOffers(driver, Lists.newArrayList(createTestOffer(0)));
 
