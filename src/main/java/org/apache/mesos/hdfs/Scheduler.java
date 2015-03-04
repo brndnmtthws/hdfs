@@ -113,46 +113,45 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           .getCurrentAcquisitionPhase().toString()));
 
       switch (liveState.getCurrentAcquisitionPhase()) {
-        case RECONCILING_TASKS :
+        case RECONCILING_TASKS:
           if (liveState.reconciliationComplete()) {
             reconcilePersistentState();
             correctCurrentPhase();
           }
           break;
-        case JOURNAL_NODES :
+        case JOURNAL_NODES:
           if (liveState.getJournalNodeSize() == conf.getJournalNodeCount()) {
             correctCurrentPhase();
           }
           break;
-        case NAME_NODE_1 :
-          if (liveState.getNameNodeSize() == (HDFSConstants.TOTAL_NAME_NODES - 1)) {
+        case START_NAME_NODES:
+          if (liveState.getNameNodeSize() == (HDFSConstants.TOTAL_NAME_NODES)) {
             correctCurrentPhase();
           }
           break;
-        case NAME_NODE_2 :
-          if (liveState.getNameNodeSize() == HDFSConstants.TOTAL_NAME_NODES) {
-            reloadConfigsOnAllRunningTasks(driver);
-            if (!liveState.isNameNode1Initialized()
-                && !status.getMessage().equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)) {
-              sendMessageTo(
-                  driver,
-                  status.getTaskId(),
-                  status.getSlaveId(),
-                  HDFSConstants.NAME_NODE_INIT_MESSAGE);
-            }
-            if (liveState.isNameNode1Initialized()
-                && !liveState.isNameNode2Initialized()) {
-              sendMessageTo(
-                  driver,
-                  status.getTaskId(),
-                  status.getSlaveId(),
-                  HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE);
-            } else if (status.getMessage().equals(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE)) {
-              correctCurrentPhase();
-            }
+        case FORMAT_NAME_NODES:
+          reloadConfigsOnAllRunningTasks(driver);
+          if (!liveState.isNameNode1Initialized()
+              && !status.getMessage().equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)) {
+            sendMessageTo(
+                driver,
+                status.getTaskId(),
+                status.getSlaveId(),
+                HDFSConstants.NAME_NODE_INIT_MESSAGE);
+          }
+          if (liveState.isNameNode1Initialized()
+              && !liveState.isNameNode2Initialized()) {
+            sendMessageTo(
+                driver,
+                status.getTaskId(),
+                status.getSlaveId(),
+                HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE);
+          } else if (liveState.isNameNode1Initialized()
+              && liveState.isNameNode2Initialized()) {
+            correctCurrentPhase();
           }
           break;
-        case DATA_NODES :
+        case DATA_NODES:
           break;
       }
     } else {
@@ -177,7 +176,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           driver.declineOffer(offer.getId());
         } else {
           switch (liveState.getCurrentAcquisitionPhase()) {
-            case RECONCILING_TASKS :
+            case RECONCILING_TASKS:
               if (liveState.reconciliationComplete()) {
                 reconcilePersistentState();
                 log.info("Current persistent state:");
@@ -191,7 +190,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
                 driver.declineOffer(offer.getId());
               }
               break;
-            case JOURNAL_NODES :
+            case JOURNAL_NODES:
               if (liveState.getJournalNodeSize() < conf.getJournalNodeCount()) {
                 if (tryToLaunchJournalNode(driver, offer)) {
                   acceptedOffer = true;
@@ -200,21 +199,21 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
                 }
               }
               break;
-            case NAME_NODE_1 :
+            case START_NAME_NODES:
               if (tryToLaunchNameNode(driver, offer)) {
                 acceptedOffer = true;
               } else {
                 driver.declineOffer(offer.getId());
               }
               break;
-            case NAME_NODE_2 :
+            case FORMAT_NAME_NODES:
               if (tryToLaunchNameNode(driver, offer)) {
                 acceptedOffer = true;
               } else {
                 driver.declineOffer(offer.getId());
               }
               break;
-            case DATA_NODES :
+            case DATA_NODES:
               if (tryToLaunchDataNode(driver, offer)) {
                 acceptedOffer = true;
               } else {
@@ -515,14 +514,14 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   private void correctCurrentPhase() {
     if (liveState.getJournalNodeSize() < conf.getJournalNodeCount()) {
       liveState.transitionTo(AcquisitionPhase.JOURNAL_NODES);
-    } else if (liveState.getNameNodeSize() == 0) {
-      liveState.transitionTo(AcquisitionPhase.NAME_NODE_1);
-    } else if (liveState.getNameNodeSize() == 1) {
-      liveState.transitionTo(AcquisitionPhase.NAME_NODE_2);
-    } else if (liveState.getNameNodeSize() == HDFSConstants.TOTAL_NAME_NODES
-        && liveState.isNameNode1Initialized()
-        && liveState.isNameNode2Initialized()) {
-      liveState.transitionTo(AcquisitionPhase.DATA_NODES);
+    } else if (liveState.getNameNodeSize() < HDFSConstants.TOTAL_NAME_NODES) {
+      liveState.transitionTo(AcquisitionPhase.START_NAME_NODES);
+    } else if (liveState.getNameNodeSize() == HDFSConstants.TOTAL_NAME_NODES) {
+      if (liveState.isNameNode1Initialized()
+          && liveState.isNameNode2Initialized()) {
+        liveState.transitionTo(AcquisitionPhase.DATA_NODES);
+      }
+      liveState.transitionTo(AcquisitionPhase.FORMAT_NAME_NODES);
     } else {
       log.error("Framework is in an unstable state, attention is required");
     }

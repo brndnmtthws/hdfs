@@ -56,7 +56,7 @@ public class TestScheduler {
   }
 
   @Test
-  public void statusUpdateTransitionFromAcquiringJournalNodesToNameNode1() {
+  public void statusUpdateTransitionFromAcquiringJournalNodesToStartingNameNodes() {
     Protos.TaskID taskId = createTaskId("1");
 
     when(liveState.getCurrentAcquisitionPhase()).thenReturn(AcquisitionPhase.JOURNAL_NODES);
@@ -65,7 +65,7 @@ public class TestScheduler {
     scheduler.statusUpdate(driver,
         createTaskStatus(taskId, Protos.TaskState.TASK_RUNNING));
 
-    verify(liveState).transitionTo(AcquisitionPhase.NAME_NODE_1);
+    verify(liveState).transitionTo(AcquisitionPhase.START_NAME_NODES);
   }
 
   @Test
@@ -78,16 +78,16 @@ public class TestScheduler {
     scheduler.statusUpdate(driver,
         createTaskStatus(taskId, Protos.TaskState.TASK_RUNNING));
 
-    verify(liveState, never()).transitionTo(AcquisitionPhase.NAME_NODE_1);
+    verify(liveState, never()).transitionTo(AcquisitionPhase.START_NAME_NODES);
   }
 
   @Test
-  public void statusUpdateTransitionFromAcquiringNameNode1ToNameNode2() {
+  public void statusUpdateTransitionFromStartingNameNodesToFormateNameNodes() {
     Protos.TaskID taskId = createTaskId(HDFSConstants.NAME_NODE_TASKID + "1");
     Protos.SlaveID slaveId = createSlaveId("1");
 
-    when(liveState.getCurrentAcquisitionPhase()).thenReturn(AcquisitionPhase.NAME_NODE_1);
-    when(liveState.getNameNodeSize()).thenReturn(1);
+    when(liveState.getCurrentAcquisitionPhase()).thenReturn(AcquisitionPhase.START_NAME_NODES);
+    when(liveState.getNameNodeSize()).thenReturn(2);
     when(liveState.getJournalNodeSize()).thenReturn(schedulerConf.getJournalNodeCount());
     when(liveState.getFirstNameNodeTaskId()).thenReturn(taskId);
     when(liveState.getFirstNameNodeSlaveId()).thenReturn(slaveId);
@@ -95,36 +95,22 @@ public class TestScheduler {
     scheduler.statusUpdate(driver,
         createTaskStatus(taskId, Protos.TaskState.TASK_RUNNING));
 
-    verify(liveState).transitionTo(AcquisitionPhase.NAME_NODE_2);
+    verify(liveState).transitionTo(AcquisitionPhase.FORMAT_NAME_NODES);
   }
-  //
-  // @Test
-  // public void statusUpdateTransitionFromAcquiringNameNode2ToDataNode() {
-  // Protos.TaskID taskId1 = createTaskId(HDFSConstants.NAME_NODE_TASKID + "1");
-  // Protos.SlaveID slaveId1 = createSlaveId("1");
-  // Protos.ExecutorID executorId1 = createExecutorId("executor.namenode.1");
-  // Protos.TaskID taskId2 = createTaskId(HDFSConstants.NAME_NODE_TASKID + "1");
-  // Protos.SlaveID slaveId2 = createSlaveId("1");
-  // Protos.ExecutorID executorId2 = createExecutorId("executor.namenode.1");
-  //
-  // when(liveState.getCurrentAcquisitionPhase()).thenReturn(AcquisitionPhase.NAME_NODE_2);
-  // when(liveState.getNameNodeSize()).thenReturn(2);
-  // when(liveState.getFirstNameNodeTaskId()).thenReturn(taskId1);
-  // when(liveState.getFirstNameNodeSlaveId()).thenReturn(slaveId2);
-  // when(liveState.getSecondNameNodeTaskId()).thenReturn(taskId2);
-  // when(liveState.getSecondNameNodeSlaveId()).thenReturn(slaveId2);
-  //
-  // scheduler.statusUpdate(driver,
-  // createTaskStatus(taskId1, Protos.TaskState.TASK_RUNNING));
-  //
-  // verify(driver).sendFrameworkMessage(executorId1, slaveId1,
-  // HDFSConstants.NAME_NODE_INIT_MESSAGE.getBytes());
-  //
-  // verify(driver).sendFrameworkMessage(executorId2, slaveId2,
-  // HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE.getBytes());
-  //
-  // verify(liveState).transitionTo(AcquisitionPhase.DATA_NODES);
-  // }
+
+  @Test
+  public void statusUpdateTransitionFromFormatNameNodesToDataNodes() {
+    when(liveState.getCurrentAcquisitionPhase()).thenReturn(AcquisitionPhase.FORMAT_NAME_NODES);
+    when(liveState.getJournalNodeSize()).thenReturn(schedulerConf.getJournalNodeCount());
+    when(liveState.getNameNodeSize()).thenReturn(HDFSConstants.TOTAL_NAME_NODES);
+    when(liveState.isNameNode1Initialized()).thenReturn(true);
+    when(liveState.isNameNode2Initialized()).thenReturn(true);
+
+    scheduler.statusUpdate(driver,
+        createTaskStatus(createTaskId(HDFSConstants.NAME_NODE_TASKID), Protos.TaskState.TASK_RUNNING));
+
+    verify(liveState).transitionTo(AcquisitionPhase.DATA_NODES);
+  }
 
   @Test
   public void statusUpdateAquiringDataNodesJustStays() {
@@ -161,7 +147,7 @@ public class TestScheduler {
 
   @Test
   public void launchesNamenodeWhenInNamenode1Phase() {
-    when(liveState.getCurrentAcquisitionPhase()).thenReturn(AcquisitionPhase.NAME_NODE_1);
+    when(liveState.getCurrentAcquisitionPhase()).thenReturn(AcquisitionPhase.START_NAME_NODES);
     when(persistentState.journalNodeRunningOnSlave("host0")).thenReturn(true);
 
     scheduler.resourceOffers(driver, Lists.newArrayList(createTestOffer(0)));
@@ -173,7 +159,7 @@ public class TestScheduler {
 
   @Test
   public void launchesNamenodeWhenInNamenode2Phase() {
-    when(liveState.getCurrentAcquisitionPhase()).thenReturn(AcquisitionPhase.NAME_NODE_2);
+    when(liveState.getCurrentAcquisitionPhase()).thenReturn(AcquisitionPhase.FORMAT_NAME_NODES);
     when(persistentState.journalNodeRunningOnSlave("host0")).thenReturn(true);
 
     scheduler.resourceOffers(driver, Lists.newArrayList(createTestOffer(0)));

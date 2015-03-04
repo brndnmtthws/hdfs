@@ -81,7 +81,7 @@ public class LiveState {
 
   public void updateTaskForStatus(Protos.TaskStatus status) {
     //Case of name node, update the task map
-    if (status.getTaskId().contains(HDFSConstants.NAME_NODE_TASKID)) {
+    if (status.getTaskId().getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
       if (status.getMessage().equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)) {
         nameNode1TaskMap.put(status, true);
       } else if (status.getMessage().equals(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE)) {
@@ -115,28 +115,28 @@ public class LiveState {
     if (nameNode1TaskMap.isEmpty()) {
       return null;
     }
-    return nameNode1TaskMap.get(0).getTaskId();
+    return nameNode1TaskMap.keySet().iterator().next().getTaskId();
   }
 
   public Protos.TaskID getSecondNameNodeTaskId() {
-    if (nameNode2TaskStatus == null) {
+    if (nameNode2TaskMap.isEmpty()) {
       return null;
     }
-    return nameNode2TaskStatus.get(0).getTaskId();
+    return nameNode2TaskMap.keySet().iterator().next().getTaskId();
   }
 
   public Protos.SlaveID getFirstNameNodeSlaveId() {
-    if (nameNode1TaskStatus == null) {
+    if (nameNode1TaskMap.isEmpty()) {
       return null;
     }
-    return nameNode1TaskStatus.get(0).getSlaveId();
+    return nameNode1TaskMap.keySet().iterator().next().getSlaveId();
   }
 
   public Protos.SlaveID getSecondNameNodeSlaveId() {
-    if (nameNode2TaskStatus == null) {
+    if (nameNode2TaskMap.isEmpty()) {
       return null;
     }
-    return nameNode2TaskStatus.get(0).getSlaveId();
+    return nameNode2TaskMap.keySet().iterator().next().getSlaveId();
   }
 
   private int countOfRunningTasksWith(final String nodeId) {
