@@ -100,7 +100,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     }
 
     if (isTerminalState(status)) {
-      liveState.removeTask(status.getTaskId());
+      liveState.removeRunningTask(status.getTaskId());
       persistentState.removeTaskId(status.getTaskId().getValue());
       if (liveState.reconciliationComplete()) {
         correctCurrentPhase();

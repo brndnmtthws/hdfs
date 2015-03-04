@@ -21,7 +21,6 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -227,7 +226,7 @@ public class TestScheduler {
         Protos.TaskState.TASK_LOST));
 
     verify(liveState, times(4)).removeStagingTask(any(Protos.TaskID.class));
-    verify(liveState, times(4)).removeTask(any(Protos.TaskID.class));
+    verify(liveState, times(4)).removeRunningTask(any(Protos.TaskID.class));
   }
 
   @Test

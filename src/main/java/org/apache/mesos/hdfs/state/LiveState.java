@@ -62,7 +62,7 @@ public class LiveState {
     return runningTasks;
   }
 
-  public void removeTask(Protos.TaskID taskId) {
+  public void removeRunningTask(Protos.TaskID taskId) {
     if (isNameNode1Initialized() && nameNode1TaskId.equals(taskId)) {
       nameNode1TaskId = null;
     } else if (isNameNode2Initialized() && nameNode2TaskId.equals(taskId)) {
