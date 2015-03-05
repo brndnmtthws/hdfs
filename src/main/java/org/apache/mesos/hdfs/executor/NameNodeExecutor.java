@@ -99,7 +99,8 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
         || messageStr.equals(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE)) {
       if (nameDir.exists()) {
         log.info(String
-            .format("NameNode data directory %s already exists, not formatting just starting", nameDir));
+            .format("NameNode data directory %s already exists, not formatting just starting",
+                nameDir));
         startProcess(driver, nameNodeTask);
         startProcess(driver, zkfcNodeTask);
       } else {

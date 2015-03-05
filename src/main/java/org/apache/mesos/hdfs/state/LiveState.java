@@ -4,6 +4,8 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Sets;
 import com.google.inject.Singleton;
 import org.apache.commons.lang.time.DateUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.Protos;
 import org.apache.mesos.hdfs.config.SchedulerConf;
 import org.apache.mesos.hdfs.util.HDFSConstants;
@@ -18,6 +20,7 @@ import java.util.Set;
 
 @Singleton
 public class LiveState {
+  public static final Log log = LogFactory.getLog(LiveState.class);
   private Set<Protos.TaskID> stagingTasks = new HashSet<>();
   private AcquisitionPhase currentAcquisitionPhase = AcquisitionPhase.RECONCILING_TASKS;
   // TODO (nicgrayson) Might need to split this out to jns, nns, and dns if dns too big
@@ -79,8 +82,10 @@ public class LiveState {
     //Case of name node, update the task map
     if (status.getTaskId().getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
       if (status.getMessage().equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)) {
+        nameNode1TaskMap.clear();
         nameNode1TaskMap.put(status, true);
       } else if (status.getMessage().equals(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE)) {
+        nameNode2TaskMap.clear();
         nameNode2TaskMap.put(status, true);
       } else if (nameNode1TaskMap.isEmpty()) {
         nameNode1TaskMap.put(status, false);
