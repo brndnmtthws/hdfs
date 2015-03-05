@@ -138,8 +138,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
                 liveState.getFirstNameNodeTaskId(),
                 liveState.getFirstNameNodeSlaveId(),
                 HDFSConstants.NAME_NODE_INIT_MESSAGE);
-          }
-          if (liveState.isNameNode1Initialized()
+          } else if (liveState.isNameNode1Initialized()
               && !liveState.isNameNode2Initialized()) {
             sendMessageTo(
                 driver,
@@ -520,8 +519,9 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       if (liveState.isNameNode1Initialized()
           && liveState.isNameNode2Initialized()) {
         liveState.transitionTo(AcquisitionPhase.DATA_NODES);
+      } else {
+        liveState.transitionTo(AcquisitionPhase.FORMAT_NAME_NODES);
       }
-      liveState.transitionTo(AcquisitionPhase.FORMAT_NAME_NODES);
     } else {
       log.error("Framework is in an unstable state, attention is required");
     }

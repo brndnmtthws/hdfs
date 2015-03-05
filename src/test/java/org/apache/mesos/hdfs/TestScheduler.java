@@ -106,8 +106,10 @@ public class TestScheduler {
     when(liveState.isNameNode1Initialized()).thenReturn(true);
     when(liveState.isNameNode2Initialized()).thenReturn(true);
 
-    scheduler.statusUpdate(driver,
-        createTaskStatus(createTaskId(HDFSConstants.NAME_NODE_TASKID), Protos.TaskState.TASK_RUNNING));
+    scheduler.statusUpdate(
+        driver,
+        createTaskStatus(createTaskId(HDFSConstants.NAME_NODE_TASKID),
+            Protos.TaskState.TASK_RUNNING));
 
     verify(liveState).transitionTo(AcquisitionPhase.DATA_NODES);
   }
