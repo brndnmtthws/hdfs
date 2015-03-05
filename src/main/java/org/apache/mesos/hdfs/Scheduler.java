@@ -126,11 +126,12 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           break;
         case START_NAME_NODES :
           if (liveState.getNameNodeSize() == (HDFSConstants.TOTAL_NAME_NODES)) {
+            // TODO move the reload to correctCurrentPhase and make it idempotent
+            reloadConfigsOnAllRunningTasks(driver);
             correctCurrentPhase();
           }
           break;
         case FORMAT_NAME_NODES :
-          reloadConfigsOnAllRunningTasks(driver);
           if (!liveState.isNameNode1Initialized()
               && !status.getMessage().equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)) {
             sendMessageTo(
