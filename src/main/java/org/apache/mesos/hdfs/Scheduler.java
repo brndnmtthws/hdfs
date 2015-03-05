@@ -18,6 +18,7 @@ import org.apache.mesos.hdfs.util.HDFSConstants;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 //TODO remove as much logic as possible from Scheduler to clean up code
@@ -543,8 +544,15 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   }
 
   private void reconcilePersistentState() {
+    LinkedHashMap<Protos.TaskID, Protos.TaskStatus> runningTasks = liveState.getRunningTasks();
     for (String taskId : persistentState.getAllTaskIds()) {
-      if (!liveState.getRunningTasks().keySet().contains(taskId)) {
+      boolean taskFound = false;
+      for (Protos.TaskID runningTaskId : runningTasks.keySet()) {
+        if (runningTaskId.getValue().equals(taskId)) {
+          taskFound = true;
+        }
+      }
+      if (!taskFound) {
         persistentState.removeTaskId(taskId);
       }
     }
