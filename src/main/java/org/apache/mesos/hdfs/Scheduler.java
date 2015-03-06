@@ -321,13 +321,16 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
                             .setValue(String.format("%d", conf.getHadoopHeapSize())).build(),
                         Environment.Variable.newBuilder()
                             .setName("HADOOP_NAMENODE_OPTS")
-                            .setValue("-Xmx" + conf.getNameNodeHeapSize() + "m").build(),
+                            .setValue("-Xmx" + conf.getNameNodeHeapSize()
+                                + "m -Xms" + conf.getNameNodeHeapSize() + "m").build(),
                         Environment.Variable.newBuilder()
                             .setName("HADOOP_DATANODE_OPTS")
-                            .setValue("-Xmx" + conf.getDataNodeHeapSize() + "m").build(),
+                            .setValue("-Xmx" + conf.getDataNodeHeapSize()
+                                + "m -Xms" + conf.getDataNodeHeapSize() + "m")).build(),
                         Environment.Variable.newBuilder()
                             .setName("EXECUTOR_OPTS")
-                            .setValue("-Xmx" + conf.getExecutorHeap() + "m").build())))
+                            .setValue("-Xmx" + conf.getExecutorHeap()
+                                + "m -Xms" + conf.getDataNodeHeapSize() + "m").build())))
                 .setValue(
                     "env ; cd hdfs-mesos-* && exec java $HADOOP_OPTS $EXECUTOR_OPTS " +
                         "-cp lib/*.jar org.apache.mesos.hdfs.executor." + executorName)
