@@ -327,7 +327,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
                         Environment.Variable.newBuilder()
                             .setName("HADOOP_DATANODE_OPTS")
                             .setValue("-Xmx" + conf.getDataNodeHeapSize()
-                                + "m -Xms" + conf.getDataNodeHeapSize() + "m")).build(),
+                                + "m -Xms" + conf.getDataNodeHeapSize() + "m").build(),
                         Environment.Variable.newBuilder()
                             .setName("EXECUTOR_OPTS")
                             .setValue("-Xmx" + conf.getExecutorHeap()
