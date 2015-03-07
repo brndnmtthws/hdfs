@@ -74,6 +74,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     try {
       persistentState.setFrameworkId(frameworkId);
     } catch (InterruptedException | ExecutionException e) {
+      log.error("Error setting framework id in persistent state", e);
       throw new RuntimeException(e);
     }
     log.info("Registered framework frameworkId=" + frameworkId.getValue());
