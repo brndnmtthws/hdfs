@@ -83,7 +83,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   }
   @Override
   public void reregistered(SchedulerDriver driver, MasterInfo masterInfo) {
-    log.info("Reregistered framework: starting task reconcile");
+    log.info("Reregistered framework: starting task reconciliation");
     liveState.updateReconciliationTimestamp();
     driver.reconcileTasks(Collections.<Protos.TaskStatus> emptyList());
   }
