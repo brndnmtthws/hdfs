@@ -84,16 +84,14 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       throw new RuntimeException(e);
     }
     log.info("Registered framework frameworkId=" + frameworkId.getValue());
-    updateReconciliationTimestamp();
-    driver.reconcileTasks(Collections.<Protos.TaskStatus>emptyList());
-    reconciliationCompleted = true;
+    //reconcile tasks upon registration
+    reconcileTasks(driver);
   }
   @Override
   public void reregistered(SchedulerDriver driver, MasterInfo masterInfo) {
     log.info("Reregistered framework: starting task reconciliation");
-    updateReconciliationTimestamp();
-    driver.reconcileTasks(Collections.<Protos.TaskStatus> emptyList());
-    reconciliationCompleted = true;
+    // reconcile tasks upon reregistration
+    reconcileTasks(driver);
   }
 
   @Override
@@ -125,7 +123,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       switch (liveState.getCurrentAcquisitionPhase()) {
         case RECONCILING_TASKS :
           if (reconciliationComplete()) {
-            reconcilePersistentState();
             correctCurrentPhase();
           }
           break;
@@ -186,11 +183,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           switch (liveState.getCurrentAcquisitionPhase()) {
             case RECONCILING_TASKS :
               if (reconciliationComplete()) {
-                reconcilePersistentState();
-                log.info("Current persistent state:");
-                log.info(String.format("JournalNodes: %s", persistentState.getJournalNodes()));
-                log.info(String.format("NameNodes: %s", persistentState.getNameNodes()));
-                log.info(String.format("DataNodes: %s", persistentState.getDataNodes()));
                 correctCurrentPhase();
                 driver.declineOffer(offer.getId());
               } else {
@@ -553,6 +545,13 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     return false;
   }
 
+  private void reconcileTasks(SchedulerDriver driver) {
+    updateReconciliationTimestamp();
+    driver.reconcileTasks(Collections.<Protos.TaskStatus> emptyList());
+    reconcilePersistentState();
+    reconciliationCompleted = true;
+  }
+
   private boolean reconciliationComplete() {
     return reconciliationTimestamp != null &&
         reconciliationTimestamp.before(new Date()) && reconciliationCompleted;
@@ -565,6 +564,11 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   }
 
   private void reconcilePersistentState() {
+    log.info("Current persistent state:");
+    log.info(String.format("JournalNodes: %s", persistentState.getJournalNodes()));
+    log.info(String.format("NameNodes: %s", persistentState.getNameNodes()));
+    log.info(String.format("DataNodes: %s", persistentState.getDataNodes()));
+
     LinkedHashMap<Protos.TaskID, Protos.TaskStatus> runningTasks = liveState.getRunningTasks();
     for (String taskId : persistentState.getAllTaskIds()) {
       boolean taskFound = false;
