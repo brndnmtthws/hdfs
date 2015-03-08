@@ -3,6 +3,7 @@ package org.apache.mesos.hdfs;
 import com.google.inject.Inject;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import org.apache.commons.lang.time.DateUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.MesosSchedulerDriver;
@@ -15,12 +16,15 @@ import org.apache.mesos.hdfs.state.LiveState;
 import org.apache.mesos.hdfs.state.PersistentState;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+
 //TODO remove as much logic as possible from Scheduler to clean up code
 public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
@@ -28,10 +32,12 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   private final SchedulerConf conf;
   private final LiveState liveState;
   private PersistentState persistentState;
+  private Timestamp reconciliationTimestamp;
+  private boolean reconciliationCompleted;
 
   @Inject
-  public Scheduler(SchedulerConf conf) {
-    this(conf, new LiveState(conf), new PersistentState(conf));
+  public Scheduler(SchedulerConf conf, LiveState liveState) {
+    this(conf, liveState, new PersistentState(conf));
   }
 
   public Scheduler(SchedulerConf conf, LiveState liveState, PersistentState persistentState) {
@@ -78,14 +84,16 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       throw new RuntimeException(e);
     }
     log.info("Registered framework frameworkId=" + frameworkId.getValue());
-    liveState.updateReconciliationTimestamp();
+    updateReconciliationTimestamp();
     driver.reconcileTasks(Collections.<Protos.TaskStatus>emptyList());
+    reconciliationCompleted = true;
   }
   @Override
   public void reregistered(SchedulerDriver driver, MasterInfo masterInfo) {
     log.info("Reregistered framework: starting task reconciliation");
-    liveState.updateReconciliationTimestamp();
+    updateReconciliationTimestamp();
     driver.reconcileTasks(Collections.<Protos.TaskStatus> emptyList());
+    reconciliationCompleted = true;
   }
 
   @Override
@@ -104,7 +112,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     if (isTerminalState(status)) {
       liveState.removeRunningTask(status.getTaskId());
       persistentState.removeTaskId(status.getTaskId().getValue());
-      if (liveState.reconciliationComplete()) {
+      if (reconciliationComplete()) {
         correctCurrentPhase();
       }
 
@@ -116,7 +124,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
       switch (liveState.getCurrentAcquisitionPhase()) {
         case RECONCILING_TASKS :
-          if (liveState.reconciliationComplete()) {
+          if (reconciliationComplete()) {
             reconcilePersistentState();
             correctCurrentPhase();
           }
@@ -179,7 +187,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         } else {
           switch (liveState.getCurrentAcquisitionPhase()) {
             case RECONCILING_TASKS :
-              if (liveState.reconciliationComplete()) {
+              if (reconciliationComplete()) {
                 reconcilePersistentState();
                 log.info("Current persistent state:");
                 log.info(String.format("JournalNodes: %s", persistentState.getJournalNodes()));
@@ -331,7 +339,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
                         Environment.Variable.newBuilder()
                             .setName("EXECUTOR_OPTS")
                             .setValue("-Xmx" + conf.getExecutorHeap()
-                                + "m -Xms" + conf.getDataNodeHeapSize() + "m").build())))
+                                + "m -Xms" + conf.getExecutorHeap() + "m").build())))
                 .setValue(
                     "env ; cd hdfs-mesos-* && exec java $HADOOP_OPTS $EXECUTOR_OPTS " +
                         "-cp lib/*.jar org.apache.mesos.hdfs.executor." + executorName)
@@ -545,6 +553,17 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       }
     }
     return false;
+  }
+
+  private boolean reconciliationComplete() {
+    return reconciliationTimestamp != null &&
+        reconciliationTimestamp.before(new Date()) && reconciliationCompleted;
+  }
+
+  private void updateReconciliationTimestamp() {
+    reconciliationCompleted = false;
+    Date date = DateUtils.addSeconds(new Date(), conf.getReconciliationTimeout());
+    reconciliationTimestamp = new Timestamp(date.getTime());
   }
 
   private void reconcilePersistentState() {

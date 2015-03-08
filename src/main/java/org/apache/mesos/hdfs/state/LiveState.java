@@ -3,16 +3,14 @@ package org.apache.mesos.hdfs.state;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Sets;
 import com.google.inject.Singleton;
-import org.apache.commons.lang.time.DateUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.Protos;
 import org.apache.mesos.hdfs.config.SchedulerConf;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 
-import java.sql.Timestamp;
+
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -27,16 +25,6 @@ public class LiveState {
   private LinkedHashMap<Protos.TaskID, Protos.TaskStatus> runningTasks = new LinkedHashMap<>();
   private HashMap<Protos.TaskStatus, Boolean> nameNode1TaskMap = new HashMap<>();
   private HashMap<Protos.TaskStatus, Boolean> nameNode2TaskMap = new HashMap<>();
-  private Timestamp ReconciliationTimestamp;
-  private SchedulerConf schedulerConf = null;
-    
-  public LiveState(SchedulerConf conf) {
-    schedulerConf = conf;
-  }
-
-  public boolean reconciliationComplete() {
-    return ReconciliationTimestamp.before(new Date());
-  }
 
   public boolean isNameNode1Initialized() {
     return !nameNode1TaskMap.isEmpty() && nameNode1TaskMap.values().iterator().next();
@@ -44,11 +32,6 @@ public class LiveState {
 
   public boolean isNameNode2Initialized() {
     return !nameNode2TaskMap.isEmpty() && nameNode2TaskMap.values().iterator().next();
-  }
-
-  public void updateReconciliationTimestamp() {
-    Date date = DateUtils.addSeconds(new Date(), schedulerConf.getReconciliationTimeout());
-    ReconciliationTimestamp = new Timestamp(date.getTime());
   }
 
   public void addStagingTask(Protos.TaskID taskId) {

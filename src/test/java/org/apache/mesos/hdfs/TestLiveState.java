@@ -1,9 +1,7 @@
 package org.apache.mesos.hdfs;
 
 import com.google.protobuf.ByteString;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.mesos.Protos;
-import org.apache.mesos.hdfs.config.SchedulerConf;
 import org.apache.mesos.hdfs.state.LiveState;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 import org.junit.Before;
@@ -95,8 +93,7 @@ public class TestLiveState {
 
   @Before
   public void setup() {
-    SchedulerConf schedulerConf = new SchedulerConf(new Configuration());
-    liveState = new LiveState(schedulerConf);
+    liveState = new LiveState();
   }
 
   private Protos.TaskStatus createTaskStatus(String taskId, Integer taskNumber, String message) {
