@@ -142,25 +142,23 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           }
           break;
         case FORMAT_NAME_NODES :
-          if (!liveState.isNameNode1Initialized()
-              && !status.getMessage().equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)) {
+          if (!liveState.isNameNode1Initialized()) {
             sendMessageTo(
                 driver,
                 liveState.getFirstNameNodeTaskId(),
                 liveState.getFirstNameNodeSlaveId(),
                 HDFSConstants.NAME_NODE_INIT_MESSAGE);
-          } else if (liveState.isNameNode1Initialized()
-              && !liveState.isNameNode2Initialized()) {
+          } else if (!liveState.isNameNode2Initialized()) {
             sendMessageTo(
                 driver,
                 liveState.getSecondNameNodeTaskId(),
                 liveState.getSecondNameNodeSlaveId(),
                 HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE);
-          } else if (liveState.isNameNode1Initialized()
-              && liveState.isNameNode2Initialized()) {
+          } else {
             correctCurrentPhase();
           }
           break;
+        // TODO (elingg) add a configurable number of data nodes
         case DATA_NODES :
           break;
       }
