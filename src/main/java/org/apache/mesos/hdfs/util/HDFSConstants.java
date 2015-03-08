@@ -3,7 +3,7 @@ package org.apache.mesos.hdfs.util;
 public class HDFSConstants {
 
   // Total number of NameNodes
-  // Note: We do not currently support more than 2 NameNodes
+  // Note: We do not currently support more or less than 2 NameNodes
   public static final Integer TOTAL_NAME_NODES = 2;
 
   // Messages

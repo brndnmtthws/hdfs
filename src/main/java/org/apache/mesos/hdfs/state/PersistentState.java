@@ -95,7 +95,7 @@ public class PersistentState {
     return deadDataHosts;
   }
 
-  // TODO (nicgrayson) add tests with in memory zookeeper
+  // TODO (nicgrayson) add tests with in-memory state implementation for zookeeper
   public HashMap<String, String> getJournalNodes() {
     return getHashMap(JOURNALNODES_KEY);
   }
@@ -140,6 +140,7 @@ public class PersistentState {
     }
   }
 
+  // TODO (elingg) optimize this method/ Possibly index by task id instead of hostname
   public void removeTaskId(String taskId) {
     HashMap<String, String> journalNodes = getJournalNodes();
     if (journalNodes.values().contains(taskId)) {

@@ -33,7 +33,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   private final SchedulerConf conf;
   private final LiveState liveState;
   private PersistentState persistentState;
-  private Timestamp reconciliationTimestamp;
+  private Timestamp reconciliationDeadline;
   private boolean reconciliationCompleted;
 
   @Inject
@@ -548,21 +548,21 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   }
 
   private void reconcileTasks(SchedulerDriver driver) {
-    updateReconciliationTimestamp();
+    updateReconciliationDeadline();
     driver.reconcileTasks(Collections.<Protos.TaskStatus> emptyList());
     reconcilePersistentState();
     reconciliationCompleted = true;
   }
 
   private boolean reconciliationComplete() {
-    return reconciliationTimestamp != null &&
-        reconciliationTimestamp.before(new Date()) && reconciliationCompleted;
+    return reconciliationDeadline != null &&
+        reconciliationDeadline.before(new Date()) && reconciliationCompleted;
   }
 
-  private void updateReconciliationTimestamp() {
+  private void updateReconciliationDeadline() {
     reconciliationCompleted = false;
     Date date = DateUtils.addSeconds(new Date(), conf.getReconciliationTimeout());
-    reconciliationTimestamp = new Timestamp(date.getTime());
+    reconciliationDeadline = new Timestamp(date.getTime());
   }
 
   private void reconcilePersistentState() {

@@ -20,6 +20,8 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
   public static final Log log = LogFactory.getLog(NameNodeExecutor.class);
 
   private Task nameNodeTask;
+  // TODO better handling in livestate and persistent state of zkfc task. Right now they are
+  // chained.
   private Task zkfcNodeTask;
   private Task journalNodeTask;
 
@@ -101,8 +103,6 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
         log.info(String
             .format("NameNode data directory %s already exists, not formatting just starting",
                 nameDir));
-        startProcess(driver, nameNodeTask);
-        startProcess(driver, zkfcNodeTask);
       } else {
         nameDir.mkdirs();
         runCommand(driver, nameNodeTask, "bin/hdfs-mesos-namenode " + messageStr);
