@@ -191,12 +191,10 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
               }
               break;
             case JOURNAL_NODES :
-              if (liveState.getJournalNodeSize() < conf.getJournalNodeCount()) {
-                if (tryToLaunchJournalNode(driver, offer)) {
-                  acceptedOffer = true;
-                } else {
-                  driver.declineOffer(offer.getId());
-                }
+              if (tryToLaunchJournalNode(driver, offer)) {
+                acceptedOffer = true;
+              } else {
+                driver.declineOffer(offer.getId());
               }
               break;
             case START_NAME_NODES :
@@ -207,11 +205,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
               }
               break;
             case FORMAT_NAME_NODES :
-              if (tryToLaunchNameNode(driver, offer)) {
-                acceptedOffer = true;
-              } else {
-                driver.declineOffer(offer.getId());
-              }
+              driver.declineOffer(offer.getId());
               break;
             case DATA_NODES :
               if (tryToLaunchDataNode(driver, offer)) {
@@ -243,6 +237,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     try {
       FrameworkID frameworkID = persistentState.getFrameworkID();
       if (frameworkID != null) {
+        log.error("Error setting framework id", e);
         frameworkInfo.setId(frameworkID);
       }
     } catch (InterruptedException | ExecutionException | InvalidProtocolBufferException e) {
@@ -385,7 +380,9 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     log.info(deadJournalNodes);
 
     if (deadJournalNodes.isEmpty()) {
-      if (persistentState.journalNodeRunningOnSlave(offer.getHostname())) {
+      if (liveState.getJournalNodeSize() == conf.getJournalNodeCount()) {
+        log.info(String.format("Already running %s journalnodes", conf.getJournalNodeCount()));
+      } else if (persistentState.journalNodeRunningOnSlave(offer.getHostname())) {
         log.info(String.format("Already running journalnode on %s", offer.getHostname()));
       } else if (persistentState.dataNodeRunningOnSlave(offer.getHostname())) {
         log.info(String.format("Cannot colocate journalnode and datanode on %s",
@@ -420,7 +417,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     List<String> deadNameNodes = persistentState.getDeadNameNodes();
 
     if (deadNameNodes.isEmpty()) {
-      if (liveState.getNameNodeSize() >= HDFSConstants.TOTAL_NAME_NODES) {
+      if (liveState.getNameNodeSize() == HDFSConstants.TOTAL_NAME_NODES) {
         log.info(String.format("Already running %s namenodes", HDFSConstants.TOTAL_NAME_NODES));
       } else if (persistentState.nameNodeRunningOnSlave(offer.getHostname())) {
         log.info(String.format("Already running namenode on %s", offer.getHostname()));

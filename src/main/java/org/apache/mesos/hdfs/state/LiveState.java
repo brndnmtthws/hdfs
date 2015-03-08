@@ -64,10 +64,13 @@ public class LiveState {
   public void updateTaskForStatus(Protos.TaskStatus status) {
     //Case of name node, update the task map
     if (status.getTaskId().getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
-      if (status.getMessage().equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)) {
+      if (status.getMessage().equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)
+          || (currentAcquisitionPhase.equals(AcquisitionPhase.RECONCILING_TASKS)
+          && !isNameNode1Initialized())) {
         nameNode1TaskMap.clear();
         nameNode1TaskMap.put(status, true);
-      } else if (status.getMessage().equals(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE)) {
+      } else if (status.getMessage().equals(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE)
+          || currentAcquisitionPhase.equals(AcquisitionPhase.RECONCILING_TASKS)) {
         nameNode2TaskMap.clear();
         nameNode2TaskMap.put(status, true);
       } else if (nameNode1TaskMap.isEmpty()) {

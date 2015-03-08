@@ -160,18 +160,6 @@ public class TestScheduler {
   }
 
   @Test
-  public void launchesNamenodeWhenInNamenode2Phase() {
-    when(liveState.getCurrentAcquisitionPhase()).thenReturn(AcquisitionPhase.FORMAT_NAME_NODES);
-    when(persistentState.journalNodeRunningOnSlave("host0")).thenReturn(true);
-
-    scheduler.resourceOffers(driver, Lists.newArrayList(createTestOffer(0)));
-
-    verify(driver, times(1)).launchTasks(anyList(), taskInfosCapture.capture());
-    Protos.TaskInfo taskInfo = taskInfosCapture.getValue().iterator().next();
-    assertTrue(taskInfo.getName().contains(HDFSConstants.NAME_NODE_ID));
-  }
-
-  @Test
   public void declinesAnyOffersPastWhatItNeeds() {
     when(liveState.getCurrentAcquisitionPhase()).thenReturn(AcquisitionPhase.DATA_NODES);
 
