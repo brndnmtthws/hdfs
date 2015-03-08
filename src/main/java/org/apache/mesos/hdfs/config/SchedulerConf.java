@@ -104,6 +104,7 @@ public class SchedulerConf extends Configured {
   public double getNameNodeCpus() {
     return getConf().getDouble("mesos.hdfs.namenode.cpus", 1);
   }
+
   public double getJournalNodeCpus() {
     return getConf().getDouble("mesos.hdfs.journalnode.cpus", 1);
   }

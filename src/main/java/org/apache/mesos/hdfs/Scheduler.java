@@ -19,6 +19,7 @@ import org.apache.mesos.hdfs.util.HDFSConstants;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -87,6 +88,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     //reconcile tasks upon registration
     reconcileTasks(driver);
   }
+
   @Override
   public void reregistered(SchedulerDriver driver, MasterInfo masterInfo) {
     log.info("Reregistered framework: starting task reconciliation");
@@ -237,17 +239,18 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     try {
       FrameworkID frameworkID = persistentState.getFrameworkID();
       if (frameworkID != null) {
-        log.error("Error setting framework id", e);
         frameworkInfo.setId(frameworkID);
       }
     } catch (InterruptedException | ExecutionException | InvalidProtocolBufferException e) {
+      log.error("Error setting framework id", e);
       throw new RuntimeException(e);
     }
 
     MesosSchedulerDriver driver = new MesosSchedulerDriver(this, frameworkInfo.build(),
         conf.getMesosMasterUri());
-    driver.run().getValueDescriptor().getFullName();
+    driver.run();
   }
+
   private void launchNode(SchedulerDriver driver, Offer offer,
         String nodeName, List<String> taskNames, String executorName) {
     log.info(String.format("Launching node of type %s with tasks %s", nodeName,
@@ -278,6 +281,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     }
     driver.launchTasks(Arrays.asList(offer.getId()), tasks);
   }
+
   private ExecutorInfo createExecutor(String taskIdName, String nodeName, String executorName,
       List<Resource> resources) {
     int confServerPort = conf.getConfigServerPort();
@@ -339,14 +343,14 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
             .setType(Value.Type.SCALAR)
             .setScalar(Value.Scalar.newBuilder()
                 .setValue(conf.getExecutorCpus()).build())
-            .setRole("*")
+            .setRole(conf.getHdfsRole())
             .build(),
         Resource.newBuilder()
             .setName("mem")
             .setType(Value.Type.SCALAR)
             .setScalar(Value.Scalar.newBuilder()
                 .setValue(conf.getExecutorHeap() * conf.getJvmOverhead()).build())
-            .setRole("*")
+            .setRole(conf.getHdfsRole())
             .build());
   }
 
@@ -357,14 +361,14 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
             .setType(Value.Type.SCALAR)
             .setScalar(Value.Scalar.newBuilder()
                 .setValue(conf.getTaskCpus(taskName)).build())
-            .setRole("*")
+            .setRole(conf.getHdfsRole())
             .build(),
         Resource.newBuilder()
             .setName("mem")
             .setType(Value.Type.SCALAR)
             .setScalar(Value.Scalar.newBuilder()
                 .setValue(conf.getTaskHeapSize(taskName)).build())
-            .setRole("*")
+            .setRole(conf.getHdfsRole())
             .build());
   }
 
@@ -391,6 +395,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         launch = true;
       }
     } else if (deadJournalNodes.contains(offer.getHostname())) {
+      // TODO (elingg) we don't want to wait forever to launch a dead JN
       launch = true;
     }
     if (launch) {
@@ -427,6 +432,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         log.info(String.format("We need to coloate the namenode with a journalnode and there is"
             + "no journalnode running on this host. %s", offer.getHostname()));
       } else {
+        // TODO (elingg) we don't want to wait forever to launch a dead NN
         launch = true;
       }
     } else if (deadNameNodes.contains(offer.getHostname())) {
@@ -462,6 +468,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         launch = true;
       }
     } else if (deadDataNodes.contains(offer.getHostname())) {
+      // TODO (elingg) we don't want to wait forever to launch a dead DN. Also, DN's are not too
+      // important to recover due to replication if there is more than 1
       launch = true;
     }
     if (launch) {
@@ -516,16 +524,13 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       liveState.transitionTo(AcquisitionPhase.JOURNAL_NODES);
     } else if (liveState.getNameNodeSize() < HDFSConstants.TOTAL_NAME_NODES) {
       liveState.transitionTo(AcquisitionPhase.START_NAME_NODES);
-    } else if (liveState.getNameNodeSize() == HDFSConstants.TOTAL_NAME_NODES) {
-      if (liveState.isNameNode1Initialized()
-          && liveState.isNameNode2Initialized()) {
-        liveState.transitionTo(AcquisitionPhase.DATA_NODES);
-      } else {
-        liveState.transitionTo(AcquisitionPhase.FORMAT_NAME_NODES);
-      }
+    } else if (!liveState.isNameNode1Initialized()
+        || !liveState.isNameNode2Initialized()) {
+      liveState.transitionTo(AcquisitionPhase.FORMAT_NAME_NODES);
     } else {
-      log.error("Framework is in an unstable state, attention is required");
+      liveState.transitionTo(AcquisitionPhase.DATA_NODES);
     }
+
   }
 
   private boolean offerNotEnoughResources(Offer offer, double cpus, int mem) {
@@ -567,14 +572,17 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     log.info(String.format("DataNodes: %s", persistentState.getDataNodes()));
 
     LinkedHashMap<Protos.TaskID, Protos.TaskStatus> runningTasks = liveState.getRunningTasks();
-    for (String taskId : persistentState.getAllTaskIds()) {
+    Collection<String> taskIds = persistentState.getAllTaskIds();
+    Collection<Protos.TaskID> runningTaskIds = runningTasks.keySet();
+    for (String taskId : taskIds) {
       boolean taskFound = false;
-      for (Protos.TaskID runningTaskId : runningTasks.keySet()) {
+      for (Protos.TaskID runningTaskId : runningTaskIds) {
         if (runningTaskId.getValue().equals(taskId)) {
           taskFound = true;
         }
       }
       if (!taskFound) {
+        // TODO (elingg) verify this is being removed only if the task is not there
         persistentState.removeTaskId(taskId);
       }
     }

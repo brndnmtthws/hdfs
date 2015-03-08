@@ -68,6 +68,7 @@ public class PersistentState {
     }
     return deadJournalHosts;
   }
+
   public List<String> getDeadNameNodes() {
     HashMap<String, String> nameNodes = getNameNodes();
     Set<String> nameHosts = nameNodes.keySet();
@@ -80,6 +81,7 @@ public class PersistentState {
     }
     return deadNameHosts;
   }
+
   public List<String> getDeadDataNodes() {
     HashMap<String, String> dataNodes = getDataNodes();
     Set<String> dataHosts = dataNodes.keySet();
@@ -92,6 +94,7 @@ public class PersistentState {
     }
     return deadDataHosts;
   }
+
   // TODO (nicgrayson) add tests with in memory zookeeper
   public HashMap<String, String> getJournalNodes() {
     return getHashMap(JOURNALNODES_KEY);
@@ -218,6 +221,7 @@ public class PersistentState {
       return new HashMap<>();
     }
   }
+
   /**
    * Get serializable object from store.
    * 

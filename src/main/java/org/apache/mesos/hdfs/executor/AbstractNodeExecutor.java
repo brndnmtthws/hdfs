@@ -189,6 +189,7 @@ public abstract class AbstractNodeExecutor implements Executor {
       log.error("Caught exception", e);
     }
   }
+
   /**
    * Redirects a process to STDERR and STDOUT for logging and debugging purposes.
    **/
@@ -220,6 +221,7 @@ public abstract class AbstractNodeExecutor implements Executor {
       System.exit(1);
     }
   }
+
   /**
    * Abstract method to launch a task.
    **/
