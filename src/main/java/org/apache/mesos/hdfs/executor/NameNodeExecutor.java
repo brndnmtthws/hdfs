@@ -100,8 +100,10 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
     if (messageStr.equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)
         || messageStr.equals(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE)) {
       if (nameDir.exists()) {
+        // TODO (elingg) test failure scenario to make sure NN restarts with the
+        // appropriate sequence of events
         log.info(String
-            .format("NameNode data directory %s already exists, not formatting just starting",
+            .format("NameNode data directory %s already exists, not formatting",
                 nameDir));
       } else {
         nameDir.mkdirs();

@@ -112,10 +112,10 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     if (isTerminalState(status)) {
       liveState.removeRunningTask(status.getTaskId());
       persistentState.removeTaskId(status.getTaskId().getValue());
+      // Correct the phase when a task dies after the reconcile period is over
       if (reconciliationComplete()) {
         correctCurrentPhase();
       }
-
     } else if (isRunningState(status)) {
       liveState.updateTaskForStatus(status);
 
@@ -170,53 +170,45 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   @Override
   public void resourceOffers(SchedulerDriver driver, List<Offer> offers) {
     log.info(String.format("Received %d offers", offers.size()));
-
-    if (liveState.getStagingTasksSize() != 0) {
-      log.info("Declining offers because tasks are currently staging");
-      for (Offer offer : offers) {
+    if (liveState.getCurrentAcquisitionPhase().equals(AcquisitionPhase.RECONCILING_TASKS)
+        && reconciliationComplete()) {
+      correctCurrentPhase();
+    }
+    // TODO within each phase, accept offers based on the number of nodes you need
+    boolean acceptedOffer = false;
+    for (Offer offer : offers) {
+      if (acceptedOffer) {
         driver.declineOffer(offer.getId());
-      }
-    } else {
-      boolean acceptedOffer = false;
-      for (Offer offer : offers) {
-        if (acceptedOffer) {
-          driver.declineOffer(offer.getId());
-        } else {
-          switch (liveState.getCurrentAcquisitionPhase()) {
-            case RECONCILING_TASKS :
-              if (reconciliationComplete()) {
-                correctCurrentPhase();
-                driver.declineOffer(offer.getId());
-              } else {
-                log.info("Declining offers while reconciling tasks");
-                driver.declineOffer(offer.getId());
-              }
-              break;
-            case JOURNAL_NODES :
-              if (tryToLaunchJournalNode(driver, offer)) {
-                acceptedOffer = true;
-              } else {
-                driver.declineOffer(offer.getId());
-              }
-              break;
-            case START_NAME_NODES :
-              if (tryToLaunchNameNode(driver, offer)) {
-                acceptedOffer = true;
-              } else {
-                driver.declineOffer(offer.getId());
-              }
-              break;
-            case FORMAT_NAME_NODES :
+      } else {
+        switch (liveState.getCurrentAcquisitionPhase()) {
+          case RECONCILING_TASKS :
+            log.info("Declining offers while reconciling tasks");
+            driver.declineOffer(offer.getId());
+            break;
+          case JOURNAL_NODES :
+            if (tryToLaunchJournalNode(driver, offer)) {
+              acceptedOffer = true;
+            } else {
               driver.declineOffer(offer.getId());
-              break;
-            case DATA_NODES :
-              if (tryToLaunchDataNode(driver, offer)) {
-                acceptedOffer = true;
-              } else {
-                driver.declineOffer(offer.getId());
-              }
-              break;
-          }
+            }
+            break;
+          case START_NAME_NODES :
+            if (tryToLaunchNameNode(driver, offer)) {
+              acceptedOffer = true;
+            } else {
+              driver.declineOffer(offer.getId());
+            }
+            break;
+          case FORMAT_NAME_NODES :
+            driver.declineOffer(offer.getId());
+            break;
+          case DATA_NODES :
+            if (tryToLaunchDataNode(driver, offer)) {
+              acceptedOffer = true;
+            } else {
+              driver.declineOffer(offer.getId());
+            }
+            break;
         }
       }
     }
@@ -242,7 +234,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         frameworkInfo.setId(frameworkID);
       }
     } catch (InterruptedException | ExecutionException | InvalidProtocolBufferException e) {
-      log.error("Error setting framework id", e);
+      log.error("Error recovering framework id", e);
       throw new RuntimeException(e);
     }
 
@@ -399,7 +391,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         launch = true;
       }
     } else if (deadJournalNodes.contains(offer.getHostname())) {
-      // TODO (elingg) we don't want to wait forever to launch a dead JN
+      // TODO (elingg) we don't want to wait forever to launch a dead JN/ add a time out
       launch = true;
     }
     if (launch) {
@@ -436,7 +428,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         log.info(String.format("We need to coloate the namenode with a journalnode and there is"
             + "no journalnode running on this host. %s", offer.getHostname()));
       } else {
-        // TODO (elingg) we don't want to wait forever to launch a dead NN
+        // TODO (elingg) we don't want to wait forever to launch a dead NN/ add a time out
         launch = true;
       }
     } else if (deadNameNodes.contains(offer.getHostname())) {
@@ -472,8 +464,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         launch = true;
       }
     } else if (deadDataNodes.contains(offer.getHostname())) {
-      // TODO (elingg) we don't want to wait forever to launch a dead DN. Also, DN's are not too
-      // important to recover due to replication if there is more than 1
+      // TODO (elingg) we don't want to wait forever to launch a dead DN/ add a timeout. Also,
+      // DN's are not too important to recover due to replication if there is more than 1
       launch = true;
     }
     if (launch) {
@@ -488,7 +480,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     return false;
   }
 
-  private void sendMessageTo(SchedulerDriver driver, TaskID taskId, SlaveID slaveID, String message) {
+  private void sendMessageTo(SchedulerDriver driver, TaskID taskId,
+      SlaveID slaveID, String message) {
     log.info(String.format("Sending message '%s' to taskId=%s, slaveId=%s", message,
         taskId.getValue(), slaveID.getValue()));
     String postfix = taskId.getValue();
