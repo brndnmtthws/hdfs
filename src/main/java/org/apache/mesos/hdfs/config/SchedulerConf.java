@@ -27,7 +27,7 @@ public class SchedulerConf extends Configured {
   }
 
   public String getExecutorPath() {
-    return getConf().get("mesos.hdfs.executor.config.path", "..");
+    return getConf().get("mesos.hdfs.executor.path", "..");
   }
 
   public String getConfigPath() {
@@ -104,6 +104,7 @@ public class SchedulerConf extends Configured {
   public double getNameNodeCpus() {
     return getConf().getDouble("mesos.hdfs.namenode.cpus", 1);
   }
+
   public double getJournalNodeCpus() {
     return getConf().getDouble("mesos.hdfs.journalnode.cpus", 1);
   }
@@ -128,16 +129,15 @@ public class SchedulerConf extends Configured {
   }
 
   public int getJournalNodeCount() {
-    return getConf().getInt("mesos.hdfs.journalnode.count", 1);
+    return getConf().getInt("mesos.hdfs.journalnode.count", 3);
   }
 
   public String getFrameworkName() {
     return getConf().get("mesos.hdfs.framework.name", "hdfs");
   }
 
-  // TODO(elingg) This needs to be increased.
   public long getFailoverTimeout() {
-    return getConf().getLong("mesos.failover.timeout.sec", 0);
+    return getConf().getLong("mesos.failover.timeout.sec", 604800);
   }
 
   // TODO(elingg) Most likely this user name will change to HDFS
@@ -202,5 +202,9 @@ public class SchedulerConf extends Configured {
       configServerPortString = getConf().get("mesos.hdfs.config.server.port", "8765");
     }
     return Integer.valueOf(configServerPortString);
+  }
+
+  public int getReconciliationTimeout() {
+    return getConf().getInt("mesos.reconciliation.timeout.seconds", 30);
   }
 }

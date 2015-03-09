@@ -1,103 +1,137 @@
 package org.apache.mesos.hdfs.state;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.Sets;
 import com.google.inject.Singleton;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.Protos;
+import org.apache.mesos.hdfs.config.SchedulerConf;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 
+
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.Set;
 
 @Singleton
 public class LiveState {
-  private static final Log log = LogFactory.getLog(LiveState.class);
-  private final Map<Protos.TaskID, String> taskHostMap;
-  private final Set<Protos.TaskID> journalNodes;
-  private final Set<Protos.TaskID> nameNodes;
-  private final Map<Protos.TaskID, String> taskSlaveMap;
-  private final Set<String> journalNodeHosts;
-  private final Set<String> nameNodeHosts;
-  private final HashSet<Protos.TaskID> stagingTasks;
+  public static final Log log = LogFactory.getLog(LiveState.class);
+  private Set<Protos.TaskID> stagingTasks = new HashSet<>();
+  private AcquisitionPhase currentAcquisitionPhase = AcquisitionPhase.RECONCILING_TASKS;
+  // TODO (nicgrayson) Might need to split this out to jns, nns, and dns if dns too big
+  private LinkedHashMap<Protos.TaskID, Protos.TaskStatus> runningTasks = new LinkedHashMap<>();
+  private HashMap<Protos.TaskStatus, Boolean> nameNode1TaskMap = new HashMap<>();
+  private HashMap<Protos.TaskStatus, Boolean> nameNode2TaskMap = new HashMap<>();
 
-  public LiveState() {
-    taskHostMap = new HashMap<>();
-    taskSlaveMap = new HashMap<>();
-    journalNodes = new HashSet<>();
-    nameNodes = new HashSet<>();
-    journalNodeHosts = new HashSet<>();
-    nameNodeHosts = new HashSet<>();
-    stagingTasks = new HashSet<>();
-  }
-  
-  public Map<Protos.TaskID, String> getTaskHostMap() {
-    return taskHostMap;
+  public boolean isNameNode1Initialized() {
+    return !nameNode1TaskMap.isEmpty() && nameNode1TaskMap.values().iterator().next();
   }
 
-  public Map<Protos.TaskID, String> getTaskSlaveMap() {
-    return taskSlaveMap;
-  }
-
-  public Set<Protos.TaskID> getJournalNodes() {
-    return journalNodes;
-  }
-
-  public Set<Protos.TaskID> getNameNodes() {
-    return nameNodes;
-  }
-
-  public Set<String> getJournalNodeHosts() {
-    return journalNodeHosts;
-  }
-
-  public Set<String> getNameNodeHosts() {
-    return nameNodeHosts;
-  }
-
-  public Set<Protos.TaskID> getStagingTasks() {
-    return stagingTasks;
-  }
-
-  public boolean notInDfsHosts(String slaveId) {
-    return !taskSlaveMap.values().contains(slaveId);
-  }
-
-  public void addTask(Protos.TaskID taskId, String hostname, String slaveId) {
-    taskHostMap.put(taskId, hostname);
-    taskSlaveMap.put(taskId, slaveId);
-    if (taskId.getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
-      nameNodeHosts.add(hostname);
-    } else if (taskId.getValue().contains(HDFSConstants.JOURNAL_NODE_ID)) {
-      journalNodeHosts.add(hostname);
-    }
-  }
-
-  public void updateTask(Protos.TaskStatus taskStatus) {
-    if (taskStatus.getTaskId().getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
-      nameNodes.add(taskStatus.getTaskId());
-    } else if (taskStatus.getTaskId().getValue()
-        .contains(HDFSConstants.JOURNAL_NODE_ID)) {
-      journalNodes.add(taskStatus.getTaskId());
-    }
-  }
-
-  public void removeTask(Protos.TaskStatus taskStatus) {
-    Protos.TaskID taskId = taskStatus.getTaskId();
-    journalNodeHosts.remove(taskHostMap.get(taskId));
-    nameNodeHosts.remove(taskHostMap.get(taskId));
-    taskHostMap.remove(taskId);
-    nameNodes.remove(taskId);
-    journalNodes.remove(taskId);
-    taskSlaveMap.remove(taskId);
+  public boolean isNameNode2Initialized() {
+    return !nameNode2TaskMap.isEmpty() && nameNode2TaskMap.values().iterator().next();
   }
 
   public void addStagingTask(Protos.TaskID taskId) {
     stagingTasks.add(taskId);
   }
 
-  public void removeStagingTask(Protos.TaskID taskId) {
-    stagingTasks.remove(taskId);
+  public int getStagingTasksSize() {
+    return stagingTasks.size();
+  }
+
+  public void removeStagingTask(final Protos.TaskID taskID) {
+    stagingTasks.remove(taskID);
+  }
+
+  public LinkedHashMap<Protos.TaskID, Protos.TaskStatus> getRunningTasks() {
+    return runningTasks;
+  }
+
+  public void removeRunningTask(Protos.TaskID taskId) {
+    if (isNameNode1Initialized()
+        && nameNode1TaskMap.keySet().iterator().next().getTaskId().equals(taskId)) {
+      nameNode1TaskMap.clear();
+    } else if (isNameNode2Initialized()
+       && nameNode2TaskMap.keySet().iterator().next().getTaskId().equals(taskId)) {
+      nameNode2TaskMap.clear();
+    }
+    runningTasks.remove(taskId);
+  }
+
+  public void updateTaskForStatus(Protos.TaskStatus status) {
+    //Case of name node, update the task map
+    if (status.getTaskId().getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
+      if (status.getMessage().equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)
+          || (currentAcquisitionPhase.equals(AcquisitionPhase.RECONCILING_TASKS)
+          && !isNameNode1Initialized())) {
+        nameNode1TaskMap.clear();
+        nameNode1TaskMap.put(status, true);
+      } else if (status.getMessage().equals(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE)
+          || currentAcquisitionPhase.equals(AcquisitionPhase.RECONCILING_TASKS)) {
+        nameNode2TaskMap.clear();
+        nameNode2TaskMap.put(status, true);
+      } else if (nameNode1TaskMap.isEmpty()) {
+        nameNode1TaskMap.put(status, false);
+      } else if (nameNode2TaskMap.isEmpty()) {
+        nameNode2TaskMap.put(status, false);
+      }
+    }
+    runningTasks.put(status.getTaskId(), status);
+  }
+
+  public AcquisitionPhase getCurrentAcquisitionPhase() {
+    return currentAcquisitionPhase;
+  }
+
+  public void transitionTo(AcquisitionPhase phase) {
+    this.currentAcquisitionPhase = phase;
+  }
+
+  public int getJournalNodeSize() {
+    return countOfRunningTasksWith(HDFSConstants.JOURNAL_NODE_ID);
+  }
+
+  public int getNameNodeSize() {
+    return countOfRunningTasksWith(HDFSConstants.NAME_NODE_TASKID);
+  }
+
+  public Protos.TaskID getFirstNameNodeTaskId() {
+    if (nameNode1TaskMap.isEmpty()) {
+      return null;
+    }
+    return nameNode1TaskMap.keySet().iterator().next().getTaskId();
+  }
+
+  public Protos.TaskID getSecondNameNodeTaskId() {
+    if (nameNode2TaskMap.isEmpty()) {
+      return null;
+    }
+    return nameNode2TaskMap.keySet().iterator().next().getTaskId();
+  }
+
+  public Protos.SlaveID getFirstNameNodeSlaveId() {
+    if (nameNode1TaskMap.isEmpty()) {
+      return null;
+    }
+    return nameNode1TaskMap.keySet().iterator().next().getSlaveId();
+  }
+
+  public Protos.SlaveID getSecondNameNodeSlaveId() {
+    if (nameNode2TaskMap.isEmpty()) {
+      return null;
+    }
+    return nameNode2TaskMap.keySet().iterator().next().getSlaveId();
+  }
+
+  private int countOfRunningTasksWith(final String nodeId) {
+    return Sets.filter(runningTasks.keySet(), new Predicate<Protos.TaskID>() {
+      @Override
+      public boolean apply(Protos.TaskID taskID) {
+        return taskID.getValue().contains(nodeId);
+      }
+    }).size();
   }
 }

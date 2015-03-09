@@ -107,10 +107,8 @@
     <value>*</value>
   </property>
 
-  <!-- The number of journal nodes in addition to the two journal nodes that are part
-   of the two NN machines. This needs to be an odd number to create a quorum. -->
   <property>
     <name>mesos.hdfs.journalnode.count</name>
-    <value>1</value>
+    <value>3</value>
   </property>
 </configuration>

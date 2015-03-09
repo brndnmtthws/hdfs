@@ -32,7 +32,7 @@
     <setting id="org.eclipse.jdt.core.formatter.blank_lines_before_first_class_body_declaration" value="0"/>
     <setting id="org.eclipse.jdt.core.formatter.blank_lines_before_imports" value="0"/>
     <setting id="org.eclipse.jdt.core.formatter.blank_lines_before_member_type" value="0"/>
-    <setting id="org.eclipse.jdt.core.formatter.blank_lines_before_method" value="0"/>
+    <setting id="org.eclipse.jdt.core.formatter.blank_lines_before_method" value="1"/>
     <setting id="org.eclipse.jdt.core.formatter.blank_lines_before_new_chunk" value="0"/>
     <setting id="org.eclipse.jdt.core.formatter.blank_lines_before_package" value="0"/>
     <setting id="org.eclipse.jdt.core.formatter.blank_lines_between_import_groups" value="1"/>
