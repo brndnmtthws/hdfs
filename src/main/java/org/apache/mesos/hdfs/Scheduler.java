@@ -330,8 +330,11 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
                             .setValue("-Xmx" + conf.getExecutorHeap()
                                 + "m -Xms" + conf.getExecutorHeap() + "m").build())))
                 .setValue(
-                    "env ; cd hdfs-mesos-* && exec java $HADOOP_OPTS $EXECUTOR_OPTS " +
-                        "-cp lib/*.jar org.apache.mesos.hdfs.executor." + executorName)
+                    "env ; cd hdfs-mesos-* && " +
+                    "exec `if [ -z \"$JAVA_HOME\" ]; then echo java; else echo $JAVA_HOME/bin/java; fi` " +
+                    "$HADOOP_OPTS " +
+                    "$EXECUTOR_OPTS " +
+                    "-cp lib/*.jar org.apache.mesos.hdfs.executor." + executorName).build())
                 .build())
         .build();
   }
@@ -518,7 +521,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           HDFSConstants.RELOAD_CONFIG);
     }
   }
-
+        
   private void correctCurrentPhase() {
     if (liveState.getJournalNodeSize() < conf.getJournalNodeCount()) {
       liveState.transitionTo(AcquisitionPhase.JOURNAL_NODES);
