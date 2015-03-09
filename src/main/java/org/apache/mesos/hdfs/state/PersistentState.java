@@ -140,7 +140,8 @@ public class PersistentState {
     }
   }
 
-  // TODO (elingg) optimize this method/ Possibly index by task id instead of hostname
+  // TODO (elingg) optimize this method/ Possibly index by task id instead of hostname/
+  // Possibly call removeTask(slaveId, taskId) to avoid iterating through all maps
   public void removeTaskId(String taskId) {
     HashMap<String, String> journalNodes = getJournalNodes();
     if (journalNodes.values().contains(taskId)) {
