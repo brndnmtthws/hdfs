@@ -112,6 +112,10 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     if (isTerminalState(status)) {
       liveState.removeRunningTask(status.getTaskId());
       persistentState.removeTaskId(status.getTaskId().getValue());
+      // Correct the phase when a task dies after the reconcile period is over
+      if (reconciliationComplete()) {
+        correctCurrentPhase();
+      }
     } else if (isRunningState(status)) {
       liveState.updateTaskForStatus(status);
 
@@ -170,6 +174,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         && reconciliationComplete()) {
       correctCurrentPhase();
     }
+    // TODO within each phase, accept offers based on the number of nodes you need
     boolean acceptedOffer = false;
     for (Offer offer : offers) {
       if (acceptedOffer) {
@@ -386,7 +391,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         launch = true;
       }
     } else if (deadJournalNodes.contains(offer.getHostname())) {
-      // TODO (elingg) we don't want to wait forever to launch a dead JN
+      // TODO (elingg) we don't want to wait forever to launch a dead JN/ add a time out
       launch = true;
     }
     if (launch) {
@@ -423,7 +428,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         log.info(String.format("We need to coloate the namenode with a journalnode and there is"
             + "no journalnode running on this host. %s", offer.getHostname()));
       } else {
-        // TODO (elingg) we don't want to wait forever to launch a dead NN
+        // TODO (elingg) we don't want to wait forever to launch a dead NN/ add a time out
         launch = true;
       }
     } else if (deadNameNodes.contains(offer.getHostname())) {
@@ -459,8 +464,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         launch = true;
       }
     } else if (deadDataNodes.contains(offer.getHostname())) {
-      // TODO (elingg) we don't want to wait forever to launch a dead DN. Also, DN's are not too
-      // important to recover due to replication if there is more than 1
+      // TODO (elingg) we don't want to wait forever to launch a dead DN/ add a timeout. Also,
+      // DN's are not too important to recover due to replication if there is more than 1
       launch = true;
     }
     if (launch) {
