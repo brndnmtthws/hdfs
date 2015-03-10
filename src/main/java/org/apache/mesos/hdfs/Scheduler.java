@@ -545,6 +545,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   }
 
   private void reconcileTasks(SchedulerDriver driver) {
+    reconciliationCompleted = false;
     driver.reconcileTasks(Collections.<Protos.TaskStatus> emptyList());
     Timer timer = new Timer();
     timer.schedule(new ReconcileStateTask(), conf.getReconciliationTimeout() * 1000);
