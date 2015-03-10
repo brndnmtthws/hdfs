@@ -545,6 +545,9 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   }
 
   private void reconcileTasks(SchedulerDriver driver) {
+    //TODO run this method repeatedly with exponential backoff in the case that it takes time for
+    //different slaves to reregister upon master failover.
+    reconciliationCompleted = false;
     driver.reconcileTasks(Collections.<Protos.TaskStatus> emptyList());
     Timer timer = new Timer();
     timer.schedule(new ReconcileStateTask(), conf.getReconciliationTimeout() * 1000);
