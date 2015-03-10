@@ -19,12 +19,14 @@ import org.apache.mesos.hdfs.util.HDFSConstants;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.ExecutionException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
+import java.util.Timer;
+import java.util.TimerTask;
 
 //TODO remove as much logic as possible from Scheduler to clean up code
 public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
@@ -33,7 +35,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   private final SchedulerConf conf;
   private final LiveState liveState;
   private PersistentState persistentState;
-  private Timestamp reconciliationDeadline;
   private boolean reconciliationCompleted;
 
   @Inject
@@ -323,12 +324,11 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
                                 + "m -Xms" + conf.getExecutorHeap() + "m").build())))
                 .setValue(
                     "env ; cd hdfs-mesos-* && "
-                        +
-                        "exec `if [ -z \"$JAVA_HOME\" ]; then echo java; else echo $JAVA_HOME/bin/java; fi` "
-                        +
-                        "$HADOOP_OPTS " +
-                        "$EXECUTOR_OPTS " +
-                        "-cp lib/*.jar org.apache.mesos.hdfs.executor." + executorName).build())
+                        + "exec `if [ -z \"$JAVA_HOME\" ]; then echo java; "
+                        + "else echo $JAVA_HOME/bin/java; fi` "
+                        + "$HADOOP_OPTS "
+                        + "$EXECUTOR_OPTS "
+                        + "-cp lib/*.jar org.apache.mesos.hdfs.executor." + executorName).build())
         .build();
   }
 
@@ -545,43 +545,39 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   }
 
   private void reconcileTasks(SchedulerDriver driver) {
-    updateReconciliationDeadline();
     driver.reconcileTasks(Collections.<Protos.TaskStatus> emptyList());
-    reconcilePersistentState();
-    reconciliationCompleted = true;
+    Timer timer = new Timer();
+    timer.schedule(new ReconcileStateTask(), conf.getReconciliationTimeout() * 1000);
   }
 
   private boolean reconciliationComplete() {
-    return reconciliationDeadline != null &&
-        reconciliationDeadline.before(new Date()) && reconciliationCompleted;
+    return reconciliationCompleted;
   }
 
-  private void updateReconciliationDeadline() {
-    reconciliationCompleted = false;
-    Date date = DateUtils.addSeconds(new Date(), conf.getReconciliationTimeout());
-    reconciliationDeadline = new Timestamp(date.getTime());
-  }
+  private class ReconcileStateTask extends TimerTask {
 
-  private void reconcilePersistentState() {
-    log.info("Current persistent state:");
-    log.info(String.format("JournalNodes: %s", persistentState.getJournalNodes()));
-    log.info(String.format("NameNodes: %s", persistentState.getNameNodes()));
-    log.info(String.format("DataNodes: %s", persistentState.getDataNodes()));
+    @Override
+    public void run() {
+      log.info("Current persistent state:");
+      log.info(String.format("JournalNodes: %s", persistentState.getJournalNodes()));
+      log.info(String.format("NameNodes: %s", persistentState.getNameNodes()));
+      log.info(String.format("DataNodes: %s", persistentState.getDataNodes()));
 
-    LinkedHashMap<Protos.TaskID, Protos.TaskStatus> runningTasks = liveState.getRunningTasks();
-    Collection<String> taskIds = persistentState.getAllTaskIds();
-    Collection<Protos.TaskID> runningTaskIds = runningTasks.keySet();
-    for (String taskId : taskIds) {
-      boolean taskFound = false;
-      for (Protos.TaskID runningTaskId : runningTaskIds) {
-        if (runningTaskId.getValue().equals(taskId)) {
-          taskFound = true;
+      LinkedHashMap<Protos.TaskID, Protos.TaskStatus> runningTasks = liveState.getRunningTasks();
+      Collection<String> taskIds = persistentState.getAllTaskIds();
+      Collection<Protos.TaskID> runningTaskIds = runningTasks.keySet();
+      for (String taskId : taskIds) {
+        boolean taskFound = false;
+        for (Protos.TaskID runningTaskId : runningTaskIds) {
+          if (runningTaskId.getValue().equals(taskId)) {
+            taskFound = true;
+          }
+        }
+        if (!taskFound) {
+          persistentState.removeTaskId(taskId);
         }
       }
-      if (!taskFound) {
-        // TODO (elingg) verify this is being removed only if the task is not there
-        persistentState.removeTaskId(taskId);
-      }
+      reconciliationCompleted = true;
     }
   }
 }
