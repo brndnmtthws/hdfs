@@ -99,13 +99,12 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
     File nameDir = new File(schedulerConf.getDataDir() + "/name");
     if (messageStr.equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)
         || messageStr.equals(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE)) {
-      if (nameDir.exists()) {
-        // TODO (elingg) test failure scenario to make sure NN restarts with the
-        // appropriate sequence of events
+      if (nameDir.exists() && messageStr.equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)) {
         log.info(String
             .format("NameNode data directory %s already exists, not formatting",
                 nameDir));
       } else {
+        deleteFile(nameDir);
         nameDir.mkdirs();
         runCommand(driver, nameNodeTask, "bin/hdfs-mesos-namenode " + messageStr);
         startProcess(driver, nameNodeTask);

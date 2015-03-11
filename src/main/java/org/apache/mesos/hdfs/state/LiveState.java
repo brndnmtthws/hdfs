@@ -64,17 +64,26 @@ public class LiveState {
   public void updateTaskForStatus(Protos.TaskStatus status) {
     //Case of name node, update the task map
     if (status.getTaskId().getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
+      //If initializing the first NN or reconciling the first NN or bootstrapping the first NN
+      //set the status to initialized
       if (status.getMessage().equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)
           || (currentAcquisitionPhase.equals(AcquisitionPhase.RECONCILING_TASKS)
-          && !isNameNode1Initialized())) {
+              && !isNameNode1Initialized())
+          || (status.getMessage().equals(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE)
+              && !isNameNode1Initialized())) {
         nameNode1TaskMap.clear();
         nameNode1TaskMap.put(status, true);
-      } else if (status.getMessage().equals(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE)
-          || currentAcquisitionPhase.equals(AcquisitionPhase.RECONCILING_TASKS)) {
+        //If bootstrapping the second NN or reconciling the second NN, set the status to initialized
+      } else if ((status.getMessage().equals(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE)
+          && !isNameNode2Initialized())
+          || (currentAcquisitionPhase.equals(AcquisitionPhase.RECONCILING_TASKS)
+              && !isNameNode2Initialized())) {
         nameNode2TaskMap.clear();
         nameNode2TaskMap.put(status, true);
+        //If the first NN is not running, set the status to running
       } else if (nameNode1TaskMap.isEmpty()) {
         nameNode1TaskMap.put(status, false);
+        //If the second NN is not running, set the status to running
       } else if (nameNode2TaskMap.isEmpty()) {
         nameNode2TaskMap.put(status, false);
       }
