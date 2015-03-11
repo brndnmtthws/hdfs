@@ -142,12 +142,18 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           }
           break;
         case FORMAT_NAME_NODES :
-          if (!liveState.isNameNode1Initialized()) {
+          if (!liveState.isNameNode1Initialized() && !liveState.isNameNode2Initialized()) {
             sendMessageTo(
                 driver,
                 liveState.getFirstNameNodeTaskId(),
                 liveState.getFirstNameNodeSlaveId(),
                 HDFSConstants.NAME_NODE_INIT_MESSAGE);
+          } else if (!liveState.isNameNode1Initialized()) {
+            sendMessageTo(
+                driver,
+                liveState.getFirstNameNodeTaskId(),
+                liveState.getFirstNameNodeSlaveId(),
+                HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE);
           } else if (!liveState.isNameNode2Initialized()) {
             sendMessageTo(
                 driver,
@@ -545,8 +551,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   }
 
   private void reconcileTasks(SchedulerDriver driver) {
-    //TODO run this method repeatedly with exponential backoff in the case that it takes time for
-    //different slaves to reregister upon master failover.
+    // TODO run this method repeatedly with exponential backoff in the case that it takes time for
+    // different slaves to reregister upon master failover.
     reconciliationCompleted = false;
     driver.reconcileTasks(Collections.<Protos.TaskStatus> emptyList());
     Timer timer = new Timer();

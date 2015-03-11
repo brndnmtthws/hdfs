@@ -77,7 +77,7 @@ public abstract class AbstractNodeExecutor implements Executor {
   /**
    * Delete a file or directory.
    **/
-  private void deleteFile(File fileToDelete) {
+  protected void deleteFile(File fileToDelete) {
     if (fileToDelete.isDirectory()) {
       String[] entries = fileToDelete.list();
       for (String entry : entries) {
