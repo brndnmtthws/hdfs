@@ -62,10 +62,14 @@ public class LiveState {
   }
 
   public void updateTaskForStatus(Protos.TaskStatus status) {
-    //Case of name node, update the task map
+    // TODO (elingg) Use Starting Status when the task is running, but not initialized. Use running
+    // status when the task is initialized so that we can differentiate during the reconciliation
+    // phase. Also, add the health checks which will kill the task if it doesn't properly
+    // initialize or if it reaches an error state.
+    // Case of name node, update the task map
     if (status.getTaskId().getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
-      //If initializing the first NN or reconciling the first NN or bootstrapping the first NN
-      //set the status to initialized
+      // If initializing the first NN or reconciling the first NN or bootstrapping the first NN
+      // set the status to initialized
       if (status.getMessage().equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)
           || (currentAcquisitionPhase.equals(AcquisitionPhase.RECONCILING_TASKS)
               && !isNameNode1Initialized())
@@ -73,18 +77,19 @@ public class LiveState {
               && !isNameNode1Initialized())) {
         nameNode1TaskMap.clear();
         nameNode1TaskMap.put(status, true);
-        //If bootstrapping the second NN or reconciling the second NN, set the status to initialized
-      } else if ((status.getMessage().equals(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE)
+      } // If bootstrapping the second NN or reconciling the second NN,
+        // set the status to initialized
+      else if ((status.getMessage().equals(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE)
           && !isNameNode2Initialized())
           || (currentAcquisitionPhase.equals(AcquisitionPhase.RECONCILING_TASKS)
               && !isNameNode2Initialized())) {
         nameNode2TaskMap.clear();
         nameNode2TaskMap.put(status, true);
-        //If the first NN is not running, set the status to running
-      } else if (nameNode1TaskMap.isEmpty()) {
+      } // If the first NN is not running, set the status to running
+       else if (nameNode1TaskMap.isEmpty()) {
         nameNode1TaskMap.put(status, false);
-        //If the second NN is not running, set the status to running
-      } else if (nameNode2TaskMap.isEmpty()) {
+      } // If the second NN is not running, set the status to running
+       else if (nameNode2TaskMap.isEmpty()) {
         nameNode2TaskMap.put(status, false);
       }
     }
