@@ -114,6 +114,9 @@ public abstract class AbstractNodeExecutor implements Executor {
           Process process = Runtime.getRuntime().exec("unlink " + hdfsBinaryPath);
           redirectProcess(process);
           int exitCode = process.waitFor();
+          if (exitCode != 0) {
+            log.error("Unable to unlink old sym link. Exit code: " + exitCode);
+          }
         } catch (IOException e) {
           log.fatal(e);
           System.exit(1);
