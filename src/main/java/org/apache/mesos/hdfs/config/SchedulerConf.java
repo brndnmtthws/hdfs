@@ -207,4 +207,8 @@ public class SchedulerConf extends Configured {
   public int getReconciliationTimeout() {
     return getConf().getInt("mesos.reconciliation.timeout.seconds", 30);
   }
+
+  public int getDeadNodeTimeout() {
+    return getConf().getInt("mesos.hdfs.deadnode.timeout.seconds", 90);
+  }
 }

@@ -108,20 +108,22 @@ public abstract class AbstractNodeExecutor implements Executor {
       String hdfsBinaryPath = schedulerConf.getFrameworkMountPath()
           + "/" + HDFSConstants.HDFS_BINARY_DIR;
       File hdfsBinaryDir = new File(hdfsBinaryPath);
-      if (hdfsBinaryDir.exists()) {
-        //unlink the file
-        try {
-          Process process = Runtime.getRuntime().exec("unlink " + hdfsBinaryPath);
-          redirectProcess(process);
-          int exitCode = process.waitFor();
-          if (exitCode != 0) {
-            log.error("Unable to unlink old sym link. Exit code: " + exitCode);
-          }
-        } catch (IOException e) {
-          log.fatal(e);
-          System.exit(1);
+
+      // Try to delete the symbolic link in case a dangling link is present
+      try {
+        Process process = Runtime.getRuntime().exec("unlink " + hdfsBinaryPath);
+        redirectProcess(process);
+        int exitCode = process.waitFor();
+        if (exitCode != 0) {
+          log.info("Unable to unlink old sym link. Link may not exist. Exit code: " + exitCode);
         }
-        //delete the file
+      } catch (IOException e) {
+        log.fatal("Could not unlink" + hdfsBinaryPath + ": " + e);
+        System.exit(1);
+      }
+
+      // Delete the file if it exists
+      if (hdfsBinaryDir.exists()) {
         deleteFile(hdfsBinaryDir);
       }
 
