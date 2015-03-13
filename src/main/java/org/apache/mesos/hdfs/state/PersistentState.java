@@ -71,6 +71,7 @@ public class PersistentState {
     List<String> deadJournalHosts = getDeadJournalNodes();
     for (String deadJournalHost : deadJournalHosts) {
       journalNodes.remove(deadJournalHost);
+      log.info("Removing JN Host: " + deadJournalHost);
     }
     setJournalNodes(journalNodes);
   }
@@ -92,6 +93,7 @@ public class PersistentState {
     List<String> deadDataHosts = getDeadDataNodes();
     for (String deadDataHost : deadDataHosts) {
       dataNodes.remove(deadDataHost);
+      log.info("Removing DN Host: " + deadDataHost);
     }
     setDataNodes(dataNodes);
   }
