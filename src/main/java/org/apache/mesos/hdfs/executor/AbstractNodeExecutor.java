@@ -118,7 +118,7 @@ public abstract class AbstractNodeExecutor implements Executor {
           log.info("Unable to unlink old sym link. Link may not exist. Exit code: " + exitCode);
         }
       } catch (IOException e) {
-        log.fatal("Could not unlink" + hdfsBinary + ": " + e);
+        log.fatal("Could not unlink" + hdfsBinaryPath + ": " + e);
         System.exit(1);
       }
 
