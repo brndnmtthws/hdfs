@@ -1,5 +1,7 @@
 package org.apache.mesos.hdfs.state;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.lang.time.DateUtils;
 import org.apache.commons.logging.Log;
@@ -28,12 +30,13 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+@Singleton
 public class PersistentState {
   public static final Log log = LogFactory.getLog(PersistentState.class);
-  private static String FRAMEWORK_ID_KEY = "frameworkId";
-  private static String NAMENODES_KEY = "nameNodes";
-  private static String JOURNALNODES_KEY = "journalNodes";
-  private static String DATANODES_KEY = "dataNodes";
+  private String FRAMEWORK_ID_KEY = "frameworkId";
+  private String NAMENODES_KEY = "nameNodes";
+  private String JOURNALNODES_KEY = "journalNodes";
+  private String DATANODES_KEY = "dataNodes";
   private ZooKeeperState zkState;
   private SchedulerConf conf;
 
@@ -41,6 +44,7 @@ public class PersistentState {
   private Timestamp deadNameNodeTimeStamp = null;
   private Timestamp deadDataNodeTimeStamp = null;
 
+  @Inject
   public PersistentState(SchedulerConf conf) {
     MesosNativeLibrary.load(conf.getNativeLibrary());
     this.zkState = new ZooKeeperState(conf.getStateZkServers(),
@@ -174,7 +178,6 @@ public class PersistentState {
       case HDFSConstants.NAME_NODE_ID :
         HashMap<String, String> nameNodes = getNameNodes();
         nameNodes.put(hostname, taskId.getValue());
-        System.out.println("Saving the name node " + hostname + " " + taskId.getValue());
         setNameNodes(nameNodes);
         break;
       case HDFSConstants.JOURNAL_NODE_ID :
@@ -236,15 +239,15 @@ public class PersistentState {
   }
 
   public boolean journalNodeRunningOnSlave(String hostname) {
-    return getJournalNodes().keySet().contains(hostname);
+    return getJournalNodes().containsKey(hostname);
   }
 
   public boolean nameNodeRunningOnSlave(String hostname) {
-    return getNameNodes().keySet().contains(hostname);
+    return getNameNodes().containsKey(hostname);
   }
 
   public boolean dataNodeRunningOnSlave(String hostname) {
-    return getDataNodes().keySet().contains(hostname);
+    return getDataNodes().containsKey(hostname);
   }
 
   private void setNameNodes(HashMap<String, String> nameNodes) {
