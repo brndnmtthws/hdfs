@@ -3,6 +3,7 @@ package org.apache.mesos.hdfs.state;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.protobuf.InvalidProtocolBufferException;
+import org.apache.commons.lang.time.DateUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.MesosNativeLibrary;
@@ -18,8 +19,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,12 +38,18 @@ public class PersistentState {
   private String JOURNALNODES_KEY = "journalNodes";
   private String DATANODES_KEY = "dataNodes";
   private ZooKeeperState zkState;
+  private SchedulerConf conf;
+
+  private Timestamp deadJournalNodeTimeStamp = null;
+  private Timestamp deadNameNodeTimeStamp = null;
+  private Timestamp deadDataNodeTimeStamp = null;
 
   @Inject
   public PersistentState(SchedulerConf conf) {
     MesosNativeLibrary.load(conf.getNativeLibrary());
     this.zkState = new ZooKeeperState(conf.getStateZkServers(),
         conf.getStateZkTimeout(), TimeUnit.MILLISECONDS, "/hdfs-mesos/" + conf.getFrameworkName());
+    this.conf = conf;
   }
 
   public FrameworkID getFrameworkID() throws InterruptedException, ExecutionException,
@@ -60,43 +69,88 @@ public class PersistentState {
     zkState.store(value).get();
   }
 
-  public List<String> getDeadJournalNodes() {
+  private void removeDeadJournalNodes() {
+    deadJournalNodeTimeStamp = null;
     HashMap<String, String> journalNodes = getJournalNodes();
-    Set<String> journalHosts = journalNodes.keySet();
-    List<String> deadJournalHosts = new ArrayList<>();
-
-    for (String journalHost: journalHosts) {
-      if (journalNodes.get(journalHost) == null) {
-        deadJournalHosts.add(journalHost);
-      }
+    List<String> deadJournalHosts = getDeadJournalNodes();
+    for (String deadJournalHost : deadJournalHosts) {
+      journalNodes.remove(deadJournalHost);
+      log.info("Removing JN Host: " + deadJournalHost);
     }
-    return deadJournalHosts;
+    setJournalNodes(journalNodes);
+  }
+
+  private void removeDeadNameNodes() {
+    deadNameNodeTimeStamp = null;
+    HashMap<String, String> nameNodes = getNameNodes();
+    List<String> deadNameHosts = getDeadNameNodes();
+    for (String deadNameHost : deadNameHosts) {
+      nameNodes.remove(deadNameHost);
+      log.info("Removing NN Host: " + deadNameHost);
+    }
+    setNameNodes(nameNodes);
+  }
+
+  private void removeDeadDataNodes() {
+    deadDataNodeTimeStamp = null;
+    HashMap<String, String> dataNodes = getDataNodes();
+    List<String> deadDataHosts = getDeadDataNodes();
+    for (String deadDataHost : deadDataHosts) {
+      dataNodes.remove(deadDataHost);
+      log.info("Removing DN Host: " + deadDataHost);
+    }
+    setDataNodes(dataNodes);
+  }
+
+  public List<String> getDeadJournalNodes() {
+      if (deadJournalNodeTimeStamp != null && deadJournalNodeTimeStamp.before(new Date())) {
+          removeDeadJournalNodes();
+          return new ArrayList<>();
+      } else {
+        HashMap<String, String> journalNodes = getJournalNodes();
+        Set<String> journalHosts = journalNodes.keySet();
+        List<String> deadJournalHosts = new ArrayList<>();
+        for (String journalHost: journalHosts) {
+          if (journalNodes.get(journalHost) == null) {
+            deadJournalHosts.add(journalHost);
+          }
+        }
+        return deadJournalHosts;
+      }
   }
 
   public List<String> getDeadNameNodes() {
-    HashMap<String, String> nameNodes = getNameNodes();
-    Set<String> nameHosts = nameNodes.keySet();
-    List<String> deadNameHosts = new ArrayList<>();
-
-    for (String nameHost : nameHosts) {
-      if (nameNodes.get(nameHost) == null) {
-        deadNameHosts.add(nameHost);
+      if (deadNameNodeTimeStamp != null && deadNameNodeTimeStamp.before(new Date())) {
+          removeDeadNameNodes();
+          return new ArrayList<>();
+      } else {
+        HashMap<String, String> nameNodes = getNameNodes();
+        Set<String> nameHosts = nameNodes.keySet();
+        List<String> deadNameHosts = new ArrayList<>();
+        for (String nameHost : nameHosts) {
+          if (nameNodes.get(nameHost) == null) {
+            deadNameHosts.add(nameHost);
+          }
+        }
+        return deadNameHosts;
       }
-    }
-    return deadNameHosts;
   }
 
   public List<String> getDeadDataNodes() {
-    HashMap<String, String> dataNodes = getDataNodes();
-    Set<String> dataHosts = dataNodes.keySet();
-    List<String> deadDataHosts = new ArrayList<>();
-
-    for (String dataHost : dataHosts) {
-      if (dataNodes.get(dataHost) == null) {
-        deadDataHosts.add(dataHost);
+      if (deadDataNodeTimeStamp != null && deadDataNodeTimeStamp.before(new Date())) {
+          removeDeadDataNodes();
+          return new ArrayList<>();
+      } else {
+        HashMap<String, String> dataNodes = getDataNodes();
+        Set<String> dataHosts = dataNodes.keySet();
+        List<String> deadDataHosts = new ArrayList<>();
+        for (String dataHost : dataHosts) {
+        if (dataNodes.get(dataHost) == null) {
+          deadDataHosts.add(dataHost);
+        }
+       }
+       return deadDataHosts;
       }
-    }
-    return deadDataHosts;
   }
 
   // TODO (nicgrayson) add tests with in-memory state implementation for zookeeper
@@ -152,6 +206,8 @@ public class PersistentState {
         if (entry.getValue() != null && entry.getValue().equals(taskId)) {
           journalNodes.put(entry.getKey(), null);
           setJournalNodes(journalNodes);
+          Date date = DateUtils.addSeconds(new Date(), conf.getDeadNodeTimeout());
+          deadJournalNodeTimeStamp = new Timestamp(date.getTime());
           return;
         }
       }
@@ -162,6 +218,8 @@ public class PersistentState {
         if (entry.getValue() != null && entry.getValue().equals(taskId)) {
           nameNodes.put(entry.getKey(), null);
           setNameNodes(nameNodes);
+          Date date = DateUtils.addSeconds(new Date(), conf.getDeadNodeTimeout());
+          deadNameNodeTimeStamp = new Timestamp(date.getTime());
           return;
         }
       }
@@ -172,6 +230,8 @@ public class PersistentState {
         if (entry.getValue() != null && entry.getValue().equals(taskId)) {
           dataNodes.put(entry.getKey(), null);
           setDataNodes(dataNodes);
+          Date date = DateUtils.addSeconds(new Date(), conf.getDeadNodeTimeout());
+          deadDataNodeTimeStamp = new Timestamp(date.getTime());
           return;
         }
       }
