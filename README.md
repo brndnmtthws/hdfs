@@ -48,3 +48,10 @@ Resource Reservation Instructions (Optional)
 7. On each slave with the new settings, start the mesos slave by running
 <br>`sudo service mesos-slave start`</br>.
 
+Shutdown Instructions (Optional)
+--------------------------
+
+1. In Marathon (or your other long-running process monitor) shutdown the task
+2. Shutdown the mesos framework: `curl -d "frameworkId=YOUR_FRAMEWORK_ID" -X POST http://YOUR_MESOS_URL:5050/master/shutdown`
+3. Access your zookeeper instance: `/PATH/TO/zookeeper/bin/zkCli.sh`
+4. Remove HDFS data from zookeeper: `rmr /hdfs-mesos`
