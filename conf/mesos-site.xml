@@ -63,6 +63,11 @@
   </property>
 
   <property>
+    <name>mesos.hdfs.preshared-configuration</name>
+    <value>false</value>
+  </property>
+
+  <property>
     <name>mesos.native.library</name>
     <value>/usr/local/lib/libmesos.so</value>
   </property>
