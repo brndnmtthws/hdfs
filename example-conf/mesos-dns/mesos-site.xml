@@ -28,6 +28,11 @@
   </property>
 
   <property>
+    <name>mesos.hdfs.zkfc.ha.zookeeper.quorum</name>
+    <value>master0.mesos:2181,master1.mesos:2181,master2.mesos:2181</value>
+  </property>
+
+  <property>
     <name>mesos.hdfs.mesosdns</name>
     <value>true</value>
   </property>
