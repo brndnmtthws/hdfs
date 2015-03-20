@@ -538,6 +538,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   }
 
   private void reloadConfigsOnAllRunningTasks(SchedulerDriver driver) {
+    if (conf.usingPresharedConfig())
+      return;
     for (Protos.TaskStatus taskStatus : liveState.getRunningTasks().values()) {
       sendMessageTo(driver, taskStatus.getTaskId(), taskStatus.getSlaveId(),
           HDFSConstants.RELOAD_CONFIG);
