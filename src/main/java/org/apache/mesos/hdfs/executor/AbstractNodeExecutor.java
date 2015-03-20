@@ -1,6 +1,5 @@
 package org.apache.mesos.hdfs.executor;
 
-import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -18,19 +17,14 @@ import java.io.File;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class AbstractNodeExecutor implements Executor {
 
   public static final Log log = LogFactory.getLog(AbstractNodeExecutor.class);
   protected ExecutorInfo executorInfo;
-  // reload config no more than once every 60 sec
-  protected RateLimiter reloadLimiter = RateLimiter.create(1 / 60.);
   protected SchedulerConf schedulerConf;
 
   /**
@@ -57,7 +51,6 @@ public abstract class AbstractNodeExecutor implements Executor {
   @Override
   public void registered(ExecutorDriver driver, ExecutorInfo executorInfo,
       FrameworkInfo frameworkInfo, SlaveInfo slaveInfo) {
-    executorInfo = executorInfo;
     // Set up data dir
     setUpDataDir();
     createSymbolicLink();
@@ -70,11 +63,9 @@ public abstract class AbstractNodeExecutor implements Executor {
   private void setUpDataDir() {
     // Create primary data dir if it does not exist
     File dataDir = new File(schedulerConf.getDataDir());
-    // TODO(elingg) Need to actually recover the data instead of getting rid of it.
-    if (dataDir.exists()) {
-      deleteFile(dataDir);
+    if (!dataDir.exists()) {
+      dataDir.mkdirs();
     }
-    dataDir.mkdirs();
 
     // Create secondary data dir if it does not exist
     File secondaryDataDir = new File(schedulerConf.getSecondaryDataDir());
@@ -86,7 +77,7 @@ public abstract class AbstractNodeExecutor implements Executor {
   /**
    * Delete a file or directory.
    **/
-  private void deleteFile(File fileToDelete) {
+  protected void deleteFile(File fileToDelete) {
     if (fileToDelete.isDirectory()) {
       String[] entries = fileToDelete.list();
       for (String entry : entries) {
@@ -117,6 +108,21 @@ public abstract class AbstractNodeExecutor implements Executor {
       String hdfsBinaryPath = schedulerConf.getFrameworkMountPath()
           + "/" + HDFSConstants.HDFS_BINARY_DIR;
       File hdfsBinaryDir = new File(hdfsBinaryPath);
+
+      // Try to delete the symbolic link in case a dangling link is present
+      try {
+        Process process = Runtime.getRuntime().exec("unlink " + hdfsBinaryPath);
+        redirectProcess(process);
+        int exitCode = process.waitFor();
+        if (exitCode != 0) {
+          log.info("Unable to unlink old sym link. Link may not exist. Exit code: " + exitCode);
+        }
+      } catch (IOException e) {
+        log.fatal("Could not unlink" + hdfsBinaryPath + ": " + e);
+        System.exit(1);
+      }
+
+      // Delete the file if it exists
       if (hdfsBinaryDir.exists()) {
         deleteFile(hdfsBinaryDir);
       }
@@ -148,6 +154,7 @@ public abstract class AbstractNodeExecutor implements Executor {
     bufferedWriter.close();
     Runtime.getRuntime().exec("chmod a+x " + pathEnvVarLocation);
   }
+
   /**
    * Starts a task's process so it goes into running state.
    **/
@@ -173,10 +180,6 @@ public abstract class AbstractNodeExecutor implements Executor {
    * Reloads the cluster configuration so the executor has the correct configuration info.
    **/
   protected void reloadConfig() {
-    if (!reloadLimiter.tryAcquire()) {
-      log.info("Limiting reload rate");
-      return;
-    }
     // Find config URI
     String configUri = "";
     for (CommandInfo.URI uri : executorInfo.getCommand().getUrisList()) {
@@ -193,6 +196,7 @@ public abstract class AbstractNodeExecutor implements Executor {
       String cfgCmd[] = new String[]{"sh", "-c",
           String.format("curl -o hdfs-site.xml %s ; cp hdfs-site.xml etc/hadoop/", configUri)};
       Process process = Runtime.getRuntime().exec(cfgCmd);
+      //TODO(nicgrayson) check if the config has changed
       redirectProcess(process);
       int exitCode = process.waitFor();
       log.info("Finished reloading hdfs-site.xml, exited with status " + exitCode);
@@ -200,6 +204,7 @@ public abstract class AbstractNodeExecutor implements Executor {
       log.error("Caught exception", e);
     }
   }
+
   /**
    * Redirects a process to STDERR and STDOUT for logging and debugging purposes.
    **/
@@ -231,6 +236,7 @@ public abstract class AbstractNodeExecutor implements Executor {
       System.exit(1);
     }
   }
+
   /**
    * Abstract method to launch a task.
    **/
@@ -258,7 +264,9 @@ public abstract class AbstractNodeExecutor implements Executor {
 
   @Override
   public void frameworkMessage(ExecutorDriver driver, byte[] msg) {
-    log.info("Executor received framework message of length: " + msg.length + " bytes");
+    reloadConfig();
+    String messageStr = new String(msg);
+    log.info("Executor received framework message: " + messageStr);
   }
 
   @Override

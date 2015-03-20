@@ -48,8 +48,18 @@
   </property>
 
   <property>
-    <name>mesos.hdfs.cluster.name</name>
-    <value>hdfs-super-available</value>
+    <name>mesos.hdfs.framework.name</name>
+    <value>hdfs</value>
+  </property>
+
+  <property>
+    <name>mesos.hdfs.mesosdns</name>
+    <value>false</value>
+  </property>
+
+  <property>
+    <name>mesos.hdfs.mesosdns.domain</name>
+    <value>mesos</value>
   </property>
 
   <property>
@@ -109,6 +119,6 @@
 
   <property>
     <name>mesos.hdfs.journalnode.count</name>
-    <value>1</value>
+    <value>3</value>
   </property>
 </configuration>
