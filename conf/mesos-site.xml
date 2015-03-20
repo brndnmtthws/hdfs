@@ -73,6 +73,11 @@
   </property>
 
   <property>
+    <name>mesos.hdfs.jvm.overhead</name>
+    <value>1.5</value>
+  </property>
+
+  <property>
     <name>mesos.hdfs.hadoop.heap.size</name>
     <value>256</value>
   </property>
@@ -89,7 +94,7 @@
 
   <property>
     <name>mesos.hdfs.executor.heap.size</name>
-    <value>256</value>
+    <value>1024</value>
   </property>
 
   <property>
@@ -104,12 +109,12 @@
 
   <property>
     <name>mesos.hdfs.journalnode.cpus</name>
-    <value>1</value>
+    <value>0.5</value>
   </property>
 
   <property>
     <name>mesos.hdfs.datanode.cpus</name>
-    <value>1</value>
+    <value>0.5</value>
   </property>
 
   <property>
