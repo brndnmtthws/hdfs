@@ -79,7 +79,7 @@
 
   <property>
     <name>mesos.hdfs.hadoop.heap.size</name>
-    <value>512</value>
+    <value>256</value>
   </property>
 
   <property>
@@ -114,7 +114,7 @@
 
   <property>
     <name>mesos.hdfs.datanode.cpus</name>
-    <value>1</value>
+    <value>0.5</value>
   </property>
 
   <property>
