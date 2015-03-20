@@ -53,7 +53,8 @@ public abstract class AbstractNodeExecutor implements Executor {
       FrameworkInfo frameworkInfo, SlaveInfo slaveInfo) {
     // Set up data dir
     setUpDataDir();
-    createSymbolicLink();
+    if (!schedulerConf.usingPresharedConfig())
+      createSymbolicLink();
     log.info("Executor registered with the slave");
   }
 
@@ -131,6 +132,8 @@ public abstract class AbstractNodeExecutor implements Executor {
    * Mesos slave packaging.
    **/
   private void addBinaryToPath(String hdfsBinaryPath) throws IOException {
+    if (schedulerConf.usingPresharedConfig())
+      return;
     String pathEnvVarLocation = "/usr/bin/hadoop";
     String scriptContent = "#!/bin/bash \n" + hdfsBinaryPath + "/bin/hadoop \"$@\"";
     FileWriter fileWriter = new FileWriter(pathEnvVarLocation);
@@ -165,6 +168,7 @@ public abstract class AbstractNodeExecutor implements Executor {
    * Reloads the cluster configuration so the executor has the correct configuration info.
    **/
   protected void reloadConfig() {
+    if (schedulerConf.usingPresharedConfig()) return;
     // Find config URI
     String configUri = "";
     for (CommandInfo.URI uri : executorInfo.getCommand().getUrisList()) {
