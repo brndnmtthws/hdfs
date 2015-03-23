@@ -20,31 +20,37 @@
   <property>
     <name>mesos.hdfs.framework.mnt.path</name>
     <value>/opt/mesosphere</value>
+    <description>This is the default for all DCOS installs</description>
   </property>
 
   <property>
     <name>mesos.hdfs.state.zk</name>
     <value>master.mesos:2181</value>
+    <description>See the Mesos DNS config file for explanation for this</description>
   </property>
 
   <property>
     <name>mesos.master.uri</name>
     <value>zk://master.mesos:2181/mesos</value>
+    <description>See the Mesos DNS config file for explanation for this</description>
   </property>
 
   <property>
     <name>mesos.hdfs.zkfc.ha.zookeeper.quorum</name>
     <value>master0.mesos:2181,master1.mesos:2181,master2.mesos:2181</value>
+    <description>See the Mesos DNS config file for explanation for this</description>
   </property>
 
   <property>
     <name>mesos.hdfs.mesosdns</name>
     <value>true</value>
+    <description>All DCOS installs come with mesos DNS to maintain static configurations</description>
   </property>
 
   <property>
     <name>mesos.hdfs.preshared-configuration</name>
     <value>true</value>
+    <description>DCOS comes with a pre-shared HDFS configuration in a single-tenant environment</description>
   </property>
 
   <property>

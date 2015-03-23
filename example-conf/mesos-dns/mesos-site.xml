@@ -18,27 +18,32 @@
 
 <configuration>
   <property>
-    <name>mesos.hdfs.state.zk</name>
-    <value>master.mesos:2181</value>
-  </property>
-
-  <property>
-    <name>mesos.master.uri</name>
-    <value>zk://master.mesos:2181/mesos</value>
-  </property>
-
-  <property>
-    <name>mesos.hdfs.zkfc.ha.zookeeper.quorum</name>
-    <value>master0.mesos:2181,master1.mesos:2181,master2.mesos:2181</value>
-  </property>
-
-  <property>
     <name>mesos.hdfs.mesosdns</name>
     <value>true</value>
+    <description>If you want mesos dns to be used at all.</description>
   </property>
 
   <property>
     <name>mesos.hdfs.mesosdns.domain</name>
     <value>mesos</value>
+    <description>The domain is usually mesos, but if you changed this in Mesos DNS, change it here.</description>
+  </property>
+
+  <property>
+    <name>mesos.hdfs.state.zk</name>
+    <value>master.mesos:2181</value>
+    <description>Zookeeper is used by Hadoop's HA feature. If you colocate zk and mesos masters, you can use the master location here.</description>
+  </property>
+
+  <property>
+    <name>mesos.master.uri</name>
+    <value>zk://master.mesos:2181/mesos</value>
+    <description>The URI of zookeeper from the above setup is a reference to any of your mesos masters. </description>
+  </property>
+
+  <property>
+    <name>mesos.hdfs.zkfc.ha.zookeeper.quorum</name>
+    <value>master0.mesos:2181,master1.mesos:2181,master2.mesos:2181</value>
+    <description>This is where you must individually list all your zookeeper nodes</description>
   </property>
 </configuration>
