@@ -34,8 +34,8 @@ public class SchedulerConf extends Configured {
     return getConf().get("mesos.hdfs.mesosdns.domain", "mesos");
   }
 
-  public boolean usingPresharedConfig() {
-    return Boolean.valueOf(getConf().get("mesos.hdfs.preshared-configuration", "false"));
+  public boolean usingPresharedHadoopBinaries() {
+    return Boolean.valueOf(getConf().get("mesos.hdfs.preshared-hadoop-binaries", "false"));
   }
 
   public String getExecutorPath() {

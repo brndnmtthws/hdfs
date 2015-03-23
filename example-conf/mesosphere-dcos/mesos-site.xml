@@ -48,7 +48,7 @@
   </property>
 
   <property>
-    <name>mesos.hdfs.preshared-configuration</name>
+    <name>mesos.hdfs.preshared-hadoop-binaries</name>
     <value>true</value>
     <description>DCOS comes with a pre-shared HDFS configuration in a single-tenant environment</description>
   </property>
