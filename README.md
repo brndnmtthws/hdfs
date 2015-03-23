@@ -16,6 +16,9 @@ Installing HDFS-Mesos on your Cluster
 3. Customize configuration in `hdfs-mesos-*/etc/hadoop/*-site.xml`
 4. Check that `hostname` on that node resolves to a non-localhost IP; update /etc/hosts if necessary
 
+### Mesos-DNS custom configuration (see example-conf directory for example)
+You can see the example configuration in the `example-conf/mesos-dns` directory. Since Mesos-DNS provides native bindings for master detection, we can simply use those names in our mesos and hdfs configurations. The example configuration assumes your Mesos masters and your zookeeper nodes are colocated. If they aren't you'll need to specify your zookeeper nodes separately.
+
 Starting HDFS-Mesos
 --------------------------
 1. `cd hdfs-mesos-*`
