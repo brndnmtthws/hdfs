@@ -16,7 +16,7 @@ Installing HDFS-Mesos on your Cluster
 3. Customize configuration in `hdfs-mesos-*/etc/hadoop/*-site.xml`
 4. Check that `hostname` on that node resolves to a non-localhost IP; update /etc/hosts if necessary
 
-### Mesos-DNS custom configuration (see example-conf directory for example)
+### Mesos-DNS custom configuration
 You can see the example configuration in the `example-conf/mesos-dns` directory. Since Mesos-DNS provides native bindings for master detection, we can simply use those names in our mesos and hdfs configurations. The example configuration assumes your Mesos masters and your zookeeper nodes are colocated. If they aren't you'll need to specify your zookeeper nodes separately.
 
 Starting HDFS-Mesos
@@ -54,7 +54,7 @@ Resource Reservation Instructions (Optional)
 Shutdown Instructions (Optional)
 --------------------------
 
-1. In Marathon (or your other long-running process monitor) shutdown the task
-2. Shutdown the mesos framework: `curl -d "frameworkId=YOUR_FRAMEWORK_ID" -X POST http://YOUR_MESOS_URL:5050/master/shutdown`
+1. In Marathon (or your other long-running process monitor) stop the hdfs scheduler application
+2. Shutdown the hdfs framework in Mesos: `curl -d "frameworkId=YOUR_FRAMEWORK_ID" -X POST http://YOUR_MESOS_URL:5050/master/shutdown`
 3. Access your zookeeper instance: `/PATH/TO/zookeeper/bin/zkCli.sh`
-4. Remove HDFS data from zookeeper: `rmr /hdfs-mesos`
+4. Remove hdfs-mesos framework state from zookeeper: `rmr /hdfs-mesos`
