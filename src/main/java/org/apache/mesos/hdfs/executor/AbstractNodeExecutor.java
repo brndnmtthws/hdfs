@@ -180,7 +180,7 @@ public abstract class AbstractNodeExecutor implements Executor {
   }
 
   /**
-   * Reloads the cluster configuration som the executor has the correct configuration info.
+   * Reloads the cluster configuration so the executor has the correct configuration info.
    **/
   protected void reloadConfig() {
     if (schedulerConf.usingNativeHadoopBinaries()) return;
