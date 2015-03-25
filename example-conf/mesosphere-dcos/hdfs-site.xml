@@ -58,11 +58,6 @@
   </property>
 
   <property>
-    <name>dfs.ha.automatic-failover.enabled.hdfs</name>
-    <value>true</value>
-  </property>
-
-  <property>
     <name>dfs.client.failover.proxy.provider.hdfs</name>
     <value>org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider</value>
   </property>
