@@ -19,64 +19,84 @@
 <configuration>
   <property>
     <name>mesos.hdfs.data.dir</name>
+    <description>The primary data directory in HDFS</description>
     <value>/tmp/hdfs/data</value>
   </property>
   
   <property>
     <name>mesos.hdfs.secondary.data.dir</name>
+    <description>The secondary data directory in HDFS</description>
     <value>/var/run/hadoop-hdfs</value>
   </property>
-  
+
+  <property>
+    <name>mesos.hdfs.native-hadoop-binaries</name>
+    <description>Mark true if you have hadoop pre-installed on your host machines (otherwise it will be distributed by the scheduler)</description>
+    <value>false</value>
+  </property>
+
   <property>
     <name>mesos.hdfs.framework.mnt.path</name>
+    <description>Mount location (if above config is marked false)</description>
     <value>/opt/mesosphere</value>
   </property>
 
   <property>
     <name>mesos.hdfs.state.zk</name>
     <value>localhost:2181</value>
+    <description>Hostname and port of zookeeper node location</description>
   </property>
 
   <property>
     <name>mesos.master.uri</name>
     <value>zk://localhost:2181/mesos</value>
+    <description>Zookeeper entry for mesos master location</description>
   </property>
 
   <property>
     <name>mesos.hdfs.zkfc.ha.zookeeper.quorum</name>
     <value>localhost:2181</value>
+    <description>Comma-separated list of zookeeper hostname-port pairs</description>
   </property>
 
   <property>
     <name>mesos.hdfs.framework.name</name>
+    <description>Your cluster name when accessing files (hdfs://YOUR_NAME)</description>
     <value>hdfs</value>
   </property>
 
   <property>
     <name>mesos.hdfs.mesosdns</name>
+    <description>Whether to use Mesos DNS for service discovery within HDFS</description>
     <value>false</value>
   </property>
 
   <property>
     <name>mesos.hdfs.mesosdns.domain</name>
+    <description>Root domain name of Mesos DNS (usually 'Mesos')</description>
     <value>mesos</value>
   </property>
 
   <property>
-    <value>false</value>
-    <name>mesos.hdfs.preshared-hadoop-binaries</name>
+    <name>mesos.native.library</name>
+    <description>Location of libmesos.so</description>
   </property>
 
   <property>
-    <name>mesos.native.library</name>
     <value>/usr/local/lib/libmesos.so</value>
+    <name>mesos.hdfs.journalnode.count</name>
+    <description>Number of journal nodes (must be odd)</description>
+    <value>3</value>
   </property>
 
   <property>
     <name>mesos.hdfs.jvm.overhead</name>
+    <description>Multiplier added to resource reservation to account for JVM allocation</description>
     <value>1.5</value>
   </property>
 
+  <!-- Additional settings for fine-tuning -->
+  <!--
   <property>
     <name>mesos.hdfs.hadoop.heap.size</name>
     <value>256</value>
@@ -94,7 +114,7 @@
 
   <property>
     <name>mesos.hdfs.executor.heap.size</name>
-    <value>1024</value>
+    <value>256</value>
   </property>
 
   <property>
@@ -109,12 +129,12 @@
 
   <property>
     <name>mesos.hdfs.journalnode.cpus</name>
-    <value>0.5</value>
+    <value>1</value>
   </property>
 
   <property>
     <name>mesos.hdfs.datanode.cpus</name>
-    <value>0.5</value>
+    <value>1</value>
   </property>
 
   <property>
@@ -126,9 +146,5 @@
     <name>mesos.hdfs.role</name>
     <value>*</value>
   </property>
-
-  <property>
-    <name>mesos.hdfs.journalnode.count</name>
-    <value>3</value>
-  </property>
+  -->
 </configuration>
