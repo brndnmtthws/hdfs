@@ -103,16 +103,6 @@
   </property>
 
   <property>
-    <name>dfs.datanode.dns.interface</name>
-    <value>default</value>
-  </property>
-
-  <property>
-    <name>dfs.datanode.dns.nameserver</name>
-    <value>default</value>
-  </property>
-
-  <property>
     <name>dfs.datanode.du.reserved</name>
     <value>10485760</value>
   </property>
@@ -120,16 +110,6 @@
   <property>
     <name>dfs.datanode.balance.bandwidthPerSec</name>
     <value>41943040</value>
-  </property>
-
-  <property>
-    <name>dfs.webhdfs.enabled</name>
-    <value>true</value>
-  </property>
-
-  <property>
-    <name>dfs.replication</name>
-    <value>3</value>
   </property>
 
   <property>
@@ -198,10 +178,5 @@
   <property>
     <name>dfs.domain.socket.path</name>
     <value>/var/run/hadoop-hdfs/dn._PORT</value>
-  </property>
-
-  <property>
-    <name>dfs.datanode.failed.volumes.tolerated</name>
-    <value>0</value>
   </property>
 </configuration>
