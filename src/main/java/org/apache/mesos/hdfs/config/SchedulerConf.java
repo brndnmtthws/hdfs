@@ -35,7 +35,7 @@ public class SchedulerConf extends Configured {
   }
 
   public boolean usingNativeHadoopBinaries() {
-    return Boolean.valueOf(getConf().get("mesos.hdfs.preshared-hadoop-binaries", "false"));
+    return Boolean.valueOf(getConf().get("mesos.hdfs.native-hadoop-binaries", "false"));
   }
 
   public String getExecutorPath() {
