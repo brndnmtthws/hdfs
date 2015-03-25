@@ -44,7 +44,6 @@
   <property>
     <name>mesos.hdfs.state.zk</name>
     <description>Comma-separated hostname-port pairs of zookeeper node locations</description>
-    <value>master.mesos:2181</value>
   </property>
 
   <property>
