@@ -538,7 +538,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   }
 
   private void reloadConfigsOnAllRunningTasks(SchedulerDriver driver) {
-    if (conf.usingPresharedHadoopBinaries())
+    if (conf.usingNativeHadoopBinaries())
       return;
     for (Protos.TaskStatus taskStatus : liveState.getRunningTasks().values()) {
       sendMessageTo(driver, taskStatus.getTaskId(), taskStatus.getSlaveId(),

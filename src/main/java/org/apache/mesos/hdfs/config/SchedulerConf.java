@@ -34,7 +34,7 @@ public class SchedulerConf extends Configured {
     return getConf().get("mesos.hdfs.mesosdns.domain", "mesos");
   }
 
-  public boolean usingPresharedHadoopBinaries() {
+  public boolean usingNativeHadoopBinaries() {
     return Boolean.valueOf(getConf().get("mesos.hdfs.preshared-hadoop-binaries", "false"));
   }
 
