@@ -93,7 +93,7 @@
   <!--
   <property>
     <name>mesos.hdfs.jvm.overhead</name>
-    <description>Multiplier added to resource reservation to account for JVM allocation</description>
+    <description>Multiplier on resources reserved in order to account for JVM allocation</description>
     <value>1.5</value>
   </property>
   
