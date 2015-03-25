@@ -37,7 +37,7 @@
 
   <property>
     <name>mesos.hdfs.framework.mnt.path</name>
-    <description>Mount location (if above config is marked false)</description>
+    <description>Mount location (if mesos.hdfs.native-hadoop-binaries is marked false)</description>
     <value>/opt/mesosphere</value>
   </property>
 
@@ -73,7 +73,7 @@
 
   <property>
     <name>mesos.hdfs.mesosdns.domain</name>
-    <description>Root domain name of Mesos DNS (usually 'Mesos')</description>
+    <description>Root domain name of Mesos DNS (usually 'mesos')</description>
     <value>mesos</value>
   </property>
 
