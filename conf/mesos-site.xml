@@ -43,8 +43,8 @@
 
   <property>
     <name>mesos.hdfs.state.zk</name>
-    <value>localhost:2181</value>
-    <description>Hostname and port of zookeeper node location</description>
+    <description>Comma-separated hostname-port pairs of zookeeper node locations</description>
+    <value>master.mesos:2181</value>
   </property>
 
   <property>
