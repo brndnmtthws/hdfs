@@ -120,12 +120,12 @@
 
   <property>
     <name>dfs.datanode.handler.count</name>
-    <value>45</value>
+    <value>10</value>
   </property>
 
   <property>
     <name>dfs.namenode.handler.count</name>
-    <value>512</value>
+    <value>20</value>
   </property>
 
   <property>
