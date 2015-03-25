@@ -61,7 +61,7 @@
 
   <property>
     <name>mesos.hdfs.framework.name</name>
-    <description>Your cluster name when accessing files (hdfs://YOUR_NAME)</description>
+    <description>Your Mesos framework name and cluster name when accessing files (hdfs://YOUR_NAME)</description>
     <value>hdfs</value>
   </property>
 
