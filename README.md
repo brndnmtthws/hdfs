@@ -58,3 +58,4 @@ Shutdown Instructions (Optional)
 2. Shutdown the hdfs framework in Mesos: `curl -d "frameworkId=YOUR_FRAMEWORK_ID" -X POST http://YOUR_MESOS_URL:5050/master/shutdown`
 3. Access your zookeeper instance: `/PATH/TO/zookeeper/bin/zkCli.sh`
 4. Remove hdfs-mesos framework state from zookeeper: `rmr /hdfs-mesos`
+5. (Optional) Clear your data directories as specified in your `mesos-site.xml`. This is necessary to relaunch HDFS in the same directory.
