@@ -112,7 +112,7 @@ public abstract class AbstractNodeExecutor implements Executor {
 
       // Try to delete the symbolic link in case a dangling link is present
       try {
-        Process process = Runtime.getRuntime().exec("unlink " + hdfsBinaryPath);
+        Process process = new ProcessBuilder("unlink " + hdfsBinaryPath).start();
         redirectProcess(process);
         int exitCode = process.waitFor();
         if (exitCode != 0) {
@@ -155,7 +155,7 @@ public abstract class AbstractNodeExecutor implements Executor {
     BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
     bufferedWriter.write(scriptContent);
     bufferedWriter.close();
-    Runtime.getRuntime().exec("chmod a+x " + pathEnvVarLocation);
+    new ProcessBuilder("chmod a+x " + pathEnvVarLocation).start();
   }
 
   /**
@@ -166,8 +166,7 @@ public abstract class AbstractNodeExecutor implements Executor {
     Process process = task.process;
     if (process == null) {
       try {
-        process = Runtime.getRuntime().exec(new String[]{
-            "sh", "-c", task.cmd});
+        process = new ProcessBuilder("sh", "-c", task.cmd).start();
         redirectProcess(process);
       } catch (IOException e) {
         log.fatal(e);
@@ -197,9 +196,9 @@ public abstract class AbstractNodeExecutor implements Executor {
     }
     try {
       log.info(String.format("Reloading hdfs-site.xml from %s", configUri));
-      String cfgCmd[] = new String[]{"sh", "-c",
-          String.format("curl -o hdfs-site.xml %s ; cp hdfs-site.xml etc/hadoop/", configUri)};
-      Process process = Runtime.getRuntime().exec(cfgCmd);
+      Process process = new ProcessBuilder("sh", "-c",
+          String.format("curl -o hdfs-site.xml %s ; cp hdfs-site.xml etc/hadoop/", configUri)
+      ).start();
       //TODO(nicgrayson) check if the config has changed
       redirectProcess(process);
       int exitCode = process.waitFor();
@@ -226,7 +225,7 @@ public abstract class AbstractNodeExecutor implements Executor {
     reloadConfig();
     try {
       log.info(String.format("About to run command: %s", command));
-      Process init = Runtime.getRuntime().exec(new String[]{"sh", "-c", command});
+      Process init = new ProcessBuilder("sh", "-c", command).start();
       redirectProcess(init);
       int exitCode = init.waitFor();
       log.info("Finished running command, exited with status " + exitCode);
