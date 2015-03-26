@@ -34,6 +34,10 @@ public class SchedulerConf extends Configured {
     return getConf().get("mesos.hdfs.mesosdns.domain", "mesos");
   }
 
+  public boolean usingNativeHadoopBinaries() {
+    return Boolean.valueOf(getConf().get("mesos.hdfs.native-hadoop-binaries", "false"));
+  }
+
   public String getExecutorPath() {
     return getConf().get("mesos.hdfs.executor.path", "..");
   }
@@ -82,7 +86,7 @@ public class SchedulerConf extends Configured {
   }
 
   public double getJvmOverhead() {
-    return getConf().getDouble("mesos.hdfs.jvm.overhead", 1.25);
+    return getConf().getDouble("mesos.hdfs.jvm.overhead", 1.5);
   }
 
   public String getJvmOpts() {

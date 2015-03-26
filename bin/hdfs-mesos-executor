@@ -10,4 +10,4 @@ else
   JAVA_CMD=$JAVA_HOME/bin/java
 fi
 
-exec $JAVA_CMD $HADOOP_OPTS $EXECUTOR_OPTS -cp lib/*.jar org.apache.mesos.hdfs.MesosExecutor
+exec $JAVA_CMD  -Dmesos.conf.path=etc/hadoop/mesos-site.xml $HADOOP_OPTS $EXECUTOR_OPTS -cp lib/*.jar org.apache.mesos.hdfs.MesosExecutor

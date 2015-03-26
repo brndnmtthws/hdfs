@@ -483,9 +483,9 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
     boolean launch = false;
     List<String> deadDataNodes = persistentState.getDeadDataNodes();
-    //TODO (elingg) Relax this constraint to only wait for DN's when the number of DN's is small
-    //What number of DN's should we try to recover or should we remove this constraint
-    //entirely?
+    // TODO (elingg) Relax this constraint to only wait for DN's when the number of DN's is small
+    // What number of DN's should we try to recover or should we remove this constraint
+    // entirely?
     if (deadDataNodes.isEmpty()) {
       if (persistentState.dataNodeRunningOnSlave(offer.getHostname())
           || persistentState.nameNodeRunningOnSlave(offer.getHostname())
@@ -538,6 +538,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   }
 
   private void reloadConfigsOnAllRunningTasks(SchedulerDriver driver) {
+    if (conf.usingNativeHadoopBinaries())
+      return;
     for (Protos.TaskStatus taskStatus : liveState.getRunningTasks().values()) {
       sendMessageTo(driver, taskStatus.getTaskId(), taskStatus.getSlaveId(),
           HDFSConstants.RELOAD_CONFIG);
