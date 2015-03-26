@@ -163,11 +163,10 @@ public abstract class AbstractNodeExecutor implements Executor {
    **/
   protected void startProcess(ExecutorDriver driver, Task task) {
     reloadConfig();
-    Process process = task.process;
-    if (process == null) {
+    if (task.process == null) {
       try {
-        process = new ProcessBuilder("sh", "-c", task.cmd).start();
-        redirectProcess(process);
+        task.process = new ProcessBuilder("sh", "-c", task.cmd).start();
+        redirectProcess(task.process);
       } catch (IOException e) {
         log.fatal(e);
         sendTaskFailed(driver, task);
@@ -275,12 +274,6 @@ public abstract class AbstractNodeExecutor implements Executor {
   @Override
   public void error(ExecutorDriver driver, String message) {
     log.error(this.getClass().getName() + ".error: " + message);
-  }
-
-  @Override
-  public void shutdown(ExecutorDriver d) {
-    // TODO(elingg) let's shut down the driver more gracefully
-    log.info("Executor asked to shutdown");
   }
 
   /**
