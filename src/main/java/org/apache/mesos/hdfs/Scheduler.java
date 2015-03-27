@@ -274,7 +274,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           .build();
       TaskInfo task = TaskInfo.newBuilder()
           .setExecutor(executorInfo)
-          .setName(taskItem.getValue())
+          .setName(taskName)
           .setTaskId(taskId)
           .setSlaveId(offer.getSlaveId())
           .addAllResources(taskResources)
