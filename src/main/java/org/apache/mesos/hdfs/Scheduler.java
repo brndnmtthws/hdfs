@@ -19,6 +19,7 @@ import org.apache.mesos.hdfs.util.DnsResolver;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -270,7 +271,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     ExecutorInfo executorInfo = createExecutor(taskIdName, nodeName, executorName, resources);
     List<TaskInfo> tasks = new ArrayList<>();
     // K: TaskType V: TaskName
-    for (HashMap.Entry<String,String> taskInfo : taskMap.entrySet()) {
+    for (Map.Entry<String,String> taskInfo : taskMap.entrySet()) {
       List<Resource> taskResources = getTaskResources(taskInfo.getKey());
       TaskID taskId = TaskID.newBuilder()
           .setValue(String.format("task.%s.%s", taskInfo.getKey(), taskIdName))
