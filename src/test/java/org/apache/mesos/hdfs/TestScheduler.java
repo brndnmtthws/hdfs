@@ -22,6 +22,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -154,14 +155,17 @@ public class TestScheduler {
   @Test
   public void launchesNamenodeWhenInNamenode1Phase() {
     when(liveState.getCurrentAcquisitionPhase()).thenReturn(AcquisitionPhase.START_NAME_NODES);
+    when(liveState.getNameNodeNames()).thenReturn(new HashMap<String, String>());
     when(persistentState.journalNodeRunningOnSlave("host0")).thenReturn(true);
     when(dnsResolver.journalNodesResolvable()).thenReturn(true);
 
     scheduler.resourceOffers(driver, Lists.newArrayList(createTestOffer(0)));
 
     verify(driver, times(1)).launchTasks(anyList(), taskInfosCapture.capture());
-    Protos.TaskInfo taskInfo = taskInfosCapture.getValue().iterator().next();
-    assertTrue(taskInfo.getName().contains(HDFSConstants.NAME_NODE_ID));
+    assertTrue(taskInfosCapture.getValue().size() == 2);
+    String firstTask = taskInfosCapture.getValue().iterator().next().getName();
+    assertTrue(firstTask.contains(HDFSConstants.NAME_NODE_ID)
+        || firstTask.contains(HDFSConstants.ZKFC_NODE_ID));
   }
 
   @Test
