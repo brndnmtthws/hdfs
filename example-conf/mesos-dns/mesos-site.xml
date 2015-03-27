@@ -32,7 +32,7 @@
   <property>
     <name>mesos.hdfs.state.zk</name>
     <value>master.mesos:2181</value>
-    <description>HDFS framework's path for storing znodes in a zookeeper quorum. In this example, we use the same quorum as mesos uses for leader election.</description>
+    <description>HDFS framework's path for storing state information in a zookeeper quorum. In this example, we use the same quorum as mesos uses for leader election.</description>
   </property>
 
   <property>

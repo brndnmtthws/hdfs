@@ -22,7 +22,7 @@
     <description>The primary data directory in HDFS</description>
     <value>/tmp/hdfs/data</value>
   </property>
-  
+
   <property>
     <name>mesos.hdfs.secondary.data.dir</name>
     <description>The secondary data directory in HDFS</description>
@@ -96,11 +96,6 @@
     <description>Multiplier on resources reserved in order to account for JVM allocation</description>
     <value>1.5</value>
   </property>
-  
-  <property>
-    <name>mesos.hdfs.hadoop.heap.size</name>
-    <value>256</value>
-  </property>
 
   <property>
     <name>mesos.hdfs.namenode.heap.size</name>
@@ -110,11 +105,6 @@
   <property>
     <name>mesos.hdfs.datanode.heap.size</name>
     <value>1024</value>
-  </property>
-
-  <property>
-    <name>mesos.hdfs.executor.heap.size</name>
-    <value>256</value>
   </property>
 
   <property>
