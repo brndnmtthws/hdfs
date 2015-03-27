@@ -103,11 +103,6 @@
   </property>
 
   <property>
-    <name>mesos.hdfs.executor.heap.size</name>
-    <value>256</value>
-  </property>
-
-  <property>
     <name>mesos.hdfs.namenode.heap.size</name>
     <value>1024</value>
   </property>
@@ -115,6 +110,11 @@
   <property>
     <name>mesos.hdfs.datanode.heap.size</name>
     <value>1024</value>
+  </property>
+
+  <property>
+    <name>mesos.hdfs.executor.heap.size</name>
+    <value>256</value>
   </property>
 
   <property>
