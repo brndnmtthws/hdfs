@@ -112,7 +112,8 @@ public abstract class AbstractNodeExecutor implements Executor {
 
       // Try to delete the symbolic link in case a dangling link is present
       try {
-        Process process = new ProcessBuilder("unlink", hdfsBinaryPath).start();
+        ProcessBuilder processBuilder = new ProcessBuilder("unlink", hdfsBinaryPath);
+        Process process = processBuilder.start();
         redirectProcess(process);
         int exitCode = process.waitFor();
         if (exitCode != 0) {
@@ -155,7 +156,8 @@ public abstract class AbstractNodeExecutor implements Executor {
     BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
     bufferedWriter.write(scriptContent);
     bufferedWriter.close();
-    new ProcessBuilder("chmod", "a+x", pathEnvVarLocation).start();
+    ProcessBuilder processBuilder = new ProcessBuilder("chmod", "a+x", pathEnvVarLocation);
+    processBuilder.start();
   }
 
   /**
@@ -165,7 +167,8 @@ public abstract class AbstractNodeExecutor implements Executor {
     reloadConfig();
     if (task.process == null) {
       try {
-        task.process = new ProcessBuilder("sh", "-c", task.cmd).start();
+        ProcessBuilder processBuilder = new ProcessBuilder("sh", "-c", task.cmd);
+        task.process = processBuilder.start();
         redirectProcess(task.process);
       } catch (IOException e) {
         log.fatal(e);
@@ -195,9 +198,9 @@ public abstract class AbstractNodeExecutor implements Executor {
     }
     try {
       log.info(String.format("Reloading hdfs-site.xml from %s", configUri));
-      Process process = new ProcessBuilder("sh", "-c",
-          String.format("curl -o hdfs-site.xml %s ; cp hdfs-site.xml etc/hadoop/", configUri)
-      ).start();
+      ProcessBuilder processBuilder = new ProcessBuilder("sh", "-c",
+          String.format("curl -o hdfs-site.xml %s ; cp hdfs-site.xml etc/hadoop/", configUri));
+      Process process = processBuilder.start();
       //TODO(nicgrayson) check if the config has changed
       redirectProcess(process);
       int exitCode = process.waitFor();
@@ -224,7 +227,8 @@ public abstract class AbstractNodeExecutor implements Executor {
     reloadConfig();
     try {
       log.info(String.format("About to run command: %s", command));
-      Process init = new ProcessBuilder("sh", "-c", command).start();
+      ProcessBuilder processBuilder = new ProcessBuilder("sh", "-c", command);
+      Process init = processBuilder.start();
       redirectProcess(init);
       int exitCode = init.waitFor();
       log.info("Finished running command, exited with status " + exitCode);
