@@ -256,6 +256,12 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     //executorName is to distinguish different types of nodes
     //taskType is the type of task in mesos to launch on the node
     //taskName is a name chosen to identify the task in mesos and mesos-dns (if used)
+    HashMap<String,String> taskMap = new HashMap<>();
+    for (String taskType : taskTypes) {
+      String taskName = getNextTaskType(taskType);
+      if (taskName.isEmpty()) return false;
+      taskMap.put(taskType, taskName);
+    }
     log.info(String.format("Launching node of type %s with tasks %s", nodeName,
         taskTypes.toString()));
     String taskIdName = String.format("%s.%s.%d", nodeName, executorName,
@@ -263,26 +269,25 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     List<Resource> resources = getExecutorResources();
     ExecutorInfo executorInfo = createExecutor(taskIdName, nodeName, executorName, resources);
     List<TaskInfo> tasks = new ArrayList<>();
-    for (String taskType : taskTypes) {
-      List<Resource> taskResources = getTaskResources(taskType);
-      String taskName = getNextTaskType(taskType);
-      if (taskName.isEmpty()) return false;
+    // K: TaskType V: TaskName
+    for (HashMap.Entry<String,String> taskInfo : taskMap.entrySet()) {
+      List<Resource> taskResources = getTaskResources(taskInfo.getKey());
       TaskID taskId = TaskID.newBuilder()
-          .setValue(String.format("task.%s.%s", taskType, taskIdName))
+          .setValue(String.format("task.%s.%s", taskInfo.getKey(), taskIdName))
           .build();
       TaskInfo task = TaskInfo.newBuilder()
           .setExecutor(executorInfo)
-          .setName(taskName)
+          .setName(taskInfo.getValue())
           .setTaskId(taskId)
           .setSlaveId(offer.getSlaveId())
           .addAllResources(taskResources)
           .setData(ByteString.copyFromUtf8(
-              String.format("bin/hdfs-mesos-%s", taskType)))
+              String.format("bin/hdfs-mesos-%s", taskInfo.getKey())))
           .build();
       tasks.add(task);
 
-      liveState.addStagingTask(task.getTaskId(), taskName);
-      persistentState.addHdfsNode(taskId, offer.getHostname(), taskType);
+      liveState.addStagingTask(task.getTaskId(), taskInfo.getValue());
+      persistentState.addHdfsNode(taskId, offer.getHostname(), taskInfo.getKey());
     }
     driver.launchTasks(Arrays.asList(offer.getId()), tasks);
     return true;
@@ -383,20 +388,20 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
             .build());
   }
 
-  private List<Resource> getTaskResources(String taskName) {
+  private List<Resource> getTaskResources(String taskType) {
     return Arrays.asList(
         Resource.newBuilder()
             .setName("cpus")
             .setType(Value.Type.SCALAR)
             .setScalar(Value.Scalar.newBuilder()
-                .setValue(conf.getTaskCpus(taskName)).build())
+                .setValue(conf.getTaskCpus(taskType)).build())
             .setRole(conf.getHdfsRole())
             .build(),
         Resource.newBuilder()
             .setName("mem")
             .setType(Value.Type.SCALAR)
             .setScalar(Value.Scalar.newBuilder()
-                .setValue(conf.getTaskHeapSize(taskName)).build())
+                .setValue(conf.getTaskHeapSize(taskType)).build())
             .setRole(conf.getHdfsRole())
             .build());
   }
