@@ -430,7 +430,9 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     }
 
     String journalNodeTaskName = getNextTaskName(HDFSConstants.JOURNAL_NODE_ID);
-    if (journalNodeTaskName.isEmpty()) return false;
+    if (journalNodeTaskName.isEmpty()) {
+      return false;
+    }
 
     Map<String,String> taskInfo = new HashMap<>();
     taskInfo.put(HDFSConstants.JOURNAL_NODE_ID,journalNodeTaskName);
@@ -475,7 +477,9 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     }
 
     String nameNodeTaskName = getNextTaskName(HDFSConstants.NAME_NODE_ID);
-    if (nameNodeTaskName.isEmpty()) return false;
+    if (nameNodeTaskName.isEmpty()) {
+      return false;
+    }
 
     Map<String,String> taskInfo = new HashMap<>();
     taskInfo.put(HDFSConstants.NAME_NODE_ID,nameNodeTaskName);
