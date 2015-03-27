@@ -264,9 +264,11 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     ExecutorInfo executorInfo = createExecutor(taskIdName, nodeName, executorName, resources);
     List<TaskInfo> tasks = new ArrayList<>();
     for (Map.Entry<String,String> taskItem : taskInfo.entrySet()) {
-      List<Resource> taskResources = getTaskResources(taskItem.getKey());
+      String taskType = taskItem.getKey();
+      String taskName = taskItem.getValue();
+      List<Resource> taskResources = getTaskResources(taskType);
       TaskID taskId = TaskID.newBuilder()
-          .setValue(String.format("task.%s.%s", taskItem.getKey(), taskIdName))
+          .setValue(String.format("task.%s.%s", taskType, taskIdName))
           .build();
       TaskInfo task = TaskInfo.newBuilder()
           .setExecutor(executorInfo)
@@ -275,12 +277,12 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           .setSlaveId(offer.getSlaveId())
           .addAllResources(taskResources)
           .setData(ByteString.copyFromUtf8(
-              String.format("bin/hdfs-mesos-%s", taskItem.getKey())))
+              String.format("bin/hdfs-mesos-%s", taskType)))
           .build();
       tasks.add(task);
 
-      liveState.addStagingTask(task.getTaskId(), taskItem.getValue());
-      persistentState.addHdfsNode(taskId, offer.getHostname(), taskItem.getKey());
+      liveState.addStagingTask(task.getTaskId(), taskName);
+      persistentState.addHdfsNode(taskId, offer.getHostname(), taskType);
     }
     driver.launchTasks(Arrays.asList(offer.getId()), tasks);
   }
@@ -423,7 +425,9 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     } else if (deadJournalNodes.contains(offer.getHostname())) {
       launch = true;
     }
-    if (!launch) return false;
+    if (!launch) {
+      return false;
+    }
 
     String journalNodeTaskName = getNextTaskName(HDFSConstants.JOURNAL_NODE_ID);
     if (journalNodeTaskName.isEmpty()) return false;
@@ -466,7 +470,9 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     } else if (deadNameNodes.contains(offer.getHostname())) {
       launch = true;
     }
-    if (!launch) return false;
+    if (!launch) {
+      return false;
+    }
 
     String nameNodeTaskName = getNextTaskName(HDFSConstants.NAME_NODE_ID);
     if (nameNodeTaskName.isEmpty()) return false;
@@ -505,7 +511,9 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     } else if (deadDataNodes.contains(offer.getHostname())) {
       launch = true;
     }
-    if (!launch) return false;
+    if (!launch) {
+      return false;
+    }
 
     Map<String,String> taskInfo = new HashMap<>();
     taskInfo.put(HDFSConstants.DATA_NODE_ID,HDFSConstants.DATA_NODE_ID);

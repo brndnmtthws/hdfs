@@ -98,6 +98,7 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
 
   @Override
   public void shutdown(ExecutorDriver d) {
+    // TODO(elingg) let's shut down the driver more gracefully
     log.info("Executor asked to shutdown");
     killTask(d, journalNodeTask.taskInfo.getTaskId());
     killTask(d, nameNodeTask.taskInfo.getTaskId());
