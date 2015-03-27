@@ -37,7 +37,7 @@
 
   <property>
     <name>mesos.hdfs.zkfc.ha.zookeeper.quorum</name>
-    <value>master0.mesos:2181,master1.mesos:2181,master2.mesos:2181</value>
+    <value>master.mesos:2181</value>
     <description>See the Mesos DNS config file for explanation for this</description>
   </property>
 
