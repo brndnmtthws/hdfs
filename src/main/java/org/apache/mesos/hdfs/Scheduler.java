@@ -251,50 +251,41 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     driver.run();
   }
 
-  private boolean launchNode(SchedulerDriver driver, Offer offer,
-        String nodeName, List<String> taskTypes, String executorName) {
+  private void launchNode(SchedulerDriver driver, Offer offer,
+        String nodeName, Map<String,String> taskInfo, String executorName) {
     //nodeName is the type of executor to launch
     //executorName is to distinguish different types of nodes
-    //taskType is the type of task in mesos to launch on the node
-    //taskName is a name chosen to identify the task in mesos and mesos-dns (if used)
-    HashMap<String,String> taskMap = new HashMap<>();
-    for (String taskType : taskTypes) {
-      String taskName = getNextTaskType(taskType);
-      if (taskName.isEmpty()) return false;
-      taskMap.put(taskType, taskName);
-    }
+    //taskInfo is taskType mapped to taskName
     log.info(String.format("Launching node of type %s with tasks %s", nodeName,
-        taskTypes.toString()));
+        taskInfo));
     String taskIdName = String.format("%s.%s.%d", nodeName, executorName,
         System.currentTimeMillis());
     List<Resource> resources = getExecutorResources();
     ExecutorInfo executorInfo = createExecutor(taskIdName, nodeName, executorName, resources);
     List<TaskInfo> tasks = new ArrayList<>();
-    // K: TaskType V: TaskName
-    for (Map.Entry<String,String> taskInfo : taskMap.entrySet()) {
-      List<Resource> taskResources = getTaskResources(taskInfo.getKey());
+    for (Map.Entry<String,String> taskItem : taskInfo.entrySet()) {
+      List<Resource> taskResources = getTaskResources(taskItem.getKey());
       TaskID taskId = TaskID.newBuilder()
-          .setValue(String.format("task.%s.%s", taskInfo.getKey(), taskIdName))
+          .setValue(String.format("task.%s.%s", taskItem.getKey(), taskIdName))
           .build();
       TaskInfo task = TaskInfo.newBuilder()
           .setExecutor(executorInfo)
-          .setName(taskInfo.getValue())
+          .setName(taskItem.getValue())
           .setTaskId(taskId)
           .setSlaveId(offer.getSlaveId())
           .addAllResources(taskResources)
           .setData(ByteString.copyFromUtf8(
-              String.format("bin/hdfs-mesos-%s", taskInfo.getKey())))
+              String.format("bin/hdfs-mesos-%s", taskItem.getKey())))
           .build();
       tasks.add(task);
 
-      liveState.addStagingTask(task.getTaskId(), taskInfo.getValue());
-      persistentState.addHdfsNode(taskId, offer.getHostname(), taskInfo.getKey());
+      liveState.addStagingTask(task.getTaskId(), taskItem.getValue());
+      persistentState.addHdfsNode(taskId, offer.getHostname(), taskItem.getKey());
     }
     driver.launchTasks(Arrays.asList(offer.getId()), tasks);
-    return true;
   }
 
-  private String getNextTaskType(String taskType) {
+  private String getNextTaskName(String taskType) {
     if (taskType.equals(HDFSConstants.NAME_NODE_ID)) {
       for (int i = 1; i <= HDFSConstants.TOTAL_NAME_NODES; i++) {
         if (!liveState.getNameNodeNames().containsValue(HDFSConstants.NAME_NODE_ID + i)) {
@@ -432,15 +423,20 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     } else if (deadJournalNodes.contains(offer.getHostname())) {
       launch = true;
     }
-    if (launch) {
-      return launchNode(
-          driver,
-          offer,
-          HDFSConstants.JOURNAL_NODE_ID,
-          Arrays.asList(HDFSConstants.JOURNAL_NODE_ID),
-          HDFSConstants.NODE_EXECUTOR_ID);
-    }
-    return false;
+    if (!launch) return false;
+
+    String journalNodeTaskName = getNextTaskName(HDFSConstants.JOURNAL_NODE_ID);
+    if (journalNodeTaskName.isEmpty()) return false;
+
+    Map<String,String> taskInfo = new HashMap<>();
+    taskInfo.put(HDFSConstants.JOURNAL_NODE_ID,journalNodeTaskName);
+    launchNode(
+        driver,
+        offer,
+        HDFSConstants.JOURNAL_NODE_ID,
+        taskInfo,
+        HDFSConstants.NODE_EXECUTOR_ID);
+    return true;
   }
 
   private boolean tryToLaunchNameNode(SchedulerDriver driver, Offer offer) {
@@ -470,15 +466,21 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     } else if (deadNameNodes.contains(offer.getHostname())) {
       launch = true;
     }
-    if (launch) {
-      return launchNode(
-          driver,
-          offer,
-          HDFSConstants.NAME_NODE_ID,
-          Arrays.asList(HDFSConstants.NAME_NODE_ID, HDFSConstants.ZKFC_NODE_ID),
-          HDFSConstants.NAME_NODE_EXECUTOR_ID);
-    }
-    return false;
+    if (!launch) return false;
+
+    String nameNodeTaskName = getNextTaskName(HDFSConstants.NAME_NODE_ID);
+    if (nameNodeTaskName.isEmpty()) return false;
+
+    Map<String,String> taskInfo = new HashMap<>();
+    taskInfo.put(HDFSConstants.NAME_NODE_ID,nameNodeTaskName);
+    taskInfo.put(HDFSConstants.ZKFC_NODE_ID,HDFSConstants.ZKFC_NODE_ID);
+    launchNode(
+        driver,
+        offer,
+        HDFSConstants.NAME_NODE_ID,
+        taskInfo,
+        HDFSConstants.NAME_NODE_EXECUTOR_ID);
+    return true;
   }
 
   private boolean tryToLaunchDataNode(SchedulerDriver driver, Offer offer) {
@@ -503,15 +505,17 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     } else if (deadDataNodes.contains(offer.getHostname())) {
       launch = true;
     }
-    if (launch) {
-      return launchNode(
-          driver,
-          offer,
-          HDFSConstants.DATA_NODE_ID,
-          Arrays.asList(HDFSConstants.DATA_NODE_ID),
-          HDFSConstants.NODE_EXECUTOR_ID);
-    }
-    return false;
+    if (!launch) return false;
+
+    Map<String,String> taskInfo = new HashMap<>();
+    taskInfo.put(HDFSConstants.DATA_NODE_ID,HDFSConstants.DATA_NODE_ID);
+    launchNode(
+        driver,
+        offer,
+        HDFSConstants.DATA_NODE_ID,
+        taskInfo,
+        HDFSConstants.NODE_EXECUTOR_ID);
+    return true;
   }
 
   public void sendMessageTo(SchedulerDriver driver, TaskID taskId,
