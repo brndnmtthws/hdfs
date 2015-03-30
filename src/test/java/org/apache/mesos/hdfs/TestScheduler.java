@@ -22,6 +22,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.HashMap;
 
 import static org.junit.Assert.assertTrue;
@@ -163,9 +164,13 @@ public class TestScheduler {
 
     verify(driver, times(1)).launchTasks(anyList(), taskInfosCapture.capture());
     assertTrue(taskInfosCapture.getValue().size() == 2);
-    String firstTask = taskInfosCapture.getValue().iterator().next().getName();
+    Iterator<Protos.TaskInfo> taskInfoIterator = taskInfosCapture.getValue().iterator();
+    String firstTask = taskInfoIterator.next().getName();
     assertTrue(firstTask.contains(HDFSConstants.NAME_NODE_ID)
         || firstTask.contains(HDFSConstants.ZKFC_NODE_ID));
+    String secondTask = taskInfoIterator.next().getName();
+    assertTrue(secondTask.contains(HDFSConstants.NAME_NODE_ID)
+        || secondTask.contains(HDFSConstants.ZKFC_NODE_ID));
   }
 
   @Test
