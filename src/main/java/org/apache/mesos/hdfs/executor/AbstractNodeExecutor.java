@@ -161,7 +161,7 @@ public abstract class AbstractNodeExecutor implements Executor {
     int exitCode = process.waitFor();
     if (exitCode != 0) {
       log.fatal("Error creating the symbolic link to hdfs binary."
-          + "Failure running chmod a+x " + pathEnvVarLocation);
+          + "Failure running 'chmod a+x " + pathEnvVarLocation + "'");
       System.exit(1);
     }
   }
