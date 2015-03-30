@@ -210,8 +210,9 @@ public abstract class AbstractNodeExecutor implements Executor {
       //TODO(nicgrayson) check if the config has changed
       redirectProcess(process);
       int exitCode = process.waitFor();
-      log.info("Finished reloading hdfs-site.xml, exited with status " + exitCode);
-      if (exitCode != 0) {
+      if (exitCode == 0) {
+        log.info("Finished reloading hdfs-site.xml, exited with status " + exitCode);
+      } else {
         log.error("Error reloading hdfs-site.xml.");
       }
     } catch (InterruptedException | IOException e) {
@@ -240,8 +241,9 @@ public abstract class AbstractNodeExecutor implements Executor {
       Process init = processBuilder.start();
       redirectProcess(init);
       int exitCode = init.waitFor();
-      log.info("Finished running command, exited with status " + exitCode);
-      if (exitCode != 0) {
+      if (exitCode == 0) {
+        log.info("Finished running command, exited with status " + exitCode);
+      } else {
         log.error("Unable to run command: " + command);
         task.process.destroy();
         sendTaskFailed(driver, task);
