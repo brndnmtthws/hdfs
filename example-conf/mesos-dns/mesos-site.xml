@@ -32,7 +32,7 @@
   <property>
     <name>mesos.hdfs.state.zk</name>
     <value>master.mesos:2181</value>
-    <description>HDFS framework's path for storing znodes in a zookeeper quorum. In this example, we use the same quorum as mesos uses for leader election.</description>
+    <description>HDFS framework's path for storing state information in a zookeeper quorum. In this example, we use the same quorum as mesos uses for leader election.</description>
   </property>
 
   <property>
@@ -43,7 +43,7 @@
 
   <property>
     <name>mesos.hdfs.zkfc.ha.zookeeper.quorum</name>
-    <value>master0.mesos:2181,master1.mesos:2181,master2.mesos:2181</value>
-    <description>This is where you must individually list all your zookeeper host-port pairs for Hadoop's HA feature. If you colocate mesos masters and zookeeper nodes, you can use Mesos DNS for this.</description>
+    <value>master.mesos:2181</value>
+    <description>This is where you must individually list all your zookeeper host-port pairs for Hadoop's HA feature. If you colocate mesos masters and zookeeper nodes, you can use Mesos DNS to shortcut this by listing the master.mesos address, which points to all (any) of your Mesos masters.</description>
   </property>
 </configuration>
