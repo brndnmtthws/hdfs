@@ -147,7 +147,7 @@ public abstract class AbstractNodeExecutor implements Executor {
    * requires that /usr/bin/ is on the Mesos slave PATH, which is defined as part of the standard
    * Mesos slave packaging.
    **/
-  private void addBinaryToPath(String hdfsBinaryPath) throws IOException {
+  private void addBinaryToPath(String hdfsBinaryPath) throws IOException, InterruptedException {
     if (schedulerConf.usingNativeHadoopBinaries())
       return;
     String pathEnvVarLocation = "/usr/bin/hadoop";
@@ -157,7 +157,13 @@ public abstract class AbstractNodeExecutor implements Executor {
     bufferedWriter.write(scriptContent);
     bufferedWriter.close();
     ProcessBuilder processBuilder = new ProcessBuilder("chmod", "a+x", pathEnvVarLocation);
-    processBuilder.start();
+    Process process = processBuilder.start();
+    int exitCode = process.waitFor();
+    if (exitCode != 0) {
+      log.fatal("Error creating the symbolic link to hdfs binary."
+          + "Failure running chmod a+x " + pathEnvVarLocation);
+      System.exit(1);
+    }
   }
 
   /**
@@ -171,9 +177,9 @@ public abstract class AbstractNodeExecutor implements Executor {
         task.process = processBuilder.start();
         redirectProcess(task.process);
       } catch (IOException e) {
-        log.fatal(e);
+        log.error(e);
+        task.process.destroy();
         sendTaskFailed(driver, task);
-        System.exit(2);
       }
     } else {
       log.error("Tried to start process, but process already running");
@@ -199,12 +205,15 @@ public abstract class AbstractNodeExecutor implements Executor {
     try {
       log.info(String.format("Reloading hdfs-site.xml from %s", configUri));
       ProcessBuilder processBuilder = new ProcessBuilder("sh", "-c",
-          String.format("curl -o hdfs-site.xml %s ; cp hdfs-site.xml etc/hadoop/", configUri));
+          String.format("curl -o hdfs-site.xml %s && cp hdfs-site.xml etc/hadoop/", configUri));
       Process process = processBuilder.start();
       //TODO(nicgrayson) check if the config has changed
       redirectProcess(process);
       int exitCode = process.waitFor();
       log.info("Finished reloading hdfs-site.xml, exited with status " + exitCode);
+      if (exitCode != 0) {
+        log.error("Error reloading hdfs-site.xml.");
+      }
     } catch (InterruptedException | IOException e) {
       log.error("Caught exception", e);
     }
@@ -233,13 +242,14 @@ public abstract class AbstractNodeExecutor implements Executor {
       int exitCode = init.waitFor();
       log.info("Finished running command, exited with status " + exitCode);
       if (exitCode != 0) {
-        log.fatal("Unable to run command: " + command);
+        log.error("Unable to run command: " + command);
+        task.process.destroy();
         sendTaskFailed(driver, task);
-        System.exit(1);
       }
     } catch (InterruptedException | IOException e) {
-      log.fatal(e);
-      System.exit(1);
+      log.error(e);
+      task.process.destroy();
+      sendTaskFailed(driver, task);
     }
   }
 
