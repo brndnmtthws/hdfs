@@ -1,33 +1,93 @@
 #!/bin/bash
 
-mvn clean package
+HADOOP_VER=2.5.0-cdh5.3.1
+HADOOP_DIR=hadoop-$HADOOP_VER
+HADOOP_ZIP=$HADOOP_DIR.tar.gz
+HADOOP_URL=http://archive.cloudera.com/cdh5/cdh/5/$HADOOP_ZIP
+IMPALA_VER=cdh5.3.1-release
+IMPALA_ZIP=$IMPALA_VER.zip
+IMPALA_URL=https://github.com/cloudera/Impala/archive/$IMPALA_ZIP
+NATIVE=native
+DIST=hdfs-mesos-0.1.0
 
-wget http://archive.cloudera.com/cdh5/cdh/5/hadoop-2.3.0-cdh5.1.0.tar.gz
-tar xf hadoop-2.*.tar.gz
-cd hadoop-2.*
+# Remove cached binaries and exit
+if [ "$1" == "clean" ]; then
+    rm -f $HADOOP_ZIP
+    rm -rf $HADOOP_DIR
+    rm -rf $NATIVE
+    rm -rf $DIST
+    rm -f $DIST.tgz
+    mvn clean
+    exit 0
+fi
 
-# Remove unneeded computer stuff
-rm -rf cloudera
-rm -rf examples*
-rm -rf src
-rm -rf share/hadoop/mapreduce*
-rm -rf share/hadoop/yarn
-rm -rf share/doc
-rm -rf etc/hadoop-mapreduce*
+# Build and package hdfs-mesos project
+if [ "$1" != "nocompile" ]; then
+  mvn clean package || exit
+fi
+
+# Download hadoop binary
+if [ ! -f $HADOOP_ZIP ]; then
+    echo "Downloading $HADOOP_URL"
+    wget $HADOOP_URL || exit
+else
+    echo "($HADOOP_ZIP already exists, skipping dl)"
+fi
+
+# Extract hadoop
+if [ ! -d $HADOOP_DIR ]; then
+    echo "Extracting $HADOOP_ZIP"
+    tar xf $HADOOP_ZIP
+else
+    echo "($HADOOP_DIR already exists, skipping extract)"
+fi
 
 # Get native libraries
-wget https://github.com/cloudera/Impala/archive/cdh5-1.4_5.1.0.zip
-unzip -q cdh5-1.4_5.1.0.zip
-cp Impala-cdh5-1.4_5.1.0/thirdparty/hadoop-2.3.0-cdh5.1.0/lib/native/lib* lib/native
-rm -rf cdh5-1* Impala*
+if [ ! -d $NATIVE ]; then
+    echo "Downloading and unpacking native libs"
+    wget $IMPALA_URL || exit
+    unzip -q $IMPALA_VER.zip
+    mkdir -p $NATIVE
+    cp Impala-$IMPALA_VER/thirdparty/$HADOOP_DIR/lib/native/lib* $NATIVE
+    rm -rf $IMPALA_VER* Impala*
+else
+    echo "($NATIVE libs already exist, skipping dl)"
+fi
 
-# Copy scripts to bin
-cp ../bin/hdfs-mesos* bin/
+# Create dist
+if [ ! -d $DIST ]; then
+    echo "Creating new $DIST dist folder"
+    mkdir -p $DIST
+else
+    echo "($DIST already exists, deleting before create)"
+    rm -rf $DIST
+    mkdir -p $DIST
+fi
+
+# Copy to dist
+echo "Copying required hadoop dependencies into $DIST"
+cp -R $HADOOP_DIR/bin $DIST
+cp -R $HADOOP_DIR/etc $DIST
+cp -R $HADOOP_DIR/libexec $DIST
+mkdir -p $DIST/share/hadoop/common
+cp -R $HADOOP_DIR/share/hadoop/common/hadoop-common-$HADOOP_VER.jar $DIST/share/hadoop/common
+cp -R $HADOOP_DIR/share/hadoop/common/lib $DIST/share/hadoop/common
+mkdir -p $DIST/share/hadoop/hdfs
+cp -R $HADOOP_DIR/share/hadoop/hdfs/hadoop-hdfs-$HADOOP_VER.jar $DIST/share/hadoop/hdfs
+cp -R $HADOOP_DIR/share/hadoop/hdfs/lib $DIST/share/hadoop/hdfs
+cp -R $HADOOP_DIR/share/hadoop/hdfs/webapps $DIST/share/hadoop/hdfs
+
+mkdir -p $DIST/lib/native
+cp $NATIVE/* $DIST/lib/native
+
+echo "Copying build output into $DIST"
+cd $DIST
+cp ../bin/* bin/
 cp ../target/*-uber.jar lib/
 cp ../conf/* etc/hadoop/
-
-# Build executor package
 cd ..
-tar czf hadoop-mesos-cdh5.tar.gz hadoop-2.*
 
-echo "Done!"
+# Compress tarball
+echo "Compressing to $DIST.tgz"
+rm -f $DIST.tgz
+tar czf $DIST.tgz $DIST
