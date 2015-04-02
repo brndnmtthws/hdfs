@@ -589,11 +589,11 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   private boolean offerNotEnoughResources(Offer offer, double cpus, int mem) {
     for (Resource offerResource : offer.getResourcesList()) {
       if (offerResource.getName().equals("cpus") &&
-          cpus > offerResource.getScalar().getValue()) {
+          cpus + conf.getExecutorCpus() > offerResource.getScalar().getValue()) {
         return true;
       }
       if (offerResource.getName().equals("mem") &&
-          mem > offerResource.getScalar().getValue()) {
+          mem + conf.getExecutorHeap() > offerResource.getScalar().getValue()) {
         return true;
       }
     }
