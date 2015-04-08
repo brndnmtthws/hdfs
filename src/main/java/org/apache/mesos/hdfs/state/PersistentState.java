@@ -37,6 +37,8 @@ public class PersistentState {
   private static final String NAMENODES_KEY = "nameNodes";
   private static final String JOURNALNODES_KEY = "journalNodes";
   private static final String DATANODES_KEY = "dataNodes";
+  private static final String NAMENODE_TASKNAMES_KEY = "nameNodeTaskNames";
+  private static final String JOURNALNODE_TASKNAMES_KEY = "journalNodeTaskNames";
   private ZooKeeperState zkState;
   private SchedulerConf conf;
 
@@ -162,6 +164,14 @@ public class PersistentState {
     return getHashMap(NAMENODES_KEY);
   }
 
+  public HashMap<String, String> getJournalNodeTaskNames() {
+    return getHashMap(JOURNALNODE_TASKNAMES_KEY);
+  }
+
+  public HashMap<String, String> getNameNodeTaskNames() {
+    return getHashMap(NAMENODE_TASKNAMES_KEY);
+  }
+
   public HashMap<String, String> getDataNodes() {
     return getHashMap(DATANODES_KEY);
   }
@@ -173,17 +183,23 @@ public class PersistentState {
     return allTasksIds.values();
   }
 
-  public void addHdfsNode(Protos.TaskID taskId, String hostname, String taskType) {
+  public void addHdfsNode(Protos.TaskID taskId, String hostname, String taskType, String taskName) {
     switch (taskType) {
       case HDFSConstants.NAME_NODE_ID :
         HashMap<String, String> nameNodes = getNameNodes();
         nameNodes.put(hostname, taskId.getValue());
         setNameNodes(nameNodes);
+        HashMap<String, String> nameNodeTaskNames = getNameNodeTaskNames();
+        nameNodeTaskNames.put(taskId.getValue(), taskName);
+        setNameNodeTaskNames(nameNodeTaskNames);
         break;
       case HDFSConstants.JOURNAL_NODE_ID :
         HashMap<String, String> journalNodes = getJournalNodes();
         journalNodes.put(hostname, taskId.getValue());
         setJournalNodes(journalNodes);
+        HashMap<String, String> journalNodeTaskNames = getJournalNodeTaskNames();
+        journalNodeTaskNames.put(taskId.getValue(), taskName);
+        setJournalNodeTaskNames(journalNodeTaskNames);
         break;
       case HDFSConstants.DATA_NODE_ID :
         HashMap<String, String> dataNodes = getDataNodes();
@@ -201,11 +217,14 @@ public class PersistentState {
   // Possibly call removeTask(slaveId, taskId) to avoid iterating through all maps
   public void removeTaskId(String taskId) {
     HashMap<String, String> journalNodes = getJournalNodes();
+    HashMap<String, String> journalNodeTaskNames = getJournalNodeTaskNames();
     if (journalNodes.values().contains(taskId)) {
       for (Map.Entry<String, String> entry : journalNodes.entrySet()) {
         if (entry.getValue() != null && entry.getValue().equals(taskId)) {
           journalNodes.put(entry.getKey(), null);
           setJournalNodes(journalNodes);
+          journalNodeTaskNames.remove(taskId);
+          setJournalNodeTaskNames(journalNodeTaskNames);
           Date date = DateUtils.addSeconds(new Date(), conf.getDeadNodeTimeout());
           deadJournalNodeTimeStamp = new Timestamp(date.getTime());
           return;
@@ -213,11 +232,14 @@ public class PersistentState {
       }
     }
     HashMap<String, String> nameNodes = getNameNodes();
+    HashMap<String, String> nameNodeTaskNames = getNameNodeTaskNames();
     if (nameNodes.values().contains(taskId)) {
       for (Map.Entry<String, String> entry : nameNodes.entrySet()) {
         if (entry.getValue() != null && entry.getValue().equals(taskId)) {
           nameNodes.put(entry.getKey(), null);
           setNameNodes(nameNodes);
+          nameNodeTaskNames.remove(taskId);
+          setNameNodeTaskNames(nameNodeTaskNames);
           Date date = DateUtils.addSeconds(new Date(), conf.getDeadNodeTimeout());
           deadNameNodeTimeStamp = new Timestamp(date.getTime());
           return;
@@ -261,6 +283,22 @@ public class PersistentState {
   private void setJournalNodes(HashMap<String, String> journalNodes) {
     try {
       set(JOURNALNODES_KEY, journalNodes);
+    } catch (Exception e) {
+      log.error("Error while setting journalnodes in persistent state", e);
+    }
+  }
+
+  private void setNameNodeTaskNames(HashMap<String, String> nameNodeTaskNames) {
+    try {
+      set(NAMENODE_TASKNAMES_KEY, nameNodeTaskNames);
+    } catch (Exception e) {
+      log.error("Error while setting namenodes in persistent state", e);
+    }
+  }
+
+  private void setJournalNodeTaskNames(HashMap<String, String> journalNodeTaskNames) {
+    try {
+      set(JOURNALNODE_TASKNAMES_KEY, journalNodeTaskNames);
     } catch (Exception e) {
       log.error("Error while setting journalnodes in persistent state", e);
     }

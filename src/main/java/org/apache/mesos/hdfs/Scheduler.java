@@ -269,7 +269,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     for (String taskType : taskTypes) {
       List<Resource> taskResources = getTaskResources(taskType);
       String taskName = getNextTaskType(taskType);
-      if (taskName.isEmpty()) return false;
       TaskID taskId = TaskID.newBuilder()
           .setValue(String.format("task.%s.%s", taskType, taskIdName))
           .build();
@@ -284,17 +283,20 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           .build();
       tasks.add(task);
 
-      liveState.addStagingTask(task.getTaskId(), taskName);
-      persistentState.addHdfsNode(taskId, offer.getHostname(), taskType);
+      liveState.addStagingTask(task.getTaskId());
+      persistentState.addHdfsNode(taskId, offer.getHostname(), taskType, taskName);
     }
     driver.launchTasks(Arrays.asList(offer.getId()), tasks);
     return true;
   }
 
   private String getNextTaskType(String taskType) {
+    Collection<String> nameNodeTaskNames = persistentState.getNameNodeTaskNames().values();
+    Collection<String> journalNodeTaskNames = persistentState.getJournalNodeTaskNames().values();
+
     if (taskType.equals(HDFSConstants.NAME_NODE_ID)) {
       for (int i = 1; i <= HDFSConstants.TOTAL_NAME_NODES; i++) {
-        if (!liveState.getNameNodeNames().containsValue(HDFSConstants.NAME_NODE_ID + i)) {
+        if (!nameNodeTaskNames.contains(HDFSConstants.NAME_NODE_ID + i)) {
           return HDFSConstants.NAME_NODE_ID + i;
         }
       }
@@ -302,7 +304,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     }
     if (taskType.equals(HDFSConstants.JOURNAL_NODE_ID)) {
       for (int i = 1; i <= conf.getJournalNodeCount(); i++) {
-        if (!liveState.getJournalNodeNames().containsValue(HDFSConstants.JOURNAL_NODE_ID + i)) {
+        if (!journalNodeTaskNames.contains(HDFSConstants.JOURNAL_NODE_ID + i)) {
           return HDFSConstants.JOURNAL_NODE_ID + i;
         }
       }
@@ -416,7 +418,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     log.info(deadJournalNodes);
 
     if (deadJournalNodes.isEmpty()) {
-      if (liveState.getJournalNodeSize() == conf.getJournalNodeCount()) {
+      if (persistentState.getJournalNodes().size() == conf.getJournalNodeCount()) {
         log.info(String.format("Already running %s journalnodes", conf.getJournalNodeCount()));
       } else if (persistentState.journalNodeRunningOnSlave(offer.getHostname())) {
         log.info(String.format("Already running journalnode on %s", offer.getHostname()));
@@ -452,7 +454,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     List<String> deadNameNodes = persistentState.getDeadNameNodes();
 
     if (deadNameNodes.isEmpty()) {
-      if (liveState.getNameNodeSize() == HDFSConstants.TOTAL_NAME_NODES) {
+      if (persistentState.getNameNodes().size() == HDFSConstants.TOTAL_NAME_NODES) {
         log.info(String.format("Already running %s namenodes", HDFSConstants.TOTAL_NAME_NODES));
       } else if (persistentState.nameNodeRunningOnSlave(offer.getHostname())) {
         log.info(String.format("Already running namenode on %s", offer.getHostname()));

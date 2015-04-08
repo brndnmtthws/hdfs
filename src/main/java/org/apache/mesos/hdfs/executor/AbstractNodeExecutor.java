@@ -245,12 +245,16 @@ public abstract class AbstractNodeExecutor implements Executor {
         log.info("Finished running command, exited with status " + exitCode);
       } else {
         log.error("Unable to run command: " + command);
-        task.process.destroy();
+        if (task.process != null) {
+          task.process.destroy();
+        }
         sendTaskFailed(driver, task);
       }
     } catch (InterruptedException | IOException e) {
       log.error(e);
-      task.process.destroy();
+      if (task.process != null) {
+        task.process.destroy();
+      }
       sendTaskFailed(driver, task);
     }
   }
