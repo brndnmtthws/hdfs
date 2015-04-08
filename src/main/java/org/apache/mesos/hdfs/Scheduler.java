@@ -268,7 +268,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     List<TaskInfo> tasks = new ArrayList<>();
     for (String taskType : taskTypes) {
       List<Resource> taskResources = getTaskResources(taskType);
-      String taskName = getNextTaskType(taskType);
+      String taskName = getNextTaskName(taskType);
       TaskID taskId = TaskID.newBuilder()
           .setValue(String.format("task.%s.%s", taskType, taskIdName))
           .build();
@@ -290,25 +290,29 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     return true;
   }
 
-  private String getNextTaskType(String taskType) {
-    Collection<String> nameNodeTaskNames = persistentState.getNameNodeTaskNames().values();
-    Collection<String> journalNodeTaskNames = persistentState.getJournalNodeTaskNames().values();
+  private String getNextTaskName(String taskType) {
 
     if (taskType.equals(HDFSConstants.NAME_NODE_ID)) {
+      Collection<String> nameNodeTaskNames = persistentState.getNameNodeTaskNames().values();
       for (int i = 1; i <= HDFSConstants.TOTAL_NAME_NODES; i++) {
         if (!nameNodeTaskNames.contains(HDFSConstants.NAME_NODE_ID + i)) {
           return HDFSConstants.NAME_NODE_ID + i;
         }
       }
-      return ""; // we couldn't find a node name, we must have started enough.
+      String errorStr = "Cluster is in inconsistent state. Trying to launch more namenodes, but they are all already running.";
+      log.error(errorStr);
+      throw new RuntimeException(errorStr);
     }
     if (taskType.equals(HDFSConstants.JOURNAL_NODE_ID)) {
+      Collection<String> journalNodeTaskNames = persistentState.getJournalNodeTaskNames().values();
       for (int i = 1; i <= conf.getJournalNodeCount(); i++) {
         if (!journalNodeTaskNames.contains(HDFSConstants.JOURNAL_NODE_ID + i)) {
           return HDFSConstants.JOURNAL_NODE_ID + i;
         }
       }
-      return ""; // we couldn't find a node name, we must have started enough.
+      String errorStr = "Cluster is in inconsistent state. Trying to launch more journalnodes, but they all are already running.";
+      log.error(errorStr);
+      throw new RuntimeException(errorStr);
     }
     return taskType;
   }
