@@ -74,17 +74,17 @@
 
   <property>
     <name>dfs.journalnode.edits.dir</name>
-    <value>/tmp/hdfs/data/jn</value>
+    <value>/var/lib/hdfs/data/jn</value>
   </property>
 
   <property>
     <name>dfs.namenode.name.dir</name>
-    <value>file:///tmp/hdfs/data/name</value>
+    <value>file:///var/lib/hdfs/data/name</value>
   </property>
 
   <property>
     <name>dfs.datanode.data.dir</name>
-    <value>file:///tmp/hdfs/data/data</value>
+    <value>file:///var/lib/hdfs/data/data</value>
   </property>
 
   <property>

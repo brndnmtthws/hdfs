@@ -18,6 +18,12 @@
 
 <configuration>
   <property>
+    <name>mesos.hdfs.data.dir</name>
+    <description>The primary data directory in HDFS</description>
+    <value>/var/lib/hdfs/data</value>
+  </property>
+
+  <property>
     <name>mesos.hdfs.framework.mnt.path</name>
     <value>/opt/mesosphere</value>
     <description>This is the default for all DCOS installs</description>
