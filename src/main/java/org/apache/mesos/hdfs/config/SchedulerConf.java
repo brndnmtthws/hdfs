@@ -59,7 +59,7 @@ public class SchedulerConf extends Configured {
   }
 
   public int getNameNodeHeapSize() {
-    return getConf().getInt("mesos.hdfs.namenode.heap.size", 1024);
+    return getConf().getInt("mesos.hdfs.namenode.heap.size", 4096);
   }
 
   public int getExecutorHeap() {
