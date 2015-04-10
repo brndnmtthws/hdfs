@@ -55,6 +55,6 @@
 
   <property>
     <name>mesos.native.library</name>
-    <value>/opt/mesosphere/dcos/latest/lib/libmesos.so</value>
+    <value>/opt/mesosphere/lib/libmesos.so</value>
   </property>
 </configuration>
