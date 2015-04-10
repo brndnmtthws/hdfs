@@ -47,7 +47,7 @@ public class SchedulerConf extends Configured {
   }
 
   public int getHadoopHeapSize() {
-    return getConf().getInt("mesos.hdfs.hadoop.heap.size", 256);
+    return getConf().getInt("mesos.hdfs.hadoop.heap.size", 512);
   }
 
   public int getDataNodeHeapSize() {

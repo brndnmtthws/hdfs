@@ -94,12 +94,12 @@
   <property>
     <name>mesos.hdfs.jvm.overhead</name>
     <description>Multiplier on resources reserved in order to account for JVM allocation</description>
-    <value>1.5</value>
+    <value>1.25</value>
   </property>
 
   <property>
     <name>mesos.hdfs.hadoop.heap.size</name>
-    <value>256</value>
+    <value>512</value>
   </property>
 
   <property>
