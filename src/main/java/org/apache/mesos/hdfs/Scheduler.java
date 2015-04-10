@@ -570,8 +570,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       }
       if (offerResource.getName().equals("mem") &&
           ((mem * conf.getJvmOverhead())
-           + (conf.getExecutorHeap() * conf.getJvmOverhead())
-           > offerResource.getScalar().getValue())) {
+              + (conf.getExecutorHeap() * conf.getJvmOverhead())
+              > offerResource.getScalar().getValue())) {
         return true;
       }
     }
