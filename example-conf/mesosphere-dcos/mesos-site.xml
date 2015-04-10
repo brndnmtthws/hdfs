@@ -18,6 +18,12 @@
 
 <configuration>
   <property>
+    <name>mesos.hdfs.data.dir</name>
+    <description>The primary data directory in HDFS</description>
+    <value>/var/lib/hdfs/data</value>
+  </property>
+
+  <property>
     <name>mesos.hdfs.framework.mnt.path</name>
     <value>/opt/mesosphere</value>
     <description>This is the default for all DCOS installs</description>
@@ -55,6 +61,6 @@
 
   <property>
     <name>mesos.native.library</name>
-    <value>/opt/mesosphere/dcos/latest/lib/libmesos.so</value>
+    <value>/opt/mesosphere/lib/libmesos.so</value>
   </property>
 </configuration>
