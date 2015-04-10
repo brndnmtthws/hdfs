@@ -104,7 +104,7 @@
 
   <property>
     <name>mesos.hdfs.namenode.heap.size</name>
-    <value>1024</value>
+    <value>4096</value>
   </property>
 
   <property>
