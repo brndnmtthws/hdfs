@@ -405,7 +405,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
             .setName("mem")
             .setType(Value.Type.SCALAR)
             .setScalar(Value.Scalar.newBuilder()
-                .setValue(conf.getTaskHeapSize(taskName)).build())
+                .setValue(conf.getTaskHeapSize(taskName) * conf.getJvmOverhead()).build())
             .setRole(conf.getHdfsRole())
             .build());
   }
@@ -575,7 +575,9 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         return true;
       }
       if (offerResource.getName().equals("mem") &&
-          mem + conf.getExecutorHeap() > offerResource.getScalar().getValue()) {
+          ((mem * conf.getJvmOverhead())
+              + (conf.getExecutorHeap() * conf.getJvmOverhead())
+              > offerResource.getScalar().getValue())) {
         return true;
       }
     }
