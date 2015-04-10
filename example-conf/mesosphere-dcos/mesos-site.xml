@@ -17,6 +17,17 @@
 <!-- Put site-specific property overrides in this file. -->
 
 <configuration>
+    
+  <property>
+    <name>mesos.hdfs.journalnode.cpus</name>
+    <value>0.5</value>
+  </property>
+    
+  <property>
+    <name>mesos.hdfs.executor.cpus</name>
+    <value>0.1</value>
+  </property>
+    
   <property>
     <name>mesos.hdfs.data.dir</name>
     <description>The primary data directory in HDFS</description>

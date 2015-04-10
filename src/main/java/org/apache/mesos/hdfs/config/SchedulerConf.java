@@ -86,7 +86,7 @@ public class SchedulerConf extends Configured {
   }
 
   public double getJvmOverhead() {
-    return getConf().getDouble("mesos.hdfs.jvm.overhead", 1.5);
+    return getConf().getDouble("mesos.hdfs.jvm.overhead", 1.25);
   }
 
   public String getJvmOpts() {
