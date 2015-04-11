@@ -216,13 +216,14 @@ public class PersistentState {
   // TODO (elingg) optimize this method/ Possibly index by task id instead of hostname/
   // Possibly call removeTask(slaveId, taskId) to avoid iterating through all maps
   public void removeTaskId(String taskId) {
+      
     HashMap<String, String> journalNodes = getJournalNodes();
-    HashMap<String, String> journalNodeTaskNames = getJournalNodeTaskNames();
     if (journalNodes.values().contains(taskId)) {
       for (Map.Entry<String, String> entry : journalNodes.entrySet()) {
         if (entry.getValue() != null && entry.getValue().equals(taskId)) {
           journalNodes.put(entry.getKey(), null);
           setJournalNodes(journalNodes);
+          HashMap<String, String> journalNodeTaskNames = getJournalNodeTaskNames();
           journalNodeTaskNames.remove(taskId);
           setJournalNodeTaskNames(journalNodeTaskNames);
           Date date = DateUtils.addSeconds(new Date(), conf.getDeadNodeTimeout());
@@ -231,13 +232,14 @@ public class PersistentState {
         }
       }
     }
+      
     HashMap<String, String> nameNodes = getNameNodes();
-    HashMap<String, String> nameNodeTaskNames = getNameNodeTaskNames();
     if (nameNodes.values().contains(taskId)) {
       for (Map.Entry<String, String> entry : nameNodes.entrySet()) {
         if (entry.getValue() != null && entry.getValue().equals(taskId)) {
           nameNodes.put(entry.getKey(), null);
           setNameNodes(nameNodes);
+          HashMap<String, String> nameNodeTaskNames = getNameNodeTaskNames();
           nameNodeTaskNames.remove(taskId);
           setNameNodeTaskNames(nameNodeTaskNames);
           Date date = DateUtils.addSeconds(new Date(), conf.getDeadNodeTimeout());
@@ -246,6 +248,7 @@ public class PersistentState {
         }
       }
     }
+      
     HashMap<String, String> dataNodes = getDataNodes();
     if (dataNodes.values().contains(taskId)) {
       for (Map.Entry<String, String> entry : dataNodes.entrySet()) {
