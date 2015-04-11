@@ -146,7 +146,11 @@ public class TestScheduler {
   @Test
   public void launchesOnlyNeededNumberOfJournalNodes() {
     when(liveState.getCurrentAcquisitionPhase()).thenReturn(AcquisitionPhase.JOURNAL_NODES);
-    when(liveState.getJournalNodeSize()).thenReturn(3);
+    HashMap<String, String> journalNodes = new HashMap<String, String>();
+    journalNodes.put("host1", "journalnode1");
+    journalNodes.put("host2", "journalnode2");
+    journalNodes.put("host3", "journalnode3");
+    when(persistentState.getJournalNodes()).thenReturn(journalNodes);
 
     scheduler.resourceOffers(driver, Lists.newArrayList(createTestOffer(0)));
 
@@ -156,7 +160,7 @@ public class TestScheduler {
   @Test
   public void launchesNamenodeWhenInNamenode1Phase() {
     when(liveState.getCurrentAcquisitionPhase()).thenReturn(AcquisitionPhase.START_NAME_NODES);
-    when(liveState.getNameNodeNames()).thenReturn(new HashMap<String, String>());
+    when(persistentState.getNameNodeTaskNames()).thenReturn(new HashMap<String, String>());
     when(persistentState.journalNodeRunningOnSlave("host0")).thenReturn(true);
     when(dnsResolver.journalNodesResolvable()).thenReturn(true);
 
