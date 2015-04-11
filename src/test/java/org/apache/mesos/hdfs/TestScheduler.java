@@ -137,7 +137,7 @@ public class TestScheduler {
     when(liveState.getCurrentAcquisitionPhase()).thenReturn(AcquisitionPhase.JOURNAL_NODES);
 
     scheduler.resourceOffers(driver,
-        Lists.newArrayList(createTestOfferWithResources(0, 2, 1024)));
+        Lists.newArrayList(createTestOfferWithResources(0, 2, 2048)));
 
     verify(driver, times(1)).launchTasks(anyList(), taskInfosCapture.capture());
     assertEquals(1, taskInfosCapture.getValue().size());
