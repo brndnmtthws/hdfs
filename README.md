@@ -73,20 +73,4 @@ Docker Usage (Optional)
 
 ### Run with Marathon
 
-Use a json file like the following and follow the [Marathon Docs](https://mesosphere.github.io/marathon/docs/native-docker.html):
-
-```json
-{
-  "id": "hdfs-mesos",
-  "container": {
-    "type": "DOCKER",
-    "docker": {
-      "image": "mesosphere/hdfs-mesos",
-      "network": "HOST",
-    }
-  },
-  "cpus": 0.1,
-  "mem": 256.0,
-  "instances": 1
-}
-```
+Run the following command in the repository root to launch the docker container in your marathon install: `curl -X POST -H "Content-Type: application/json" http://<yourMarathonHost>:8080/v2/apps -d@marathon.json`
