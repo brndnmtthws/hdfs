@@ -1,0 +1,13 @@
+{
+  "id": "hdfs-mesos",
+  "container": {
+    "type": "DOCKER",
+    "docker": {
+      "image": "mesosphere/hdfs-mesos",
+      "network": "HOST",
+    }
+  },
+  "cpus": 0.1,
+  "mem": 256.0,
+  "instances": 1
+}
