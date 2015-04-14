@@ -116,6 +116,9 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     } else if (isRunningState(status)) {
       liveState.updateTaskForStatus(status);
 
+      log.info(String.format("Current Acquisition Phase: %s", liveState
+        .getCurrentAcquisitionPhase().toString()));
+
       switch (liveState.getCurrentAcquisitionPhase()) {
         case RECONCILING_TASKS :
           if (reconciliationComplete()) {
@@ -173,9 +176,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   @Override
   public void resourceOffers(SchedulerDriver driver, List<Offer> offers) {
     log.info(String.format("Received %d offers", offers.size()));
-
-    log.info(String.format("Current Acquisition Phase: %s", liveState
-        .getCurrentAcquisitionPhase().toString()));
 
     if (liveState.getCurrentAcquisitionPhase().equals(AcquisitionPhase.RECONCILING_TASKS)
         && reconciliationComplete()) {
