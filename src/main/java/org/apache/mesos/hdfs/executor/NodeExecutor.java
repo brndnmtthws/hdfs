@@ -58,5 +58,18 @@ public class NodeExecutor extends AbstractNodeExecutor {
       task.process.destroy();
       task.process = null;
     }
+    driver.sendStatusUpdate(TaskStatus.newBuilder()
+        .setTaskId(taskId)
+        .setState(TaskState.TASK_KILLED)
+        .build());
+  }
+
+  @Override
+  public void shutdown(ExecutorDriver d) {
+    // TODO(elingg) let's shut down the driver more gracefully
+    log.info("Executor asked to shutdown");
+    if (task != null) {
+      killTask(d, task.taskInfo.getTaskId());
+    }
   }
 }

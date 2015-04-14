@@ -23,7 +23,6 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
   // TODO better handling in livestate and persistent state of zkfc task. Right now they are
   // chained.
   private Task zkfcNodeTask;
-  private Task journalNodeTask;
 
   /**
    * The constructor for the primary name node which saves the configuration.
@@ -51,15 +50,7 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
   public void launchTask(final ExecutorDriver driver, final TaskInfo taskInfo) {
     executorInfo = taskInfo.getExecutor();
     Task task = new Task(taskInfo);
-    if (taskInfo.getTaskId().getValue().contains(HDFSConstants.JOURNAL_NODE_ID)) {
-      journalNodeTask = task;
-      // Start the journal node
-      startProcess(driver, journalNodeTask);
-      driver.sendStatusUpdate(TaskStatus.newBuilder()
-          .setTaskId(journalNodeTask.taskInfo.getTaskId())
-          .setState(TaskState.TASK_RUNNING)
-          .build());
-    } else if (taskInfo.getTaskId().getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
+    if (taskInfo.getTaskId().getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
       nameNodeTask = task;
       driver.sendStatusUpdate(TaskStatus.newBuilder()
           .setTaskId(nameNodeTask.taskInfo.getTaskId())
@@ -78,9 +69,7 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
   public void killTask(ExecutorDriver driver, TaskID taskId) {
     log.info("Killing task : " + taskId.getValue());
     Task task = null;
-    if (taskId.getValue().contains(HDFSConstants.JOURNAL_NODE_ID)) {
-      task = journalNodeTask;
-    } else if (taskId.getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
+    if (taskId.getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
       task = nameNodeTask;
     } else if (taskId.getValue().contains(HDFSConstants.ZKFC_NODE_ID)) {
       task = zkfcNodeTask;
@@ -89,6 +78,22 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
     if (task != null && task.process != null) {
       task.process.destroy();
       task.process = null;
+    }
+    driver.sendStatusUpdate(TaskStatus.newBuilder()
+        .setTaskId(taskId)
+        .setState(TaskState.TASK_KILLED)
+        .build());
+  }
+
+  @Override
+  public void shutdown(ExecutorDriver d) {
+    // TODO(elingg) let's shut down the driver more gracefully
+    log.info("Executor asked to shutdown");
+    if (nameNodeTask != null) {
+      killTask(d, nameNodeTask.taskInfo.getTaskId());
+    }
+    if (zkfcNodeTask != null) {
+      killTask(d, zkfcNodeTask.taskInfo.getTaskId());
     }
   }
 

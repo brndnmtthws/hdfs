@@ -23,8 +23,6 @@ public class LiveState {
   private AcquisitionPhase currentAcquisitionPhase = AcquisitionPhase.RECONCILING_TASKS;
   // TODO (nicgrayson) Might need to split this out to jns, nns, and dns if dns too big
   private LinkedHashMap<String, Protos.TaskStatus> runningTasks = new LinkedHashMap<>();
-  private HashMap<String, String> journalNodeNames = new HashMap<>();
-  private HashMap<String, String> nameNodeNames = new HashMap<>();
   private HashMap<Protos.TaskStatus, Boolean> nameNode1TaskMap = new HashMap<>();
   private HashMap<Protos.TaskStatus, Boolean> nameNode2TaskMap = new HashMap<>();
 
@@ -36,17 +34,8 @@ public class LiveState {
     return !nameNode2TaskMap.isEmpty() && nameNode2TaskMap.values().iterator().next();
   }
 
-  public HashMap<String, String> getJournalNodeNames() { return journalNodeNames; }
-
-  public HashMap<String, String> getNameNodeNames() { return nameNodeNames; }
-
-  public void addStagingTask(Protos.TaskID taskId, String taskName) {
+  public void addStagingTask(Protos.TaskID taskId) {
     stagingTasks.add(taskId);
-    if (taskId.getValue().contains(HDFSConstants.JOURNAL_NODE_ID)) {
-      journalNodeNames.put(taskId.getValue(), taskName);
-    } else if (taskId.getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
-      nameNodeNames.put(taskId.getValue(), taskName);
-    }
   }
 
   public int getStagingTasksSize() {
@@ -70,8 +59,6 @@ public class LiveState {
       nameNode2TaskMap.clear();
     }
     runningTasks.remove(taskId.getValue());
-    journalNodeNames.remove(taskId.getValue());
-    nameNodeNames.remove(taskId.getValue());
   }
 
   public void updateTaskForStatus(Protos.TaskStatus status) {

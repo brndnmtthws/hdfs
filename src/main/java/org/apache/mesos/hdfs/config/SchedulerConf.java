@@ -34,6 +34,10 @@ public class SchedulerConf extends Configured {
     return getConf().get("mesos.hdfs.mesosdns.domain", "mesos");
   }
 
+  public boolean usingNativeHadoopBinaries() {
+    return Boolean.valueOf(getConf().get("mesos.hdfs.native-hadoop-binaries", "false"));
+  }
+
   public String getExecutorPath() {
     return getConf().get("mesos.hdfs.executor.path", "..");
   }
@@ -43,7 +47,7 @@ public class SchedulerConf extends Configured {
   }
 
   public int getHadoopHeapSize() {
-    return getConf().getInt("mesos.hdfs.hadoop.heap.size", 256);
+    return getConf().getInt("mesos.hdfs.hadoop.heap.size", 512);
   }
 
   public int getDataNodeHeapSize() {
@@ -55,7 +59,7 @@ public class SchedulerConf extends Configured {
   }
 
   public int getNameNodeHeapSize() {
-    return getConf().getInt("mesos.hdfs.namenode.heap.size", 1024);
+    return getConf().getInt("mesos.hdfs.namenode.heap.size", 4096);
   }
 
   public int getExecutorHeap() {
@@ -82,7 +86,7 @@ public class SchedulerConf extends Configured {
   }
 
   public double getJvmOverhead() {
-    return getConf().getDouble("mesos.hdfs.jvm.overhead", 1.25);
+    return getConf().getDouble("mesos.hdfs.jvm.overhead", 1.35);
   }
 
   public String getJvmOpts() {
