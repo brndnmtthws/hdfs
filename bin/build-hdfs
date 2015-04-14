@@ -9,6 +9,7 @@ IMPALA_ZIP=$IMPALA_VER.zip
 IMPALA_URL=https://github.com/cloudera/Impala/archive/$IMPALA_ZIP
 NATIVE=native
 DIST=hdfs-mesos-0.1.0
+DOCKER_IMAGE_NAME=hdfs-mesos
 
 # Remove cached binaries and exit
 if [ "$1" == "clean" ]; then
@@ -29,7 +30,7 @@ fi
 # Download hadoop binary
 if [ ! -f $HADOOP_ZIP ]; then
     echo "Downloading $HADOOP_URL"
-    wget $HADOOP_URL || exit
+    wget -q $HADOOP_URL || exit
 else
     echo "($HADOOP_ZIP already exists, skipping dl)"
 fi
@@ -45,7 +46,7 @@ fi
 # Get native libraries
 if [ ! -d $NATIVE ]; then
     echo "Downloading and unpacking native libs"
-    wget $IMPALA_URL || exit
+    wget -q $IMPALA_URL || exit
     unzip -q $IMPALA_VER.zip
     mkdir -p $NATIVE
     cp Impala-$IMPALA_VER/thirdparty/$HADOOP_DIR/lib/native/lib* $NATIVE
@@ -91,3 +92,13 @@ cd ..
 echo "Compressing to $DIST.tgz"
 rm -f $DIST.tgz
 tar czf $DIST.tgz $DIST
+
+
+# Build docker container
+if [ "$1" == "docker" ] && [ -f $DIST.tgz ]; then
+    if [ ! -z "$2" ]; then
+        DOCKER_IMAGE_NAME=$2
+    fi
+    docker build -t $DOCKER_IMAGE_NAME .
+    exit $?
+fi
