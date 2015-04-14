@@ -30,8 +30,8 @@ Starting HDFS-Mesos
 
 Using HDFS
 --------------------------
-See some of the many HDFS tutorials out there for more details and explore the web UI at <br>`http://<ActiveNameNode>:50070`.</br> 
-Note that you can access commands through `hdfs://<mesos.hdfs.framework.name>/` (default: `hdfs://hdfs/`). 
+See some of the many HDFS tutorials out there for more details and explore the web UI at <br>`http://<ActiveNameNode>:50070`.</br>
+Note that you can access commands through `hdfs://<mesos.hdfs.framework.name>/` (default: `hdfs://hdfs/`).
 Also here is a quick sanity check:
 
 1. `hadoop fs -ls hdfs://hdfs/` should show nothing for starters
@@ -49,7 +49,7 @@ Resource Reservation Instructions (Optional)
 5. On each slave with the new settings, stop the mesos slave by running
 <br>`sudo service mesos-slave stop`</br>.
 6. On each slave with the new settings, remove the old slave state by running
-<br>`rm -f /tmp/mesos/meta/slaves/latest`</br>. 
+<br>`rm -f /tmp/mesos/meta/slaves/latest`</br>.
 <br>Note: This will also remove task state, so you will want to manually kill any running tasks as a precaution.</br>
 7. On each slave with the new settings, start the mesos slave by running
 <br>`sudo service mesos-slave start`</br>.
@@ -62,3 +62,31 @@ Shutdown Instructions (Optional)
 3. Access your zookeeper instance: `/PATH/TO/zookeeper/bin/zkCli.sh`
 4. Remove hdfs-mesos framework state from zookeeper: `rmr /hdfs-mesos`
 5. (Optional) Clear your data directories as specified in your `mesos-site.xml`. This is necessary to relaunch HDFS in the same directory.
+
+Docker Usage (Optional)
+--------------------------
+
+### Build
+
+- `./bin/build-hdfs docker`
+- If you wish to specify an image name run `./bin/build-hdfs docker <image-name>`
+
+### Run with Marathon
+
+Use a json file like the following and follow the [Marathon Docs](https://mesosphere.github.io/marathon/docs/native-docker.html):
+
+```json
+{
+  "id": "hdfs-mesos",
+  "container": {
+    "type": "DOCKER",
+    "docker": {
+      "image": "mesosphere/hdfs-mesos",
+      "network": "HOST",
+    }
+  },
+  "cpus": 0.1,
+  "mem": 256.0,
+  "instances": 1
+}
+```
