@@ -3,7 +3,7 @@
   "container": {
     "type": "DOCKER",
     "docker": {
-      "image": "mesosphere/hdfs-mesos",
+      "image": "mesosphere/hdfs-mesos:0.1.0",
       "network": "HOST",
     }
   },
