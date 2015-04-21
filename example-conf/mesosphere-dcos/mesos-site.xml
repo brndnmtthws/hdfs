@@ -20,17 +20,17 @@
     
   <property>
     <name>mesos.hdfs.namenode.cpus</name>
-    <value>0.5</value>
+    <value>0.25</value>
   </property>
 
   <property>
     <name>mesos.hdfs.datanode.cpus</name>
-    <value>0.5</value>
+    <value>0.25</value>
   </property>
     
   <property>
     <name>mesos.hdfs.journalnode.cpus</name>
-    <value>0.5</value>
+    <value>0.25</value>
   </property>
     
   <property>
