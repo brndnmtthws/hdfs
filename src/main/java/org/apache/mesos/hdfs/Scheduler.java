@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.HashMap;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Collection;
@@ -602,16 +603,22 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     @Override
     public void run() {
       log.info("Current persistent state:");
-      log.info(String.format("JournalNodes: %s", persistentState.getJournalNodes()));
-      log.info(String.format("NameNodes: %s", persistentState.getNameNodes()));
+      log.info(String.format("JournalNodes: %s %s", persistentState.getJournalNodes(),
+          persistentState.getJournalNodeTaskNames()));
+      log.info(String.format("NameNodes: %s %s", persistentState.getNameNodes(),
+          persistentState.getNameNodeTaskNames()));
       log.info(String.format("DataNodes: %s", persistentState.getDataNodes()));
 
-      Collection<String> taskIds = persistentState.getAllTaskIds();
-      HashMap<String, Protos.TaskStatus> runningTaskIds = liveState.getRunningTasks();
+      Set<String> taskIds = persistentState.getAllTaskIds();
+      Set<String> runningTaskIds = liveState.getRunningTasks().keySet();
+
       for (String taskId : taskIds) {
-        if (!runningTaskIds.containsKey(taskId))
+        if (taskId != null && !runningTaskIds.contains(taskId)) {
+          log.info("Removing task id: " + taskId);
           persistentState.removeTaskId(taskId);
+        }
       }
+      persistentState.resetDeadNodeTimeStamps();
       reconciliationCompleted = true;
     }
   }
