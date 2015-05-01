@@ -22,6 +22,7 @@ public class LiveState {
   private Set<Protos.TaskID> stagingTasks = new HashSet<>();
   private AcquisitionPhase currentAcquisitionPhase = AcquisitionPhase.RECONCILING_TASKS;
   // TODO (nicgrayson) Might need to split this out to jns, nns, and dns if dns too big
+  //TODO (elingg) we need to also track ZKFC's state
   private LinkedHashMap<String, Protos.TaskStatus> runningTasks = new LinkedHashMap<>();
   private HashMap<Protos.TaskStatus, Boolean> nameNode1TaskMap = new HashMap<>();
   private HashMap<Protos.TaskStatus, Boolean> nameNode2TaskMap = new HashMap<>();

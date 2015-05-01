@@ -42,6 +42,7 @@ public class PersistentState {
   private static final String JOURNALNODE_TASKNAMES_KEY = "journalNodeTaskNames";
   private ZooKeeperState zkState;
   private SchedulerConf conf;
+  // TODO (elingg) we need to also track ZKFC's state
 
   private Timestamp deadJournalNodeTimeStamp = null;
   private Timestamp deadNameNodeTimeStamp = null;
@@ -53,6 +54,7 @@ public class PersistentState {
     this.zkState = new ZooKeeperState(conf.getStateZkServers(),
         conf.getStateZkTimeout(), TimeUnit.MILLISECONDS, "/hdfs-mesos/" + conf.getFrameworkName());
     this.conf = conf;
+    resetDeadNodeTimeStamps();
   }
 
   public FrameworkID getFrameworkID() throws InterruptedException, ExecutionException,
@@ -72,7 +74,7 @@ public class PersistentState {
     zkState.store(value).get();
   }
 
-  public void resetDeadNodeTimeStamps() {
+  private void resetDeadNodeTimeStamps() {
     Date date = DateUtils.addSeconds(new Date(), conf.getDeadNodeTimeout());
 
     if (getDeadJournalNodes().size() > 0) {

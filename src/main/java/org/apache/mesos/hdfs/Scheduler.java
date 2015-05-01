@@ -603,9 +603,9 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     @Override
     public void run() {
       log.info("Current persistent state:");
-      log.info(String.format("JournalNodes: %s %s", persistentState.getJournalNodes(),
+      log.info(String.format("JournalNodes: %s, %s", persistentState.getJournalNodes(),
           persistentState.getJournalNodeTaskNames()));
-      log.info(String.format("NameNodes: %s %s", persistentState.getNameNodes(),
+      log.info(String.format("NameNodes: %s, %s", persistentState.getNameNodes(),
           persistentState.getNameNodeTaskNames()));
       log.info(String.format("DataNodes: %s", persistentState.getDataNodes()));
 
@@ -618,7 +618,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           persistentState.removeTaskId(taskId);
         }
       }
-      persistentState.resetDeadNodeTimeStamps();
       reconciliationCompleted = true;
     }
   }
