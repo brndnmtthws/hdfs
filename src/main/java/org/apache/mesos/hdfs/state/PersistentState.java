@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,6 +42,7 @@ public class PersistentState {
   private static final String JOURNALNODE_TASKNAMES_KEY = "journalNodeTaskNames";
   private ZooKeeperState zkState;
   private SchedulerConf conf;
+  // TODO (elingg) we need to also track ZKFC's state
 
   private Timestamp deadJournalNodeTimeStamp = null;
   private Timestamp deadNameNodeTimeStamp = null;
@@ -52,6 +54,7 @@ public class PersistentState {
     this.zkState = new ZooKeeperState(conf.getStateZkServers(),
         conf.getStateZkTimeout(), TimeUnit.MILLISECONDS, "/hdfs-mesos/" + conf.getFrameworkName());
     this.conf = conf;
+    resetDeadNodeTimeStamps();
   }
 
   public FrameworkID getFrameworkID() throws InterruptedException, ExecutionException,
@@ -69,6 +72,22 @@ public class PersistentState {
     Variable value = zkState.fetch(FRAMEWORK_ID_KEY).get();
     value = value.mutate(frameworkId.toByteArray());
     zkState.store(value).get();
+  }
+
+  private void resetDeadNodeTimeStamps() {
+    Date date = DateUtils.addSeconds(new Date(), conf.getDeadNodeTimeout());
+
+    if (getDeadJournalNodes().size() > 0) {
+      deadJournalNodeTimeStamp = new Timestamp(date.getTime());
+    }
+
+    if (getDeadNameNodes().size() > 0) {
+      deadNameNodeTimeStamp = new Timestamp(date.getTime());
+    }
+
+    if (getDeadDataNodes().size() > 0) {
+      deadDataNodeTimeStamp = new Timestamp(date.getTime());
+    }
   }
 
   private void removeDeadJournalNodes() {
@@ -176,11 +195,15 @@ public class PersistentState {
     return getHashMap(DATANODES_KEY);
   }
 
-  public Collection<String> getAllTaskIds() {
-    HashMap<String, String> allTasksIds = getJournalNodes();
-    allTasksIds.putAll(getNameNodes());
-    allTasksIds.putAll(getDataNodes());
-    return allTasksIds.values();
+  public Set<String> getAllTaskIds() {
+    Set<String> allTaskIds = new HashSet<String>();
+    Collection<String> journalNodes = getJournalNodes().values();
+    Collection<String> nameNodes = getNameNodes().values();
+    Collection<String> dataNodes = getDataNodes().values();
+    allTaskIds.addAll(journalNodes);
+    allTaskIds.addAll(nameNodes);
+    allTaskIds.addAll(dataNodes);
+    return allTaskIds;
   }
 
   public void addHdfsNode(Protos.TaskID taskId, String hostname, String taskType, String taskName) {
@@ -216,7 +239,7 @@ public class PersistentState {
   // TODO (elingg) optimize this method/ Possibly index by task id instead of hostname/
   // Possibly call removeTask(slaveId, taskId) to avoid iterating through all maps
   public void removeTaskId(String taskId) {
-      
+
     HashMap<String, String> journalNodes = getJournalNodes();
     if (journalNodes.values().contains(taskId)) {
       for (Map.Entry<String, String> entry : journalNodes.entrySet()) {
@@ -232,7 +255,7 @@ public class PersistentState {
         }
       }
     }
-      
+
     HashMap<String, String> nameNodes = getNameNodes();
     if (nameNodes.values().contains(taskId)) {
       for (Map.Entry<String, String> entry : nameNodes.entrySet()) {
@@ -248,7 +271,7 @@ public class PersistentState {
         }
       }
     }
-      
+
     HashMap<String, String> dataNodes = getDataNodes();
     if (dataNodes.values().contains(taskId)) {
       for (Map.Entry<String, String> entry : dataNodes.entrySet()) {
