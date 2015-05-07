@@ -3,6 +3,11 @@ HA HDFS on Apache Mesos
 ======================
 Starts 1 active NameNode (with JournalNode and ZKFC), 1 standby NN (+JN,ZKFC), 1 JN, and everything else is DataNodes.
 
+Prerequisites
+--------------------------
+1. Install `maven`, `tar`, `unzip`, `wget` in your build host. Set proxy for maven and wget if needed
+2. Install `curl` for all hosts in cluster
+
 Building HDFS-Mesos
 --------------------------
 1. `./bin/build-hdfs`
