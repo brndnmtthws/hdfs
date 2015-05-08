@@ -53,12 +53,12 @@ Resource Reservation Instructions (Optional)
 4. On each slave where you want to reserve resources, add specific resource reservations for the HDFS role. Here is one example:
 <br>`cpus(*):8;cpus(hdfs):4;mem(*):16384;mem(hdfs):8192 > /etc/mesos-slave/resources`</br> or by setting `—-resources=cpus(*):8;cpus(hdfs):4;mem(*):16384;mem(hdfs):8192`.
 5. On each slave with the new settings, stop the mesos slave by running
-<br>`sudo service mesos-slave stop`</br>.
+<br>`sudo service mesos-slave stop`.</br>
 6. On each slave with the new settings, remove the old slave state by running
-<br>`rm -f /tmp/mesos/meta/slaves/latest`</br>. 
+<br>`rm -f /tmp/mesos/meta/slaves/latest`.</br> 
 <br>Note: This will also remove task state, so you will want to manually kill any running tasks as a precaution.</br>
 7. On each slave with the new settings, start the mesos slave by running
-<br>`sudo service mesos-slave start`</br>.
+<br>`sudo service mesos-slave start`.</br>
 
 Shutdown Instructions (Optional)
 --------------------------
