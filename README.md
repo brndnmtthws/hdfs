@@ -7,7 +7,7 @@ Prerequisites
 --------------------------
 1. Install `maven`, `tar`, `unzip`, `wget` in your build host. Set proxy for maven and wget if needed
 2. Install `curl` for all hosts in cluster
-3. `$JAVA_HOME` needs to be set on the host running your HDFS scheduler. This can be set through specifying environment variables in Marathon.
+3. `$JAVA_HOME` needs to be set on the host running your HDFS scheduler. This can be set through setting the environment variable on the host, `export JAVA_HOME=/path/to/jre`, or specifying the environment variable in Marathon.
 
 Building HDFS-Mesos
 --------------------------
