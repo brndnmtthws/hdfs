@@ -50,7 +50,7 @@ Resource Reservation Instructions (Optional)
 2. On master, add the role for HDFS, by running `echo hdfs > /etc/mesos-master/role` or by setting the `—-role=hdfs`.
 3. Then restart the master by running `sudo service mesos-master restart`.
 4. On each slave where you want to reserve resources, add specific resource reservations for the HDFS role. Here is one example:
-<br>`cpus(*):4;cpus(hdfs):2;mem(*):8192;mem(hdfs):4096 > /etc/mesos-slave/resources`</br> or by setting `—-resources=cpus(*):4;cpus(hdfs):2;mem(*):8192;mem(hdfs):4096`.
+<br>`cpus(*):8;cpus(hdfs):4;mem(*):16384;mem(hdfs):8192 > /etc/mesos-slave/resources`</br> or by setting `—-resources=cpus(*):8;cpus(hdfs):4;mem(*):16384;mem(hdfs):8192`.
 5. On each slave with the new settings, stop the mesos slave by running
 <br>`sudo service mesos-slave stop`</br>.
 6. On each slave with the new settings, remove the old slave state by running
