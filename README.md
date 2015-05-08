@@ -7,6 +7,7 @@ Prerequisites
 --------------------------
 1. Install `maven`, `tar`, `unzip`, `wget` in your build host. Set proxy for maven and wget if needed
 2. Install `curl` for all hosts in cluster
+3. `$JAVA_HOME` needs to be set on the host running your HDFS scheduler. This can be set through specifying environment variables in Marathon.
 
 Building HDFS-Mesos
 --------------------------
@@ -25,7 +26,7 @@ Installing HDFS-Mesos on your Cluster
 If you have Hadoop installed across your cluster, you don't need the Mesos scheduler application to distribute the binaries. You can set the `mesos.hdfs.native-hadoop-binaries` configuration parameter in `mesos-site.xml` if don't want the binaries distributed.
 
 ### Mesos-DNS custom configuration
-You can see the example configuration in the `example-conf/mesos-dns` directory. Since Mesos-DNS provides native bindings for master detection, we can simply use those names in our mesos and hdfs configurations. The example configuration assumes your Mesos masters and your zookeeper nodes are colocated. If they aren't you'll need to specify your zookeeper nodes separately.
+You can see the example configuration in the `example-conf/dcos` directory. Since Mesos-DNS provides native bindings for master detection, we can simply use those names in our mesos and hdfs configurations. The example configuration assumes your Mesos masters and your zookeeper nodes are colocated. If they aren't you'll need to specify your zookeeper nodes separately. Also, note that you are using the example in `example-conf/dcos`, the `mesos.hdfs.native-hadoop-binaries` property needs to be set to `false` if your HDFS binaries are not predistributed.
 
 Starting HDFS-Mesos
 --------------------------
