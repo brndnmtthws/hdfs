@@ -209,6 +209,8 @@ public class TestScheduler {
 
   @Test
   public void removesTerminalTasksFromLiveState() {
+    when(liveState.getCurrentAcquisitionPhase()).thenReturn(AcquisitionPhase.DATA_NODES);
+
     scheduler.statusUpdate(driver, createTaskStatus(createTaskId("0"),
         Protos.TaskState.TASK_FAILED));
     scheduler.statusUpdate(driver, createTaskStatus(createTaskId("1"),

@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.HashMap;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Collection;
@@ -34,7 +35,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   private final LiveState liveState;
   private final PersistentState persistentState;
   private final DnsResolver dnsResolver;
-  private boolean reconciliationCompleted;
 
   @Inject
   public Scheduler(SchedulerConf conf, LiveState liveState, PersistentState persistentState) {
@@ -110,7 +110,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       liveState.removeRunningTask(status.getTaskId());
       persistentState.removeTaskId(status.getTaskId().getValue());
       // Correct the phase when a task dies after the reconcile period is over
-      if (reconciliationComplete()) {
+      if (!liveState.getCurrentAcquisitionPhase().equals(AcquisitionPhase.RECONCILING_TASKS)) {
         correctCurrentPhase();
       }
     } else if (isRunningState(status)) {
@@ -121,9 +121,6 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
       switch (liveState.getCurrentAcquisitionPhase()) {
         case RECONCILING_TASKS :
-          if (reconciliationComplete()) {
-            correctCurrentPhase();
-          }
           break;
         case JOURNAL_NODES :
           if (liveState.getJournalNodeSize() == conf.getJournalNodeCount()) {
@@ -176,10 +173,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   @Override
   public void resourceOffers(SchedulerDriver driver, List<Offer> offers) {
     log.info(String.format("Received %d offers", offers.size()));
-    if (liveState.getCurrentAcquisitionPhase().equals(AcquisitionPhase.RECONCILING_TASKS)
-        && reconciliationComplete()) {
-      correctCurrentPhase();
-    }
+
     // TODO within each phase, accept offers based on the number of nodes you need
     boolean acceptedOffer = false;
     boolean journalNodesResolvable = false;
@@ -587,14 +581,9 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   private void reconcileTasks(SchedulerDriver driver) {
     // TODO run this method repeatedly with exponential backoff in the case that it takes time for
     // different slaves to reregister upon master failover.
-    reconciliationCompleted = false;
     driver.reconcileTasks(Collections.<Protos.TaskStatus> emptyList());
     Timer timer = new Timer();
     timer.schedule(new ReconcileStateTask(), conf.getReconciliationTimeout() * 1000);
-  }
-
-  private boolean reconciliationComplete() {
-    return reconciliationCompleted;
   }
 
   private class ReconcileStateTask extends TimerTask {
@@ -602,17 +591,22 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     @Override
     public void run() {
       log.info("Current persistent state:");
-      log.info(String.format("JournalNodes: %s", persistentState.getJournalNodes()));
-      log.info(String.format("NameNodes: %s", persistentState.getNameNodes()));
+      log.info(String.format("JournalNodes: %s, %s", persistentState.getJournalNodes(),
+          persistentState.getJournalNodeTaskNames()));
+      log.info(String.format("NameNodes: %s, %s", persistentState.getNameNodes(),
+          persistentState.getNameNodeTaskNames()));
       log.info(String.format("DataNodes: %s", persistentState.getDataNodes()));
 
-      Collection<String> taskIds = persistentState.getAllTaskIds();
-      HashMap<String, Protos.TaskStatus> runningTaskIds = liveState.getRunningTasks();
+      Set<String> taskIds = persistentState.getAllTaskIds();
+      Set<String> runningTaskIds = liveState.getRunningTasks().keySet();
+
       for (String taskId : taskIds) {
-        if (!runningTaskIds.containsKey(taskId))
+        if (taskId != null && !runningTaskIds.contains(taskId)) {
+          log.info("Removing task id: " + taskId);
           persistentState.removeTaskId(taskId);
+        }
       }
-      reconciliationCompleted = true;
+      correctCurrentPhase();
     }
   }
 }

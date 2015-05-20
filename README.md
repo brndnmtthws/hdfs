@@ -3,6 +3,12 @@ HA HDFS on Apache Mesos
 ======================
 Starts 1 active NameNode (with JournalNode and ZKFC), 1 standby NN (+JN,ZKFC), 1 JN, and everything else is DataNodes.
 
+Prerequisites
+--------------------------
+1. Install `maven`, `tar`, `unzip`, `wget` in your build host. Set proxy for maven and wget if needed
+2. Install `curl` for all hosts in cluster
+3. `$JAVA_HOME` needs to be set on the host running your HDFS scheduler. This can be set through setting the environment variable on the host, `export JAVA_HOME=/path/to/jre`, or specifying the environment variable in Marathon.
+
 Building HDFS-Mesos
 --------------------------
 1. `./bin/build-hdfs`
@@ -20,7 +26,7 @@ Installing HDFS-Mesos on your Cluster
 If you have Hadoop installed across your cluster, you don't need the Mesos scheduler application to distribute the binaries. You can set the `mesos.hdfs.native-hadoop-binaries` configuration parameter in `mesos-site.xml` if don't want the binaries distributed.
 
 ### Mesos-DNS custom configuration
-You can see the example configuration in the `example-conf/mesos-dns` directory. Since Mesos-DNS provides native bindings for master detection, we can simply use those names in our mesos and hdfs configurations. The example configuration assumes your Mesos masters and your zookeeper nodes are colocated. If they aren't you'll need to specify your zookeeper nodes separately.
+You can see the example configuration in the `example-conf/dcos` directory. Since Mesos-DNS provides native bindings for master detection, we can simply use those names in our mesos and hdfs configurations. The example configuration assumes your Mesos masters and your zookeeper nodes are colocated. If they aren't you'll need to specify your zookeeper nodes separately. Also, note that you are using the example in `example-conf/dcos`, the `mesos.hdfs.native-hadoop-binaries` property needs to be set to `false` if your HDFS binaries are not predistributed.
 
 Starting HDFS-Mesos
 --------------------------
@@ -45,14 +51,14 @@ Resource Reservation Instructions (Optional)
 2. On master, add the role for HDFS, by running `echo hdfs > /etc/mesos-master/role` or by setting the `—-role=hdfs`.
 3. Then restart the master by running `sudo service mesos-master restart`.
 4. On each slave where you want to reserve resources, add specific resource reservations for the HDFS role. Here is one example:
-<br>`cpus(*):4;cpus(hdfs):2;mem(*):8192;mem(hdfs):4096 > /etc/mesos-slave/resources`</br> or by setting `—-resources=cpus(*):4;cpus(hdfs):2;mem(*):8192;mem(hdfs):4096`.
+<br>`cpus(*):8;cpus(hdfs):4;mem(*):16384;mem(hdfs):8192 > /etc/mesos-slave/resources`</br> or by setting `—-resources=cpus(*):8;cpus(hdfs):4;mem(*):16384;mem(hdfs):8192`.
 5. On each slave with the new settings, stop the mesos slave by running
-<br>`sudo service mesos-slave stop`</br>.
+<br>`sudo service mesos-slave stop`.</br>
 6. On each slave with the new settings, remove the old slave state by running
 <br>`rm -f /tmp/mesos/meta/slaves/latest`</br>.
 <br>Note: This will also remove task state, so you will want to manually kill any running tasks as a precaution.</br>
 7. On each slave with the new settings, start the mesos slave by running
-<br>`sudo service mesos-slave start`</br>.
+<br>`sudo service mesos-slave start`.</br>
 
 Shutdown Instructions (Optional)
 --------------------------
