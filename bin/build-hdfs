@@ -8,7 +8,9 @@ IMPALA_VER=cdh5.3.1-release
 IMPALA_ZIP=$IMPALA_VER.zip
 IMPALA_URL=https://github.com/cloudera/Impala/archive/$IMPALA_ZIP
 NATIVE=native
-DIST=hdfs-mesos-0.1.1
+DIST_NAME=hdfs-mesos
+DIST_VERSION=0.1.1
+DIST=$DIST_NAME-$DIST_VERSION
 
 # Remove cached binaries and exit
 if [ "$1" == "clean" ]; then
