@@ -1,5 +1,7 @@
 #!/bin/bash
 
+FRAMEWORK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/.."
+
 export MESOS_HDFS_DATA_DIR=${MESOS_HDFS_DATA_DIR:-"/tmp/hdfs/data"}
 export MESOS_HDFS_SECONDARY_DATA_DIR=${MESOS_HDFS_SECONDARY_DATA_DIR:-"/var/run/hadoop-hdfs"}
 export MESOS_HDFS_NATIVE_HADOOP_BINARIES=${MESOS_HDFS_NATIVE_HADOOP_BINARIES:-false}
@@ -28,8 +30,8 @@ echo "- env ------------------------------------------------------------------"
 env | sort
 echo "------------------------------------------------------------------------"
 echo "- mesos-site.xml -------------------------------------------------------"
-envsubst < /tmp/mesos-site.xml > etc/hadoop/mesos-site.xml
-cat etc/hadoop/mesos-site.xml
+envsubst < /tmp/mesos-site.xml > $FRAMEWORK_DIR/etc/hadoop/mesos-site.xml
+cat $FRAMEWORK_DIR/etc/hadoop/mesos-site.xml
 echo "------------------------------------------------------------------------"
 
 if [ -z "$PORT0" ] ; then
@@ -46,4 +48,4 @@ else
   JAVA_CMD=$JAVA_HOME/bin/java
 fi
 
-exec $JAVA_CMD -cp lib/*.jar -Dmesos.conf.path=etc/hadoop/mesos-site.xml -Dmesos.hdfs.config.server.port=$PORT0 org.apache.mesos.hdfs.Main
+exec $JAVA_CMD -cp $FRAMEWORK_DIR/lib/*.jar -Dmesos.conf.path=$FRAMEWORK_DIR/etc/hadoop/mesos-site.xml -Dmesos.hdfs.config.server.port=$PORT0 org.apache.mesos.hdfs.Main

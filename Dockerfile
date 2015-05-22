@@ -14,4 +14,4 @@ ADD conf/mesos-site.xml /tmp/mesos-site.xml
 
 WORKDIR /hdfs/hdfs-mesos-$HDFS_MESOS_VERSION
 
-CMD ./bin/hdfs-mesos
+CMD /hdfs/hdfs-mesos-$HDFS_MESOS_VERSION/bin/hdfs-mesos
