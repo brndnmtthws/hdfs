@@ -19,7 +19,7 @@ Installing HDFS-Mesos on your Cluster
 --------------------------
 1. Upload `hdfs-mesos-*.tgz` to a node in your Mesos cluster.
 2. Extract it with `tar zxvf hdfs-mesos-*.tgz`
-3. Customize configuration in `hdfs-mesos-*/etc/hadoop/*-site.xml`
+3. Customize configuration in `hdfs-mesos-*/etc/hadoop/*-site.xml` or via environment variables
 4. Check that `hostname` on that node resolves to a non-localhost IP; update /etc/hosts if necessary
 
 ### If you have Hadoop pre-installed in your cluster
@@ -72,7 +72,11 @@ Shutdown Instructions (Optional)
 Docker Usage (Optional)
 --------------------------
 
-### Build
+### Use [Official Mesosphere Image](https://registry.hub.docker.com/u/mesosphere/hdfs-mesos/)
+
+- `docker pull mesosphere/hdfs-mesos`
+
+### Build (Optional)
 
 - `./bin/build-hdfs docker`
 - If you wish to specify an image name run `./bin/build-hdfs docker <image-name>`
@@ -80,3 +84,7 @@ Docker Usage (Optional)
 ### Run with Marathon
 
 Run the following command in the repository root to launch the docker container in your marathon install: `curl -X POST -H "Content-Type: application/json" http://<yourMarathonHost>:8080/v2/apps -d@marathon.json`
+
+### Configure [mesos-site.xml](conf/mesos-site.xml) with Environemnt Variables
+
+See [marathon.json](./marathon.json) for an example. Note you only need to set values you wish to override
