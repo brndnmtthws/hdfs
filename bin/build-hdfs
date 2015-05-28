@@ -97,7 +97,7 @@ tar czf $DIST.tgz $DIST
 
 # Build docker container
 if [ "$1" == "docker" ] && [ -f $DIST.tgz ]; then
-    if [ ! -z "$2" ]; then
+    if [ "$2" ]; then
         DOCKER_IMAGE_NAME=$2
     else
         DOCKER_IMAGE_NAME="mesosphere/$DIST_NAME:$DIST_VERSION"

@@ -55,7 +55,7 @@ Resource Reservation Instructions (Optional)
 5. On each slave with the new settings, stop the mesos slave by running
 <br>`sudo service mesos-slave stop`.</br>
 6. On each slave with the new settings, remove the old slave state by running
-<br>`rm -f /tmp/mesos/meta/slaves/latest`</br>.
+<br>`rm -f /tmp/mesos/meta/slaves/latest`</br>
 <br>Note: This will also remove task state, so you will want to manually kill any running tasks as a precaution.</br>
 7. On each slave with the new settings, start the mesos slave by running
 <br>`sudo service mesos-slave start`.</br>
@@ -87,4 +87,12 @@ Run the following command in the repository root to launch the docker container 
 
 ### Configure [mesos-site.xml](conf/mesos-site.xml) with Environemnt Variables
 
-See [marathon.json](./marathon.json) for an example. Note you only need to set values you wish to override
+See [marathon.json](./marathon.json) for an example. Note you only need to set values you wish to override.
+
+<br>Note: If you are using a remote zookeeper cluster you will need to override these three values:</br>
+
+```bash
+MESOS_HDFS_STATE_ZK
+MESOS_MASTER_URI
+MESOS_HDFS_ZKFC_HA_ZOOKEEPER_QUORUM
+```
