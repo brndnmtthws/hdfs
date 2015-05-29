@@ -85,7 +85,7 @@ Docker Usage (Optional)
 
 Run the following command in the repository root to launch the docker container in your marathon install: `curl -X POST -H "Content-Type: application/json" http://<yourMarathonHost>:8080/v2/apps -d@marathon.json`
 
-### Configure [mesos-site.xml](conf/mesos-site.xml) with Environemnt Variables
+### Configure [mesos-site.xml](conf/mesos-site.xml) with Environment Variables
 
 See [marathon.json](./marathon.json) for an example. Note you only need to set values you wish to override.
 
