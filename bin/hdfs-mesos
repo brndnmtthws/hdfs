@@ -1,39 +1,5 @@
 #!/bin/bash
 
-FRAMEWORK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/.."
-
-export MESOS_HDFS_DATA_DIR=${MESOS_HDFS_DATA_DIR:-"/tmp/hdfs/data"}
-export MESOS_HDFS_SECONDARY_DATA_DIR=${MESOS_HDFS_SECONDARY_DATA_DIR:-"/var/run/hadoop-hdfs"}
-export MESOS_HDFS_NATIVE_HADOOP_BINARIES=${MESOS_HDFS_NATIVE_HADOOP_BINARIES:-false}
-export MESOS_HDFS_FRAMEWORK_MNT_PATH=${MESOS_HDFS_FRAMEWORK_MNT_PATH:-"/opt/mesosphere"}
-export MESOS_HDFS_STATE_ZK=${MESOS_HDFS_STATE_ZK:-"localhost:2181"}
-export MESOS_MASTER_URI=${MESOS_MASTER_URI:-"zk://localhost:2181/mesos"}
-export MESOS_HDFS_ZKFC_HA_ZOOKEEPER_QUORUM=${MESOS_HDFS_ZKFC_HA_ZOOKEEPER_QUORUM:-"localhost:2181"}
-export MESOS_HDFS_FRAMEWORK_NAME=${MESOS_HDFS_FRAMEWORK_NAME:-"hdfs"}
-export MESOS_HDFS_MESOSDNS=${MESOS_HDFS_MESOSDNS:-false}
-export MESOS_HDFS_MESOSDNS_DOMAIN=${MESOS_HDFS_MESOSDNS_DOMAIN:-"mesos"}
-export MESOS_NATIVE_LIBRARY=${MESOS_NATIVE_LIBRARY:-"/usr/local/lib/libmesos.so"}
-export MESOS_HDFS_JOURNALNODE_COUNT=${MESOS_HDFS_JOURNALNODE_COUNT:-3}
-export MESOS_HDFS_JVM_OVERHEAD=${MESOS_HDFS_JVM_OVERHEAD:-1.35}
-export MESOS_HDFS_HADOOP_HEAP_SIZE=${MESOS_HDFS_HADOOP_HEAP_SIZE:-512}
-export MESOS_HDFS_NAMENODE_HEAP_SIZE=${MESOS_HDFS_NAMENODE_HEAP_SIZE:-4096}
-export MESOS_HDFS_DATANODE_HEAP_SIZE=${MESOS_HDFS_DATANODE_HEAP_SIZE:-1024}
-export MESOS_HDFS_EXECUTOR_HEAP_SIZE=${MESOS_HDFS_EXECUTOR_HEAP_SIZE:-256}
-export MESOS_HDFS_EXECUTOR_CPUS=${MESOS_HDFS_EXECUTOR_CPUS:-0.5}
-export MESOS_HDFS_NAMENODE_CPUS=${MESOS_HDFS_NAMENODE_CPUS:-1}
-export MESOS_HDFS_JOURNALNODE_CPUS=${MESOS_HDFS_JOURNALNODE_CPUS:-1}
-export MESOS_HDFS_DATANODE_CPUS=${MESOS_HDFS_DATANODE_CPUS:-1}
-export MESOS_HDFS_USER=${MESOS_HDFS_USER:-"root"}
-export MESOS_HDFS_ROLE=${MESOS_HDFS_ROLE:-"*"}
-
-echo "- env ------------------------------------------------------------------"
-env | sort
-echo "------------------------------------------------------------------------"
-echo "- mesos-site.xml -------------------------------------------------------"
-envsubst < /tmp/mesos-site.xml > $FRAMEWORK_DIR/etc/hadoop/mesos-site.xml
-cat $FRAMEWORK_DIR/etc/hadoop/mesos-site.xml
-echo "------------------------------------------------------------------------"
-
 if [ -z "$PORT0" ] ; then
   PORT0="8765"
 fi
@@ -48,4 +14,4 @@ else
   JAVA_CMD=$JAVA_HOME/bin/java
 fi
 
-exec $JAVA_CMD -cp $FRAMEWORK_DIR/lib/*.jar -Dmesos.conf.path=$FRAMEWORK_DIR/etc/hadoop/mesos-site.xml -Dmesos.hdfs.config.server.port=$PORT0 org.apache.mesos.hdfs.Main
+exec $JAVA_CMD -cp lib/*.jar -Dmesos.conf.path=etc/hadoop/mesos-site.xml -Dmesos.hdfs.config.server.port=$PORT0 org.apache.mesos.hdfs.Main

@@ -19,7 +19,7 @@ Installing HDFS-Mesos on your Cluster
 --------------------------
 1. Upload `hdfs-mesos-*.tgz` to a node in your Mesos cluster.
 2. Extract it with `tar zxvf hdfs-mesos-*.tgz`
-3. Customize configuration in `hdfs-mesos-*/etc/hadoop/*-site.xml` or via environment variables
+3. Customize configuration in `hdfs-mesos-*/etc/hadoop/*-site.xml`
 4. Check that `hostname` on that node resolves to a non-localhost IP; update /etc/hosts if necessary
 
 ### If you have Hadoop pre-installed in your cluster
@@ -36,8 +36,8 @@ Starting HDFS-Mesos
 
 Using HDFS
 --------------------------
-See some of the many HDFS tutorials out there for more details and explore the web UI at <br>`http://<ActiveNameNode>:50070`.</br>
-Note that you can access commands through `hdfs://<mesos.hdfs.framework.name>/` (default: `hdfs://hdfs/`).
+See some of the many HDFS tutorials out there for more details and explore the web UI at <br>`http://<ActiveNameNode>:50070`.</br> 
+Note that you can access commands through `hdfs://<mesos.hdfs.framework.name>/` (default: `hdfs://hdfs/`). 
 Also here is a quick sanity check:
 
 1. `hadoop fs -ls hdfs://hdfs/` should show nothing for starters
@@ -55,8 +55,8 @@ Resource Reservation Instructions (Optional)
 5. On each slave with the new settings, stop the mesos slave by running
 <br>`sudo service mesos-slave stop`.</br>
 6. On each slave with the new settings, remove the old slave state by running
-<br>`rm -f /tmp/mesos/meta/slaves/latest`</br>
-<br>Note: This will also remove task state, so you will want to manually kill any running tasks as a precaution.</br>
+<br>`rm -f /tmp/mesos/meta/slaves/latest`.</br> 
+Note: This will also remove task state, so you will want to manually kill any running tasks as a precaution.
 7. On each slave with the new settings, start the mesos slave by running
 <br>`sudo service mesos-slave start`.</br>
 
@@ -68,31 +68,3 @@ Shutdown Instructions (Optional)
 3. Access your zookeeper instance: `/PATH/TO/zookeeper/bin/zkCli.sh`
 4. Remove hdfs-mesos framework state from zookeeper: `rmr /hdfs-mesos`
 5. (Optional) Clear your data directories as specified in your `mesos-site.xml`. This is necessary to relaunch HDFS in the same directory.
-
-Docker Usage (Optional)
---------------------------
-
-### Use [Official Mesosphere Image](https://registry.hub.docker.com/u/mesosphere/hdfs-mesos/)
-
-- `docker pull mesosphere/hdfs-mesos`
-
-### Build (Optional)
-
-- `./bin/build-hdfs docker`
-- If you wish to specify an image name run `./bin/build-hdfs docker <image-name>`
-
-### Run with Marathon
-
-Run the following command in the repository root to launch the docker container in your marathon install: `curl -X POST -H "Content-Type: application/json" http://<yourMarathonHost>:8080/v2/apps -d@marathon.json`
-
-### Configure [mesos-site.xml](conf/mesos-site.xml) with Environment Variables
-
-See [marathon.json](./marathon.json) for an example. Note you only need to set values you wish to override.
-
-<br>Note: If you are using a remote zookeeper cluster you will need to override these three values:</br>
-
-```bash
-MESOS_HDFS_STATE_ZK
-MESOS_MASTER_URI
-MESOS_HDFS_ZKFC_HA_ZOOKEEPER_QUORUM
-```
