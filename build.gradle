@@ -1,5 +1,6 @@
 apply plugin: 'java'
 apply plugin: 'application'
+apply plugin: 'idea'
 
 sourceCompatibility = '1.7'
 targetCompatibility = '1.7'
@@ -32,26 +33,39 @@ repositories {
 
 dependencies {
 
-     compile "org.apache.mesos:mesos:${mesosVer}"
+   compile "org.apache.mesos:mesos:${mesosVer}"
 
-     compile "org.slf4j:log4j-over-slf4j:${slf4jVer}"
-     compile "org.slf4j:jcl-over-slf4j:${slf4jVer}"
-     compile "ch.qos.logback:logback-classic:${logbackVer}"
+   compile "org.slf4j:log4j-over-slf4j:${slf4jVer}"
+   compile "org.slf4j:jcl-over-slf4j:${slf4jVer}"
+   compile "ch.qos.logback:logback-classic:${logbackVer}"
 
-     compile ("org.apache.hadoop:hadoop-common:${hadoopVer}") {
-         exclude group: "log4j", module: "log4j"
-         exclude group: "org.slf4j", module: "slf4j-log4j12"
-         exclude group: "javax.servlet", module: "servlet-api"
-         exclude group: "commons-httpclient", module: "commons-httpclient"
-         exclude group: "net.java.dev.jets3t", module: "jets3t"
-     }
+   compile ("org.apache.hadoop:hadoop-common:${hadoopVer}") {
+       exclude group: "log4j", module: "log4j"
+       exclude group: "org.slf4j", module: "slf4j-log4j12"
+       exclude group: "javax.servlet", module: "servlet-api"
+       exclude group: "commons-httpclient", module: "commons-httpclient"
+       exclude group: "net.java.dev.jets3t", module: "jets3t"
+   }
 
-     compile "org.eclipse.jetty:jetty-server:${jettyVer}"
-     compile "joda-time:joda-time:${jodaTimeVer}"
-     compile "com.floreysoft:jmte:${jmteVer}"
-     compile "com.google.inject:guice:${guiceVer}"
-     compile "com.google.guava:guava:${guavaVer}"
+   compile "org.eclipse.jetty:jetty-server:${jettyVer}"
+   compile "joda-time:joda-time:${jodaTimeVer}"
+   compile "com.floreysoft:jmte:${jmteVer}"
+   compile "com.google.inject:guice:${guiceVer}"
+   compile "com.google.guava:guava:${guavaVer}"
 
-     testCompile "junit:junit:${junitVer}"
-     testCompile "org.mockito:mockito-all:${mockitoVer}"
- }
+   testCompile "junit:junit:${junitVer}"
+   testCompile "org.mockito:mockito-all:${mockitoVer}"
+}
+
+idea {
+  project {
+      languageLevel = '1.7'
+	ipr {
+		withXml { provider ->
+		        provider.node.component
+		                .find { it.@name == 'VcsDirectoryMappings' }
+		                .mapping.@vcs = 'Git'
+		        }
+	  }
+  }
+}
