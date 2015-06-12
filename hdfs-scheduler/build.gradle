@@ -1,0 +1,17 @@
+plugins {
+  id 'com.github.johnrengelman.shadow' version '1.2.1'
+}
+
+dependencies {
+    compile project(':hdfs-commons')
+
+}
+
+
+shadowJar {
+  classifier = "uber"
+
+  dependencies {
+    exclude(dependency("commons-logging:commons-logging"))
+  }
+}
