@@ -29,15 +29,8 @@
     <jmte.version>3.0</jmte.version>
     <guice.version>3.0</guice.version>
     <guava.version>18.0</guava.version>
-    <metrics.version>3.0.1</metrics.version>
-    <gcs.version>0.4.1</gcs.version>
-    <aws.version>1.8.9.1</aws.version>
-    <squirrel.version>0.3.4</squirrel.version>
     <junit.version>4.11</junit.version>
     <mockito.version>1.9.5</mockito.version>
-    <google.http.version>1.19.0</google.http.version>
-    <google.oauth.version>1.19.0</google.oauth.version>
-    <google.storage.version>v1-rev9-1.19.0</google.storage.version>
   </properties>
 
   <dependencies>
@@ -86,10 +79,6 @@
         <exclusion>
           <groupId>commons-httpclient</groupId>
           <artifactId>commons-httpclient</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>net.java.dev.jets3t</groupId>
-          <artifactId>jets3t</artifactId>
         </exclusion>
         <exclusion>
           <groupId>net.java.dev.jets3t</groupId>

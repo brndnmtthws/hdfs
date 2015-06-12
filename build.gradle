@@ -14,7 +14,6 @@ version = "0.1.1"
 ext {
    mesosVer = "0.21.1"
    hadoopVer = "2.5.0"
-   javaAbiVer = "1.7"
    slf4jVer = "1.7.10"
    logbackVer = "1.1.2"
    jettyVer = "9.2.2.v20140723"
@@ -22,23 +21,13 @@ ext {
    jmteVer = "3.0"
    guiceVer = "3.0"
    guavaVer = "18.0"
-   metricsVer = "3.0.1"
-   gcsVer = "0.4.1"
-   awsVer = "1.8.9.1"
-   squirrelVer = "0.3.4"
    junitVer = "4.11"
    mockitoVer = "1.9.5"
-   googleHttpVer = "1.19.0"
-   googleOAuthVer = "1.19.0"
-   googleStorageVer = "v1-rev9-1.19.0"
 }
 
 repositories {
     mavenLocal()
     mavenCentral()
-    maven {
-       url "https://repository.apache.org/content/repositories/releases/"
-   }
 }
 
 dependencies {
