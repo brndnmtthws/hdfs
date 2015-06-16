@@ -1,9 +1,13 @@
 target/
-*.i??
-.idea/
 hadoop-*
 hdfs-mesos-*
 native/
+
+# idea
+*.i??
+.idea/
+out/
+
+# gradle
 .gradle
 build/
-out/

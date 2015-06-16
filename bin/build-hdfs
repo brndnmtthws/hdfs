@@ -1,5 +1,7 @@
 #!/bin/bash
 
+PROJ_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/..  && pwd )"
+
 HADOOP_VER=2.5.0-cdh5.3.1
 HADOOP_DIR=hadoop-$HADOOP_VER
 HADOOP_ZIP=$HADOOP_DIR.tar.gz
@@ -17,13 +19,13 @@ if [ "$1" == "clean" ]; then
     rm -rf $NATIVE
     rm -rf $DIST
     rm -f $DIST.tgz
-    mvn clean
+    $PROJ_DIR/gradlew clean
     exit 0
 fi
 
 # Build and package hdfs-mesos project
 if [ "$1" != "nocompile" ]; then
-  mvn clean package || exit
+  $PROJ_DIR/gradlew clean shadowJar || exit
 fi
 
 # Download hadoop binary
@@ -83,7 +85,7 @@ cp $NATIVE/* $DIST/lib/native
 echo "Copying build output into $DIST"
 cd $DIST
 cp ../bin/* bin/
-cp ../target/*-uber.jar lib/
+cp ../build/libs/*-uber.jar lib/
 cp ../conf/* etc/hadoop/
 cd ..
 

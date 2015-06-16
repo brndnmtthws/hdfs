@@ -5,14 +5,16 @@ Starts 1 active NameNode (with JournalNode and ZKFC), 1 standby NN (+JN,ZKFC), 1
 
 Prerequisites
 --------------------------
-1. Install `maven`, `tar`, `unzip`, `wget` in your build host. Set proxy for maven and wget if needed
+1. Install `tar`, `unzip`, `wget` in your build host. Set proxy for maven / gradle and wget if needed
 2. Install `curl` for all hosts in cluster
 3. `$JAVA_HOME` needs to be set on the host running your HDFS scheduler. This can be set through setting the environment variable on the host, `export JAVA_HOME=/path/to/jre`, or specifying the environment variable in Marathon.
+
+**NOTE:** The build process current supports maven and gradle.   The gradle wrapper meta-data is included in the project and is self boot-straping (meaning it doesn't a prerequisites install).  Maven as the build system is being deprecated.
 
 Building HDFS-Mesos
 --------------------------
 1. `./bin/build-hdfs`
-2. Run `./bin/build-hdfs nocompile` to skip the `mvn clean package` step and just re-bundle the binaries.
+2. Run `./bin/build-hdfs nocompile` to skip the `gradlew clean package` step and just re-bundle the binaries.
 3. To remove the project build output and downloaded binaries, run `./bin/build-hdfs clean`
 
 Installing HDFS-Mesos on your Cluster
@@ -36,8 +38,8 @@ Starting HDFS-Mesos
 
 Using HDFS
 --------------------------
-See some of the many HDFS tutorials out there for more details and explore the web UI at <br>`http://<ActiveNameNode>:50070`.</br> 
-Note that you can access commands through `hdfs://<mesos.hdfs.framework.name>/` (default: `hdfs://hdfs/`). 
+See some of the many HDFS tutorials out there for more details and explore the web UI at <br>`http://<ActiveNameNode>:50070`.</br>
+Note that you can access commands through `hdfs://<mesos.hdfs.framework.name>/` (default: `hdfs://hdfs/`).
 Also here is a quick sanity check:
 
 1. `hadoop fs -ls hdfs://hdfs/` should show nothing for starters
@@ -55,7 +57,7 @@ Resource Reservation Instructions (Optional)
 5. On each slave with the new settings, stop the mesos slave by running
 <br>`sudo service mesos-slave stop`.</br>
 6. On each slave with the new settings, remove the old slave state by running
-<br>`rm -f /tmp/mesos/meta/slaves/latest`.</br> 
+<br>`rm -f /tmp/mesos/meta/slaves/latest`.</br>
 Note: This will also remove task state, so you will want to manually kill any running tasks as a precaution.
 7. On each slave with the new settings, start the mesos slave by running
 <br>`sudo service mesos-slave start`.</br>

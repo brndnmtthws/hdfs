@@ -1,0 +1,83 @@
+plugins {
+  id 'com.github.johnrengelman.shadow' version '1.2.1'
+}
+
+apply plugin: 'java'
+apply plugin: 'application'
+apply plugin: 'idea'
+
+sourceCompatibility = '1.7'
+targetCompatibility = '1.7'
+
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+mainClassName = "com.apache.mesos.hdfs.Main"
+
+group = "com.apache.mesos.hdfs"
+version = "0.1.1"
+
+ext {
+   mesosVer = "0.21.1"
+   hadoopVer = "2.5.0"
+   slf4jVer = "1.7.10"
+   logbackVer = "1.1.2"
+   jettyVer = "9.2.2.v20140723"
+   jodaTimeVer = "2.4"
+   jmteVer = "3.0"
+   guiceVer = "3.0"
+   guavaVer = "18.0"
+   junitVer = "4.11"
+   mockitoVer = "1.9.5"
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+
+   compile "org.apache.mesos:mesos:${mesosVer}"
+
+   compile "org.slf4j:log4j-over-slf4j:${slf4jVer}"
+   compile "org.slf4j:jcl-over-slf4j:${slf4jVer}"
+   compile "ch.qos.logback:logback-classic:${logbackVer}"
+
+   compile ("org.apache.hadoop:hadoop-common:${hadoopVer}") {
+       exclude group: "log4j", module: "log4j"
+       exclude group: "org.slf4j", module: "slf4j-log4j12"
+       exclude group: "javax.servlet", module: "servlet-api"
+       exclude group: "commons-httpclient", module: "commons-httpclient"
+       exclude group: "net.java.dev.jets3t", module: "jets3t"
+   }
+
+   compile "org.eclipse.jetty:jetty-server:${jettyVer}"
+   compile "joda-time:joda-time:${jodaTimeVer}"
+   compile "com.floreysoft:jmte:${jmteVer}"
+   compile "com.google.inject:guice:${guiceVer}"
+   compile "com.google.guava:guava:${guavaVer}"
+
+   testCompile "junit:junit:${junitVer}"
+   testCompile "org.mockito:mockito-all:${mockitoVer}"
+}
+
+idea {
+  project {
+      languageLevel = '1.7'
+	ipr {
+		withXml { provider ->
+		        provider.node.component
+		                .find { it.@name == 'VcsDirectoryMappings' }
+		                .mapping.@vcs = 'Git'
+		        }
+	  }
+  }
+}
+
+shadowJar {
+  classifier = "uber"
+  
+  dependencies {
+    exclude(dependency("commons-logging:commons-logging"))
+  }
+}
