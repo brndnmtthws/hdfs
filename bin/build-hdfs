@@ -85,7 +85,7 @@ cp $NATIVE/* $DIST/lib/native
 echo "Copying build output into $DIST"
 cd $DIST
 cp ../bin/* bin/
-cp ../build/libs/*-uber.jar lib/
+cp ../hdfs-executor/build/libs/*-uber.jar lib/
 cp ../conf/* etc/hadoop/
 cd ..
 
