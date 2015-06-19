@@ -7,27 +7,41 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.MesosSchedulerDriver;
 import org.apache.mesos.Protos;
-import org.apache.mesos.Protos.*;
+import org.apache.mesos.Protos.CommandInfo;
+import org.apache.mesos.Protos.Environment;
+import org.apache.mesos.Protos.ExecutorID;
+import org.apache.mesos.Protos.ExecutorInfo;
+import org.apache.mesos.Protos.FrameworkID;
+import org.apache.mesos.Protos.FrameworkInfo;
+import org.apache.mesos.Protos.MasterInfo;
+import org.apache.mesos.Protos.Offer;
+import org.apache.mesos.Protos.OfferID;
+import org.apache.mesos.Protos.Resource;
+import org.apache.mesos.Protos.SlaveID;
+import org.apache.mesos.Protos.TaskID;
+import org.apache.mesos.Protos.TaskInfo;
+import org.apache.mesos.Protos.TaskState;
+import org.apache.mesos.Protos.TaskStatus;
+import org.apache.mesos.Protos.Value;
 import org.apache.mesos.SchedulerDriver;
 import org.apache.mesos.hdfs.config.SchedulerConf;
 import org.apache.mesos.hdfs.state.AcquisitionPhase;
 import org.apache.mesos.hdfs.state.LiveState;
 import org.apache.mesos.hdfs.state.PersistentState;
-import org.apache.mesos.hdfs.util.HDFSConstants;
 import org.apache.mesos.hdfs.util.DnsResolver;
+import org.apache.mesos.hdfs.util.HDFSConstants;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
-import java.util.HashMap;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 
-//TODO remove as much logic as possible from Scheduler to clean up code
+// TODO (elingg) remove as much logic as possible from Scheduler to clean up code
 public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
   public static final Log log = LogFactory.getLog(Scheduler.class);
@@ -82,7 +96,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       throw new RuntimeException(e);
     }
     log.info("Registered framework frameworkId=" + frameworkId.getValue());
-    //reconcile tasks upon registration
+    // reconcile tasks upon registration
     reconcileTasks(driver);
   }
 
@@ -120,23 +134,23 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           .getCurrentAcquisitionPhase().toString()));
 
       switch (liveState.getCurrentAcquisitionPhase()) {
-        case RECONCILING_TASKS :
+        case RECONCILING_TASKS:
           break;
-        case JOURNAL_NODES :
+        case JOURNAL_NODES:
           if (liveState.getJournalNodeSize() == conf.getJournalNodeCount()) {
-            // TODO move the reload to correctCurrentPhase and make it idempotent
+            // TODO (elingg) move the reload to correctCurrentPhase and make it idempotent
             reloadConfigsOnAllRunningTasks(driver);
             correctCurrentPhase();
           }
           break;
-        case START_NAME_NODES :
+        case START_NAME_NODES:
           if (liveState.getNameNodeSize() == (HDFSConstants.TOTAL_NAME_NODES)) {
-            // TODO move the reload to correctCurrentPhase and make it idempotent
+            // TODO (elingg) move the reload to correctCurrentPhase and make it idempotent
             reloadConfigsOnAllRunningTasks(driver);
             correctCurrentPhase();
           }
           break;
-        case FORMAT_NAME_NODES :
+        case FORMAT_NAME_NODES:
           if (!liveState.isNameNode1Initialized()
               && !liveState.isNameNode2Initialized()) {
             dnsResolver.sendMessageAfterNNResolvable(
@@ -161,7 +175,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
           }
           break;
         // TODO (elingg) add a configurable number of data nodes
-        case DATA_NODES :
+        case DATA_NODES:
           break;
       }
     } else {
@@ -174,7 +188,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   public void resourceOffers(SchedulerDriver driver, List<Offer> offers) {
     log.info(String.format("Received %d offers", offers.size()));
 
-    // TODO within each phase, accept offers based on the number of nodes you need
+    // TODO (elingg) within each phase, accept offers based on the number of nodes you need
     boolean acceptedOffer = false;
     boolean journalNodesResolvable = false;
     if (liveState.getCurrentAcquisitionPhase() == AcquisitionPhase.START_NAME_NODES) {
@@ -185,28 +199,28 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         driver.declineOffer(offer.getId());
       } else {
         switch (liveState.getCurrentAcquisitionPhase()) {
-          case RECONCILING_TASKS :
+          case RECONCILING_TASKS:
             log.info("Declining offers while reconciling tasks");
             driver.declineOffer(offer.getId());
             break;
-          case JOURNAL_NODES :
+          case JOURNAL_NODES:
             if (tryToLaunchJournalNode(driver, offer)) {
               acceptedOffer = true;
             } else {
               driver.declineOffer(offer.getId());
             }
             break;
-          case START_NAME_NODES :
+          case START_NAME_NODES:
             if (journalNodesResolvable && tryToLaunchNameNode(driver, offer)) {
               acceptedOffer = true;
             } else {
               driver.declineOffer(offer.getId());
             }
             break;
-          case FORMAT_NAME_NODES :
+          case FORMAT_NAME_NODES:
             driver.declineOffer(offer.getId());
             break;
-          case DATA_NODES :
+          case DATA_NODES:
             if (tryToLaunchDataNode(driver, offer)) {
               acceptedOffer = true;
             } else {
@@ -248,11 +262,11 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   }
 
   private boolean launchNode(SchedulerDriver driver, Offer offer,
-        String nodeName, List<String> taskTypes, String executorName) {
-    //nodeName is the type of executor to launch
-    //executorName is to distinguish different types of nodes
-    //taskType is the type of task in mesos to launch on the node
-    //taskName is a name chosen to identify the task in mesos and mesos-dns (if used)
+      String nodeName, List<String> taskTypes, String executorName) {
+    // nodeName is the type of executor to launch
+    // executorName is to distinguish different types of nodes
+    // taskType is the type of task in mesos to launch on the node
+    // taskName is a name chosen to identify the task in mesos and mesos-dns (if used)
     log.info(String.format("Launching node of type %s with tasks %s", nodeName,
         taskTypes.toString()));
     String taskIdName = String.format("%s.%s.%d", nodeName, executorName,
@@ -579,9 +593,10 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   }
 
   private void reconcileTasks(SchedulerDriver driver) {
-    // TODO run this method repeatedly with exponential backoff in the case that it takes time for
+    // TODO (elingg) run this method repeatedly with exponential backoff in the case that it takes
+    // time for
     // different slaves to reregister upon master failover.
-    driver.reconcileTasks(Collections.<Protos.TaskStatus> emptyList());
+    driver.reconcileTasks(Collections.<Protos.TaskStatus>emptyList());
     Timer timer = new Timer();
     timer.schedule(new ReconcileStateTask(), conf.getReconciliationTimeout() * 1000);
   }

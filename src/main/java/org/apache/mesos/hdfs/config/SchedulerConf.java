@@ -72,15 +72,15 @@ public class SchedulerConf extends Configured {
 
   public int getTaskHeapSize(String taskName) {
     switch (taskName) {
-      case "zkfc" :
+      case "zkfc":
         return getZkfcHeapSize();
-      case "namenode" :
+      case "namenode":
         return getNameNodeHeapSize();
-      case "datanode" :
+      case "datanode":
         return getDataNodeHeapSize();
-      case "journalnode" :
+      case "journalnode":
         return getJournalNodeHeapSize();
-      default :
+      default:
         throw new RuntimeException("Invalid taskName=" + taskName);
     }
   }
@@ -127,15 +127,15 @@ public class SchedulerConf extends Configured {
 
   public double getTaskCpus(String taskName) {
     switch (taskName) {
-      case "zkfc" :
+      case "zkfc":
         return getZkfcCpus();
-      case "namenode" :
+      case "namenode":
         return getNameNodeCpus();
-      case "datanode" :
+      case "datanode":
         return getDataNodeCpus();
-      case "journalnode" :
+      case "journalnode":
         return getJournalNodeCpus();
-      default :
+      default:
         throw new RuntimeException("Invalid taskName=" + taskName);
     }
   }
