@@ -39,7 +39,7 @@ public class SchedulerConf extends Configured {
   }
 
   public String getExecutorPath() {
-    return getConf().get("mesos.hdfs.executor.path", "..");
+    return getConf().get("mesos.hdfs.executor.path", ".");
   }
 
   public String getConfigPath() {
