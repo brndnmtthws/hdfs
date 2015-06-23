@@ -17,12 +17,12 @@ Building HDFS-Mesos
 2. Run `./bin/build-hdfs nocompile` to skip the `gradlew clean package` step and just re-bundle the binaries.
 3. To remove the project build output and downloaded binaries, run `./bin/build-hdfs clean`
 
-**NOTE:** The build process builds the artifacts under the `$PROJ_DIR/build` directory.  A number of zip and tar files will be there which are cached for faster subsequent builds.   The tarball used for installation is hdfs-mesos-x.x.x.tgz which contains the scheduler and the executor to be distributed.
+**NOTE:** The build process builds the artifacts under the `$PROJ_DIR/build` directory.  A number of zip and tar files are cached under the `cache` directory for faster subsequent builds.   The tarball used for installation is hdfs-mesos-x.x.x.tgz which contains the scheduler and the executor to be distributed.
 
 
 Installing HDFS-Mesos on your Cluster
 --------------------------
-1. Upload `hdfs-mesos-*.tgz` to a node in your Mesos cluster.
+1. Upload `hdfs-mesos-*.tgz` to a node in your Mesos cluster.   (which is built to `$PROJ_DIR/build/hdfs-mesos-x.x.x.tgz`)
 2. Extract it with `tar zxvf hdfs-mesos-*.tgz`
 3. Customize configuration in `hdfs-mesos-*/etc/hadoop/*-site.xml`
 4. Check that `hostname` on that node resolves to a non-localhost IP; update /etc/hosts if necessary

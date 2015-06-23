@@ -23,9 +23,9 @@ EXECUTOR=hdfs-mesos-executor-$VERSION
 
 # Remove cached binaries and exit
 if [ "$1" == "clean" ]; then
-    rm -Rf $BUILD_DIR
-    $PROJ_DIR/gradlew clean
-    exit 0
+  rm -rf $BUILD_DIR
+  $PROJ_DIR/gradlew clean
+  exit 0
 fi
 
 # Build and package hdfs-mesos project
@@ -35,45 +35,45 @@ fi
 
 # Download hadoop binary
 if [ ! -f $BUILD_CACHE_DIR/$HADOOP_ZIP ]; then
-    echo "Downloading $HADOOP_URL"
-    wget -P $BUILD_CACHE_DIR $HADOOP_URL || exit
+  echo "Downloading $HADOOP_URL"
+  wget -P $BUILD_CACHE_DIR $HADOOP_URL || exit
 else
-    echo "($HADOOP_ZIP already exists, skipping dl)"
+  echo "($HADOOP_ZIP already exists, skipping dl)"
 fi
 
 # Extract hadoop
 if [ ! -d $BUILD_CACHE_DIR/$HADOOP_DIR ]; then
 	echo $BUILD_CACHE_DIR/$HADOOP_DIR
-    echo "Extracting $HADOOP_ZIP in $BUILD_CACHE_DIR"
+  echo "Extracting $HADOOP_ZIP in $BUILD_CACHE_DIR"
 	cd $BUILD_CACHE_DIR
-    tar xf $HADOOP_ZIP
+  tar xf $HADOOP_ZIP
 	cd -
 else
-    echo "($HADOOP_DIR already exists, skipping extract)"
+  echo "($HADOOP_DIR already exists, skipping extract)"
 fi
 
 # Get native libraries
 if [ ! -d $BUILD_CACHE_DIR/$NATIVE ]; then
-    echo "Downloading and unpacking native libs"
-    wget -P $BUILD_CACHE_DIR $IMPALA_URL || exit
+  echo "Downloading and unpacking native libs"
+  wget -P $BUILD_CACHE_DIR $IMPALA_URL || exit
 	cd $BUILD_CACHE_DIR
-    unzip -q $IMPALA_VER.zip
-    mkdir -p $BUILD_CACHE_DIR/$NATIVE
-    cp $BUILD_CACHE_DIR/Impala-$IMPALA_VER/thirdparty/$HADOOP_DIR/lib/native/lib* $BUILD_CACHE_DIR/$NATIVE
-    rm -rf $BUILD_CACHE_DIR/$IMPALA_VER* $BUILD_DIR/Impala*
+  unzip -q $IMPALA_VER.zip
+  mkdir -p $BUILD_CACHE_DIR/$NATIVE
+  cp $BUILD_CACHE_DIR/Impala-$IMPALA_VER/thirdparty/$HADOOP_DIR/lib/native/lib* $BUILD_CACHE_DIR/$NATIVE
+  rm -rf $BUILD_CACHE_DIR/$IMPALA_VER* $BUILD_DIR/Impala*
 	cd -
 else
-    echo "($BUILD_DIR/$NATIVE libs already exist, skipping dl)"
+  echo "($BUILD_DIR/$NATIVE libs already exist, skipping dl)"
 fi
 
 # Create dist
 if [ ! -d $BUILD_CACHE_DIR/$EXECUTOR ]; then
-    echo "Creating new $BUILD_CACHE_DIR/$EXECUTOR dist folder"
-    mkdir -p $BUILD_CACHE_DIR/$EXECUTOR
+  echo "Creating new $BUILD_CACHE_DIR/$EXECUTOR dist folder"
+  mkdir -p $BUILD_CACHE_DIR/$EXECUTOR
 else
-    echo "($BUILD_CACHE_DIR/$EXECUTOR already exists, deleting before create)"
-    rm -rf $BUILD_CACHE_DIR/$EXECUTOR
-    mkdir -p $BUILD_CACHE_DIR/$EXECUTOR
+  echo "($BUILD_CACHE_DIR/$EXECUTOR already exists, deleting before create)"
+  rm -rf $BUILD_CACHE_DIR/$EXECUTOR
+  mkdir -p $BUILD_CACHE_DIR/$EXECUTOR
 fi
 
 # Copy to dist
@@ -110,12 +110,12 @@ cd -
 
 # Create Framework dir
 if [ ! -d $BUILD_DIR/$DIST ]; then
-    echo "Creating new $BUILD_DIR/$DIST dist folder"
-    mkdir -p $BUILD_DIR/$DIST
+  echo "Creating new $BUILD_DIR/$DIST dist folder"
+  mkdir -p $BUILD_DIR/$DIST
 else
-    echo "($BUILD_DIR/$DIST already exists, deleting before create)"
-    rm -rf $BUILD_DIR/$DIST
-    mkdir -p $BUILD_DIR/$DIST
+  echo "($BUILD_DIR/$DIST already exists, deleting before create)"
+  rm -rf $BUILD_DIR/$DIST
+  mkdir -p $BUILD_DIR/$DIST
 fi
 
 # scheduler
