@@ -9,7 +9,7 @@ Prerequisites
 2. Install `curl` for all hosts in cluster
 3. `$JAVA_HOME` needs to be set on the host running your HDFS scheduler. This can be set through setting the environment variable on the host, `export JAVA_HOME=/path/to/jre`, or specifying the environment variable in Marathon.
 
-**NOTE:** The build process current supports maven and gradle.   The gradle wrapper meta-data is included in the project and is self boot-straping (meaning it doesn't a prerequisites install).  Maven as the build system is being deprecated.
+**NOTE:** The build process current supports maven and gradle.   The gradle wrapper meta-data is included in the project and is self boot-straping (meaning it isn't a prerequisite install).  Maven as the build system is being deprecated.
 
 Building HDFS-Mesos
 --------------------------
@@ -17,9 +17,12 @@ Building HDFS-Mesos
 2. Run `./bin/build-hdfs nocompile` to skip the `gradlew clean package` step and just re-bundle the binaries.
 3. To remove the project build output and downloaded binaries, run `./bin/build-hdfs clean`
 
+**NOTE:** The build process builds the artifacts under the `$PROJ_DIR/build` directory.  A number of zip and tar files are cached under the `cache` directory for faster subsequent builds.   The tarball used for installation is hdfs-mesos-x.x.x.tgz which contains the scheduler and the executor to be distributed.
+
+
 Installing HDFS-Mesos on your Cluster
 --------------------------
-1. Upload `hdfs-mesos-*.tgz` to a node in your Mesos cluster.
+1. Upload `hdfs-mesos-*.tgz` to a node in your Mesos cluster (which is built to `$PROJ_DIR/build/hdfs-mesos-x.x.x.tgz`).
 2. Extract it with `tar zxvf hdfs-mesos-*.tgz`
 3. Customize configuration in `hdfs-mesos-*/etc/hadoop/*-site.xml`
 4. Check that `hostname` on that node resolves to a non-localhost IP; update /etc/hosts if necessary

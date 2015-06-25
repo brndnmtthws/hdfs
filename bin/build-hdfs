@@ -1,6 +1,12 @@
 #!/bin/bash
 
+# this should move out to gradle builds
+# this will create in the project/build dir the tarball to distribute
+
+VERSION="0.1.1"
 PROJ_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/..  && pwd )"
+BUILD_DIR=$PROJ_DIR/build
+BUILD_CACHE_DIR=$BUILD_DIR/cache
 
 HADOOP_VER=2.5.0-cdh5.3.1
 HADOOP_DIR=hadoop-$HADOOP_VER
@@ -10,86 +16,117 @@ IMPALA_VER=cdh5.3.1-release
 IMPALA_ZIP=$IMPALA_VER.zip
 IMPALA_URL=https://github.com/cloudera/Impala/archive/$IMPALA_ZIP
 NATIVE=native
-DIST=hdfs-mesos-0.1.1
+
+# the full distro is in the $DIST dir or $DIST.tzg
+DIST=hdfs-mesos-$VERSION
+EXECUTOR=hdfs-mesos-executor-$VERSION
 
 # Remove cached binaries and exit
 if [ "$1" == "clean" ]; then
-    rm -f $HADOOP_ZIP
-    rm -rf $HADOOP_DIR
-    rm -rf $NATIVE
-    rm -rf $DIST
-    rm -f $DIST.tgz
-    $PROJ_DIR/gradlew clean
-    exit 0
+  rm -rf $BUILD_DIR
+  $PROJ_DIR/gradlew clean
+  exit 0
 fi
 
 # Build and package hdfs-mesos project
 if [ "$1" != "nocompile" ]; then
-  $PROJ_DIR/gradlew clean shadowJar || exit
+  $PROJ_DIR/gradlew shadowJar || exit
 fi
 
 # Download hadoop binary
-if [ ! -f $HADOOP_ZIP ]; then
-    echo "Downloading $HADOOP_URL"
-    wget $HADOOP_URL || exit
+if [ ! -f $BUILD_CACHE_DIR/$HADOOP_ZIP ]; then
+  echo "Downloading $HADOOP_URL"
+  wget -P $BUILD_CACHE_DIR $HADOOP_URL || exit
 else
-    echo "($HADOOP_ZIP already exists, skipping dl)"
+  echo "($HADOOP_ZIP already exists, skipping dl)"
 fi
 
 # Extract hadoop
-if [ ! -d $HADOOP_DIR ]; then
-    echo "Extracting $HADOOP_ZIP"
-    tar xf $HADOOP_ZIP
+if [ ! -d $BUILD_CACHE_DIR/$HADOOP_DIR ]; then
+	echo $BUILD_CACHE_DIR/$HADOOP_DIR
+  echo "Extracting $HADOOP_ZIP in $BUILD_CACHE_DIR"
+	cd $BUILD_CACHE_DIR
+  tar xf $HADOOP_ZIP
+	cd -
 else
-    echo "($HADOOP_DIR already exists, skipping extract)"
+  echo "($HADOOP_DIR already exists, skipping extract)"
 fi
 
 # Get native libraries
-if [ ! -d $NATIVE ]; then
-    echo "Downloading and unpacking native libs"
-    wget $IMPALA_URL || exit
-    unzip -q $IMPALA_VER.zip
-    mkdir -p $NATIVE
-    cp Impala-$IMPALA_VER/thirdparty/$HADOOP_DIR/lib/native/lib* $NATIVE
-    rm -rf $IMPALA_VER* Impala*
+if [ ! -d $BUILD_CACHE_DIR/$NATIVE ]; then
+  echo "Downloading and unpacking native libs"
+  wget -P $BUILD_CACHE_DIR $IMPALA_URL || exit
+	cd $BUILD_CACHE_DIR
+  unzip -q $IMPALA_VER.zip
+  mkdir -p $BUILD_CACHE_DIR/$NATIVE
+  cp $BUILD_CACHE_DIR/Impala-$IMPALA_VER/thirdparty/$HADOOP_DIR/lib/native/lib* $BUILD_CACHE_DIR/$NATIVE
+  rm -rf $BUILD_CACHE_DIR/$IMPALA_VER* $BUILD_DIR/Impala*
+	cd -
 else
-    echo "($NATIVE libs already exist, skipping dl)"
+  echo "($BUILD_DIR/$NATIVE libs already exist, skipping dl)"
 fi
 
 # Create dist
-if [ ! -d $DIST ]; then
-    echo "Creating new $DIST dist folder"
-    mkdir -p $DIST
+if [ ! -d $BUILD_CACHE_DIR/$EXECUTOR ]; then
+  echo "Creating new $BUILD_CACHE_DIR/$EXECUTOR dist folder"
+  mkdir -p $BUILD_CACHE_DIR/$EXECUTOR
 else
-    echo "($DIST already exists, deleting before create)"
-    rm -rf $DIST
-    mkdir -p $DIST
+  echo "($BUILD_CACHE_DIR/$EXECUTOR already exists, deleting before create)"
+  rm -rf $BUILD_CACHE_DIR/$EXECUTOR
+  mkdir -p $BUILD_CACHE_DIR/$EXECUTOR
 fi
 
 # Copy to dist
-echo "Copying required hadoop dependencies into $DIST"
-cp -R $HADOOP_DIR/bin $DIST
-cp -R $HADOOP_DIR/etc $DIST
-cp -R $HADOOP_DIR/libexec $DIST
-mkdir -p $DIST/share/hadoop/common
-cp -R $HADOOP_DIR/share/hadoop/common/hadoop-common-$HADOOP_VER.jar $DIST/share/hadoop/common
-cp -R $HADOOP_DIR/share/hadoop/common/lib $DIST/share/hadoop/common
-mkdir -p $DIST/share/hadoop/hdfs
-cp -R $HADOOP_DIR/share/hadoop/hdfs/hadoop-hdfs-$HADOOP_VER.jar $DIST/share/hadoop/hdfs
-cp -R $HADOOP_DIR/share/hadoop/hdfs/lib $DIST/share/hadoop/hdfs
-cp -R $HADOOP_DIR/share/hadoop/hdfs/webapps $DIST/share/hadoop/hdfs
+echo "Copying required hadoop dependencies into $BUILD_DIR/$EXECUTOR"
+cp -R $BUILD_CACHE_DIR/$HADOOP_DIR/bin $BUILD_CACHE_DIR/$EXECUTOR
+cp -R $BUILD_CACHE_DIR/$HADOOP_DIR/etc $BUILD_CACHE_DIR/$EXECUTOR
+cp -R $BUILD_CACHE_DIR/$HADOOP_DIR/libexec $BUILD_CACHE_DIR/$EXECUTOR
+mkdir -p $BUILD_CACHE_DIR/$EXECUTOR/share/hadoop/common
+cp -R $BUILD_CACHE_DIR/$HADOOP_DIR/share/hadoop/common/hadoop-common-$HADOOP_VER.jar $BUILD_CACHE_DIR/$EXECUTOR/share/hadoop/common
+cp -R $BUILD_CACHE_DIR/$HADOOP_DIR/share/hadoop/common/lib $BUILD_CACHE_DIR/$EXECUTOR/share/hadoop/common
+mkdir -p $BUILD_CACHE_DIR/$EXECUTOR/share/hadoop/hdfs
+cp -R $BUILD_CACHE_DIR/$HADOOP_DIR/share/hadoop/hdfs/hadoop-hdfs-$HADOOP_VER.jar $BUILD_CACHE_DIR/$EXECUTOR/share/hadoop/hdfs
+cp -R $BUILD_CACHE_DIR/$HADOOP_DIR/share/hadoop/hdfs/lib $BUILD_CACHE_DIR/$EXECUTOR/share/hadoop/hdfs
+cp -R $BUILD_CACHE_DIR/$HADOOP_DIR/share/hadoop/hdfs/webapps $BUILD_CACHE_DIR/$EXECUTOR/share/hadoop/hdfs
 
-mkdir -p $DIST/lib/native
-cp $NATIVE/* $DIST/lib/native
+mkdir -p $BUILD_CACHE_DIR/$EXECUTOR/lib/native
+cp $BUILD_CACHE_DIR/$NATIVE/* $BUILD_CACHE_DIR/$EXECUTOR/lib/native
 
-echo "Copying build output into $DIST"
-cd $DIST
-cp ../bin/* bin/
-cp ../build/libs/*-uber.jar lib/
-cp ../conf/* etc/hadoop/
-cd ..
+echo "Copying build output into $BUILD_CACHE_DIR/$DIST"
+cd $BUILD_CACHE_DIR/$EXECUTOR
+cp $PROJ_DIR/bin/* bin/
+cp $PROJ_DIR/hdfs-executor/build/libs/*-uber.jar lib/
+cp $PROJ_DIR/conf/* etc/hadoop/
+cd -
 
 # Compress tarball
-echo "Compressing to $DIST.tgz"
-rm -f $DIST.tgz
+echo "Compressing to $EXECUTOR.tgz"
+rm -f $BUILD_CACHE_DIR/$EXECUTOR.tgz
+cd $BUILD_CACHE_DIR
+tar czf $EXECUTOR.tgz $EXECUTOR
+cd -
+
+#####  Framework / scheduler build
+
+# Create Framework dir
+if [ ! -d $BUILD_DIR/$DIST ]; then
+  echo "Creating new $BUILD_DIR/$DIST dist folder"
+  mkdir -p $BUILD_DIR/$DIST
+else
+  echo "($BUILD_DIR/$DIST already exists, deleting before create)"
+  rm -rf $BUILD_DIR/$DIST
+  mkdir -p $BUILD_DIR/$DIST
+fi
+
+# scheduler
+mkdir -p $BUILD_DIR/$DIST/bin
+cp $PROJ_DIR/bin/hdfs-mesos $BUILD_DIR/$DIST/bin
+mkdir -p $BUILD_DIR/$DIST/lib
+cp $PROJ_DIR/hdfs-scheduler/build/libs/*-uber.jar $BUILD_DIR/$DIST/lib
+cp $BUILD_CACHE_DIR/$EXECUTOR.tgz $BUILD_DIR/$DIST
+mkdir -p $BUILD_DIR/$DIST/etc/hadoop
+cp $PROJ_DIR/conf/*.xml $BUILD_DIR/$DIST/etc/hadoop
+cd $BUILD_DIR
 tar czf $DIST.tgz $DIST
+
+echo "HDFS framework build complete: $BUILD_DIR/$DIST.tgz"
