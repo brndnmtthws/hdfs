@@ -74,6 +74,4 @@ subprojects {
     testCompile "junit:junit:${junitVer}"
     testCompile "org.mockito:mockito-all:${mockitoVer}"
   }
-
-
 }

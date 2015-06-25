@@ -22,7 +22,7 @@ Building HDFS-Mesos
 
 Installing HDFS-Mesos on your Cluster
 --------------------------
-1. Upload `hdfs-mesos-*.tgz` to a node in your Mesos cluster.   (which is built to `$PROJ_DIR/build/hdfs-mesos-x.x.x.tgz`)
+1. Upload `hdfs-mesos-*.tgz` to a node in your Mesos cluster (which is built to `$PROJ_DIR/build/hdfs-mesos-x.x.x.tgz`).
 2. Extract it with `tar zxvf hdfs-mesos-*.tgz`
 3. Customize configuration in `hdfs-mesos-*/etc/hadoop/*-site.xml`
 4. Check that `hostname` on that node resolves to a non-localhost IP; update /etc/hosts if necessary
