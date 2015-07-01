@@ -92,7 +92,7 @@ public class PersistentState {
 
   private void removeDeadJournalNodes() {
     deadJournalNodeTimeStamp = null;
-    HashMap<String, String> journalNodes = getJournalNodes();
+    Map<String, String> journalNodes = getJournalNodes();
     List<String> deadJournalHosts = getDeadJournalNodes();
     for (String deadJournalHost : deadJournalHosts) {
       journalNodes.remove(deadJournalHost);
@@ -103,7 +103,7 @@ public class PersistentState {
 
   private void removeDeadNameNodes() {
     deadNameNodeTimeStamp = null;
-    HashMap<String, String> nameNodes = getNameNodes();
+    Map<String, String> nameNodes = getNameNodes();
     List<String> deadNameHosts = getDeadNameNodes();
     for (String deadNameHost : deadNameHosts) {
       nameNodes.remove(deadNameHost);
@@ -128,7 +128,7 @@ public class PersistentState {
       removeDeadJournalNodes();
       return new ArrayList<>();
     } else {
-      HashMap<String, String> journalNodes = getJournalNodes();
+      Map<String, String> journalNodes = getJournalNodes();
       Set<String> journalHosts = journalNodes.keySet();
       List<String> deadJournalHosts = new ArrayList<>();
       for (String journalHost : journalHosts) {
@@ -145,7 +145,7 @@ public class PersistentState {
       removeDeadNameNodes();
       return new ArrayList<>();
     } else {
-      HashMap<String, String> nameNodes = getNameNodes();
+      Map<String, String> nameNodes = getNameNodes();
       Set<String> nameHosts = nameNodes.keySet();
       List<String> deadNameHosts = new ArrayList<>();
       for (String nameHost : nameHosts) {
@@ -175,11 +175,11 @@ public class PersistentState {
   }
 
   // TODO (nicgrayson) add tests with in-memory state implementation for zookeeper
-  public HashMap<String, String> getJournalNodes() {
+  public Map<String, String> getJournalNodes() {
     return getHashMap(JOURNALNODES_KEY);
   }
 
-  public HashMap<String, String> getNameNodes() {
+  public Map<String, String> getNameNodes() {
     return getHashMap(NAMENODES_KEY);
   }
 
@@ -209,7 +209,7 @@ public class PersistentState {
   public void addHdfsNode(Protos.TaskID taskId, String hostname, String taskType, String taskName) {
     switch (taskType) {
       case HDFSConstants.NAME_NODE_ID:
-        HashMap<String, String> nameNodes = getNameNodes();
+        Map<String, String> nameNodes = getNameNodes();
         nameNodes.put(hostname, taskId.getValue());
         setNameNodes(nameNodes);
         HashMap<String, String> nameNodeTaskNames = getNameNodeTaskNames();
@@ -217,7 +217,7 @@ public class PersistentState {
         setNameNodeTaskNames(nameNodeTaskNames);
         break;
       case HDFSConstants.JOURNAL_NODE_ID:
-        HashMap<String, String> journalNodes = getJournalNodes();
+        Map<String, String> journalNodes = getJournalNodes();
         journalNodes.put(hostname, taskId.getValue());
         setJournalNodes(journalNodes);
         HashMap<String, String> journalNodeTaskNames = getJournalNodeTaskNames();
@@ -240,7 +240,7 @@ public class PersistentState {
   // Possibly call removeTask(slaveId, taskId) to avoid iterating through all maps
   public void removeTaskId(String taskId) {
 
-    HashMap<String, String> journalNodes = getJournalNodes();
+    Map<String, String> journalNodes = getJournalNodes();
     if (journalNodes.values().contains(taskId)) {
       for (Map.Entry<String, String> entry : journalNodes.entrySet()) {
         if (entry.getValue() != null && entry.getValue().equals(taskId)) {
@@ -256,7 +256,7 @@ public class PersistentState {
       }
     }
 
-    HashMap<String, String> nameNodes = getNameNodes();
+    Map<String, String> nameNodes = getNameNodes();
     if (nameNodes.values().contains(taskId)) {
       for (Map.Entry<String, String> entry : nameNodes.entrySet()) {
         if (entry.getValue() != null && entry.getValue().equals(taskId)) {
@@ -298,7 +298,7 @@ public class PersistentState {
     return getDataNodes().containsKey(hostname);
   }
 
-  private void setNameNodes(HashMap<String, String> nameNodes) {
+  private void setNameNodes(Map<String, String> nameNodes) {
     try {
       set(NAMENODES_KEY, nameNodes);
     } catch (Exception e) {
@@ -306,7 +306,7 @@ public class PersistentState {
     }
   }
 
-  private void setJournalNodes(HashMap<String, String> journalNodes) {
+  private void setJournalNodes(Map<String, String> journalNodes) {
     try {
       set(JOURNALNODES_KEY, journalNodes);
     } catch (Exception e) {
