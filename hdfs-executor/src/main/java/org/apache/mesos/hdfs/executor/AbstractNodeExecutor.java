@@ -17,6 +17,7 @@ import org.apache.mesos.Protos.TaskInfo;
 import org.apache.mesos.Protos.TaskState;
 import org.apache.mesos.Protos.TaskStatus;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
+import org.apache.mesos.hdfs.file.FileUtils;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 import org.apache.mesos.hdfs.util.StreamRedirect;
 
@@ -72,34 +73,13 @@ public abstract class AbstractNodeExecutor implements Executor {
   private void setUpDataDir() {
     // Create primary data dir if it does not exist
     File dataDir = new File(hdfsFrameworkConfig.getDataDir());
-    createDir(dataDir);
+    FileUtils.createDir(dataDir);
 
     // Create secondary data dir if it does not exist
     File secondaryDataDir = new File(hdfsFrameworkConfig.getSecondaryDataDir());
-    createDir(dataDir);
+    FileUtils.createDir(dataDir);
   }
 
-  private void createDir(File dataDir) {
-      if (dataDir.exists()) {
-        log.warn("data dir exits:" + dataDir);
-      } else if (!dataDir.mkdirs()) {
-        log.error("unable to create dir: " + dataDir);
-      }
-    }
-
-  /**
-   * Delete a file or directory.
-   */
-  protected void deleteFile(File fileToDelete) {
-    if (fileToDelete.isDirectory()) {
-      String[] entries = fileToDelete.list();
-      for (String entry : entries) {
-        File childFile = new File(fileToDelete.getPath(), entry);
-        deleteFile(childFile);
-      }
-    }
-    fileToDelete.delete();
-  }
 
   /**
    * Create Symbolic Link for the HDFS binary.
@@ -113,7 +93,7 @@ public abstract class AbstractNodeExecutor implements Executor {
 
       // Create mesosphere opt dir (parent dir of the symbolic link) if it does not exist
       File frameworkMountDir = new File(hdfsFrameworkConfig.getFrameworkMountPath());
-      createDir(frameworkMountDir);
+      FileUtils.createDir(frameworkMountDir);
 
       // Delete and recreate directory for symbolic link every time
       String hdfsBinaryPath = hdfsFrameworkConfig.getFrameworkMountPath()
@@ -136,7 +116,12 @@ public abstract class AbstractNodeExecutor implements Executor {
 
       // Delete the file if it exists
       if (hdfsBinaryDir.exists()) {
-        deleteFile(hdfsBinaryDir);
+        if (!FileUtils.deleteFile(hdfsBinaryDir)) {
+          final String msg = "unable to delete file: " + hdfsBinaryDir;
+          log.error(msg);
+          throw new ExecutorException(msg);
+        }
+
       }
 
       // Create symbolic link

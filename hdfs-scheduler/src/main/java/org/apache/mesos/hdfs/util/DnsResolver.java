@@ -17,6 +17,8 @@ import java.util.TimerTask;
 public class DnsResolver {
   public static final Log log = LogFactory.getLog(Scheduler.class);
 
+  static final int NN_TIMER_PERIOD = 10000;
+
   private final Scheduler scheduler;
   private final HdfsFrameworkConfig conf;
 
@@ -85,6 +87,6 @@ public class DnsResolver {
     }
     Timer timer = new Timer();
     PreNNInitTask task = new PreNNInitTask();
-    timer.scheduleAtFixedRate(task, 0, 10000);
+    timer.scheduleAtFixedRate(task, 0, NN_TIMER_PERIOD);
   }
 }

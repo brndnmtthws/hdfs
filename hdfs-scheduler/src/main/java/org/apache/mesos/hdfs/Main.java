@@ -11,6 +11,10 @@ public final class Main {
 
   private SchedulerExceptionHandler schedulerExceptionHandler = new SchedulerExceptionHandler();
 
+  // utility class
+  private Main() {
+  }
+
   public static void main(String[] args) throws Exception {
     new Main().start();
   }

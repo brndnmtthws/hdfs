@@ -1,5 +1,8 @@
 package org.apache.mesos.hdfs.util;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -7,7 +10,12 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 
+/**
+ * Can be used to redirect the STDOUT and STDERR of a started process. Used for the executors.
+ */
 public class StreamRedirect extends Thread {
+  public final Log log = LogFactory.getLog(StreamRedirect.class);
+
   InputStream stream;
   PrintStream outputStream;
 
@@ -26,7 +34,7 @@ public class StreamRedirect extends Thread {
         outputStream.println(streamLine);
       }
     } catch (IOException ioe) {
-      ioe.printStackTrace();
+      log.error("Stream redirect error", ioe);
     }
   }
 }

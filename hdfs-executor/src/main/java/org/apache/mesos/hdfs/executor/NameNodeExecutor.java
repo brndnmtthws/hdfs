@@ -13,6 +13,7 @@ import org.apache.mesos.Protos.TaskInfo;
 import org.apache.mesos.Protos.TaskState;
 import org.apache.mesos.Protos.TaskStatus;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
+import org.apache.mesos.hdfs.file.FileUtils;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 
 import java.io.File;
@@ -115,7 +116,7 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
             .format("NameNode data directory %s already exists, not formatting",
               nameDir));
       } else {
-        deleteFile(nameDir);
+        FileUtils.deleteFile(nameDir);
         if (!nameDir.mkdirs()) {
           final String errorMsg = "unable to make directory: " + nameDir;
           log.error(errorMsg);
