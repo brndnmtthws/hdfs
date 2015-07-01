@@ -72,16 +72,20 @@ public abstract class AbstractNodeExecutor implements Executor {
   private void setUpDataDir() {
     // Create primary data dir if it does not exist
     File dataDir = new File(hdfsFrameworkConfig.getDataDir());
-    if (!dataDir.exists()) {
-      dataDir.mkdirs();
-    }
+    createDir(dataDir);
 
     // Create secondary data dir if it does not exist
     File secondaryDataDir = new File(hdfsFrameworkConfig.getSecondaryDataDir());
-    if (!secondaryDataDir.exists()) {
-      secondaryDataDir.mkdirs();
-    }
+    createDir(dataDir);
   }
+
+  private void createDir(File dataDir) {
+      if (dataDir.exists()) {
+        log.warn("data dir exits:" + dataDir);
+      } else if (!dataDir.mkdirs()) {
+        log.error("unable to create dir: " + dataDir);
+      }
+    }
 
   /**
    * Delete a file or directory.
@@ -109,9 +113,7 @@ public abstract class AbstractNodeExecutor implements Executor {
 
       // Create mesosphere opt dir (parent dir of the symbolic link) if it does not exist
       File frameworkMountDir = new File(hdfsFrameworkConfig.getFrameworkMountPath());
-      if (!frameworkMountDir.exists()) {
-        frameworkMountDir.mkdirs();
-      }
+      createDir(frameworkMountDir);
 
       // Delete and recreate directory for symbolic link every time
       String hdfsBinaryPath = hdfsFrameworkConfig.getFrameworkMountPath()
