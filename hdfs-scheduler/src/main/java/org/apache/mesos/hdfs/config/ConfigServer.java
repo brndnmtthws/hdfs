@@ -28,22 +28,22 @@ public class ConfigServer {
 
   private Server server;
   private Engine engine;
-  private SchedulerConf schedulerConf;
+  private HdfsFrameworkConfig hdfsFrameworkConfig;
   private PersistentState persistentState;
 
   @Inject
-  public ConfigServer(SchedulerConf schedulerConf) throws Exception {
-    this(schedulerConf, new PersistentState(schedulerConf));
+  public ConfigServer(HdfsFrameworkConfig hdfsFrameworkConfig) throws Exception {
+    this(hdfsFrameworkConfig, new PersistentState(hdfsFrameworkConfig));
   }
 
-  public ConfigServer(SchedulerConf schedulerConf, PersistentState persistentState)
+  public ConfigServer(HdfsFrameworkConfig hdfsFrameworkConfig, PersistentState persistentState)
       throws Exception {
-    this.schedulerConf = schedulerConf;
+    this.hdfsFrameworkConfig = hdfsFrameworkConfig;
     this.persistentState = persistentState;
     engine = new Engine();
-    server = new Server(schedulerConf.getConfigServerPort());
+    server = new Server(hdfsFrameworkConfig.getConfigServerPort());
     ResourceHandler resourceHandler = new ResourceHandler();
-    resourceHandler.setResourceBase(schedulerConf.getExecutorPath());
+    resourceHandler.setResourceBase(hdfsFrameworkConfig.getExecutorPath());
     HandlerList handlers = new HandlerList();
     handlers.setHandlers(new Handler[]{
         resourceHandler, new ServeHdfsConfigHandler()});
@@ -59,7 +59,7 @@ public class ConfigServer {
     public synchronized void handle(String target, Request baseRequest, HttpServletRequest request,
         HttpServletResponse response) throws IOException {
 
-      File confFile = new File(schedulerConf.getConfigPath());
+      File confFile = new File(hdfsFrameworkConfig.getConfigPath());
 
       if (!confFile.exists()) {
         throw new FileNotFoundException("Couldn't file config file: " + confFile.getPath()
@@ -93,9 +93,9 @@ public class ConfigServer {
       }
 
       model.put("journalnodes", journalNodeString);
-      model.put("frameworkName", schedulerConf.getFrameworkName());
-      model.put("dataDir", schedulerConf.getDataDir());
-      model.put("haZookeeperQuorum", schedulerConf.getHaZookeeperQuorum());
+      model.put("frameworkName", hdfsFrameworkConfig.getFrameworkName());
+      model.put("dataDir", hdfsFrameworkConfig.getDataDir());
+      model.put("haZookeeperQuorum", hdfsFrameworkConfig.getHaZookeeperQuorum());
 
       content = engine.transform(content, model);
 

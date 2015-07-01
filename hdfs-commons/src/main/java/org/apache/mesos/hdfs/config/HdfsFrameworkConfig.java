@@ -10,13 +10,13 @@ import java.net.UnknownHostException;
 import java.util.Properties;
 
 @Singleton
-public class SchedulerConf extends Configured {
+public class HdfsFrameworkConfig extends Configured {
 
-  public SchedulerConf(Configuration conf) {
+  public HdfsFrameworkConfig(Configuration conf) {
     setConf(conf);
   }
 
-  public SchedulerConf() {
+  public HdfsFrameworkConfig() {
     // The path is configurable via the mesos.conf.path system property
     // so it can be changed when starting up the scheduler via bash
     Properties props = System.getProperties();

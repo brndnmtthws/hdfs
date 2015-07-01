@@ -9,7 +9,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.MesosNativeLibrary;
 import org.apache.mesos.Protos;
 import org.apache.mesos.Protos.FrameworkID;
-import org.apache.mesos.hdfs.config.SchedulerConf;
+import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 import org.apache.mesos.state.Variable;
 import org.apache.mesos.state.ZooKeeperState;
@@ -41,7 +41,7 @@ public class PersistentState {
   private static final String NAMENODE_TASKNAMES_KEY = "nameNodeTaskNames";
   private static final String JOURNALNODE_TASKNAMES_KEY = "journalNodeTaskNames";
   private ZooKeeperState zkState;
-  private SchedulerConf conf;
+  private HdfsFrameworkConfig conf;
   // TODO (elingg) we need to also track ZKFC's state
 
   private Timestamp deadJournalNodeTimeStamp = null;
@@ -49,7 +49,7 @@ public class PersistentState {
   private Timestamp deadDataNodeTimeStamp = null;
 
   @Inject
-  public PersistentState(SchedulerConf conf) {
+  public PersistentState(HdfsFrameworkConfig conf) {
     MesosNativeLibrary.load(conf.getNativeLibrary());
     this.zkState = new ZooKeeperState(conf.getStateZkServers(),
         conf.getStateZkTimeout(), TimeUnit.MILLISECONDS, "/hdfs-mesos/" + conf.getFrameworkName());

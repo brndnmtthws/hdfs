@@ -12,7 +12,7 @@ import org.apache.mesos.Protos.TaskID;
 import org.apache.mesos.Protos.TaskInfo;
 import org.apache.mesos.Protos.TaskState;
 import org.apache.mesos.Protos.TaskStatus;
-import org.apache.mesos.hdfs.config.SchedulerConf;
+import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 
 import java.io.File;
@@ -32,8 +32,8 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
    * The constructor for the primary name node which saves the configuration.
    */
   @Inject
-  NameNodeExecutor(SchedulerConf schedulerConf) {
-    super(schedulerConf);
+  NameNodeExecutor(HdfsFrameworkConfig hdfsFrameworkConfig) {
+    super(hdfsFrameworkConfig);
   }
 
   /**
@@ -106,7 +106,7 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
   public void frameworkMessage(ExecutorDriver driver, byte[] msg) {
     super.frameworkMessage(driver, msg);
     String messageStr = new String(msg);
-    File nameDir = new File(schedulerConf.getDataDir() + "/name");
+    File nameDir = new File(hdfsFrameworkConfig.getDataDir() + "/name");
     if (messageStr.equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)
         || messageStr.equals(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE)) {
       if (nameDir.exists() && messageStr.equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)) {

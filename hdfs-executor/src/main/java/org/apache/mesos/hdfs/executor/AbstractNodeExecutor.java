@@ -16,7 +16,7 @@ import org.apache.mesos.Protos.Status;
 import org.apache.mesos.Protos.TaskInfo;
 import org.apache.mesos.Protos.TaskState;
 import org.apache.mesos.Protos.TaskStatus;
-import org.apache.mesos.hdfs.config.SchedulerConf;
+import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 import org.apache.mesos.hdfs.util.StreamRedirect;
 
@@ -32,14 +32,14 @@ public abstract class AbstractNodeExecutor implements Executor {
 
   public static final Log log = LogFactory.getLog(AbstractNodeExecutor.class);
   protected ExecutorInfo executorInfo;
-  protected SchedulerConf schedulerConf;
+  protected HdfsFrameworkConfig hdfsFrameworkConfig;
 
   /**
    * Constructor which takes in configuration.
    */
   @Inject
-  AbstractNodeExecutor(SchedulerConf schedulerConf) {
-    this.schedulerConf = schedulerConf;
+  AbstractNodeExecutor(HdfsFrameworkConfig hdfsFrameworkConfig) {
+    this.hdfsFrameworkConfig = hdfsFrameworkConfig;
   }
 
   /**
@@ -60,7 +60,7 @@ public abstract class AbstractNodeExecutor implements Executor {
       FrameworkInfo frameworkInfo, SlaveInfo slaveInfo) {
     // Set up data dir
     setUpDataDir();
-    if (!schedulerConf.usingNativeHadoopBinaries())
+    if (!hdfsFrameworkConfig.usingNativeHadoopBinaries())
       createSymbolicLink();
     log.info("Executor registered with the slave");
   }
@@ -70,13 +70,13 @@ public abstract class AbstractNodeExecutor implements Executor {
    */
   private void setUpDataDir() {
     // Create primary data dir if it does not exist
-    File dataDir = new File(schedulerConf.getDataDir());
+    File dataDir = new File(hdfsFrameworkConfig.getDataDir());
     if (!dataDir.exists()) {
       dataDir.mkdirs();
     }
 
     // Create secondary data dir if it does not exist
-    File secondaryDataDir = new File(schedulerConf.getSecondaryDataDir());
+    File secondaryDataDir = new File(hdfsFrameworkConfig.getSecondaryDataDir());
     if (!secondaryDataDir.exists()) {
       secondaryDataDir.mkdirs();
     }
@@ -107,13 +107,13 @@ public abstract class AbstractNodeExecutor implements Executor {
       Path sandboxHdfsBinaryPath = Paths.get(sandboxHdfsBinary.getAbsolutePath());
 
       // Create mesosphere opt dir (parent dir of the symbolic link) if it does not exist
-      File frameworkMountDir = new File(schedulerConf.getFrameworkMountPath());
+      File frameworkMountDir = new File(hdfsFrameworkConfig.getFrameworkMountPath());
       if (!frameworkMountDir.exists()) {
         frameworkMountDir.mkdirs();
       }
 
       // Delete and recreate directory for symbolic link every time
-      String hdfsBinaryPath = schedulerConf.getFrameworkMountPath()
+      String hdfsBinaryPath = hdfsFrameworkConfig.getFrameworkMountPath()
           + "/" + HDFSConstants.HDFS_BINARY_DIR;
       File hdfsBinaryDir = new File(hdfsBinaryPath);
 
@@ -155,7 +155,7 @@ public abstract class AbstractNodeExecutor implements Executor {
    * Mesos slave packaging.
    */
   private void addBinaryToPath(String hdfsBinaryPath) throws IOException, InterruptedException {
-    if (schedulerConf.usingNativeHadoopBinaries())
+    if (hdfsFrameworkConfig.usingNativeHadoopBinaries())
       return;
     String pathEnvVarLocation = "/usr/bin/hadoop";
     String scriptContent = "#!/bin/bash \n" + hdfsBinaryPath + "/bin/hadoop \"$@\"";
@@ -197,7 +197,7 @@ public abstract class AbstractNodeExecutor implements Executor {
    * Reloads the cluster configuration so the executor has the correct configuration info.
    */
   protected void reloadConfig() {
-    if (schedulerConf.usingNativeHadoopBinaries()) return;
+    if (hdfsFrameworkConfig.usingNativeHadoopBinaries()) return;
     // Find config URI
     String configUri = "";
     for (CommandInfo.URI uri : executorInfo.getCommand().getUrisList()) {

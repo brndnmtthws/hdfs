@@ -24,7 +24,7 @@ import org.apache.mesos.Protos.TaskState;
 import org.apache.mesos.Protos.TaskStatus;
 import org.apache.mesos.Protos.Value;
 import org.apache.mesos.SchedulerDriver;
-import org.apache.mesos.hdfs.config.SchedulerConf;
+import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
 import org.apache.mesos.hdfs.state.AcquisitionPhase;
 import org.apache.mesos.hdfs.state.LiveState;
 import org.apache.mesos.hdfs.state.PersistentState;
@@ -45,13 +45,13 @@ import java.util.concurrent.ExecutionException;
 public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
   public static final Log log = LogFactory.getLog(Scheduler.class);
-  private final SchedulerConf conf;
+  private final HdfsFrameworkConfig conf;
   private final LiveState liveState;
   private final PersistentState persistentState;
   private final DnsResolver dnsResolver;
 
   @Inject
-  public Scheduler(SchedulerConf conf, LiveState liveState, PersistentState persistentState) {
+  public Scheduler(HdfsFrameworkConfig conf, LiveState liveState, PersistentState persistentState) {
     this.conf = conf;
     this.liveState = liveState;
     this.persistentState = persistentState;
