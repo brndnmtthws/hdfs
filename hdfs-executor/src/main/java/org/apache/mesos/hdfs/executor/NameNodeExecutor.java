@@ -111,10 +111,14 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
       if (nameDir.exists() && messageStr.equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)) {
         log.info(String
             .format("NameNode data directory %s already exists, not formatting",
-                nameDir));
+              nameDir));
       } else {
         deleteFile(nameDir);
-        nameDir.mkdirs();
+        if (!nameDir.mkdirs()) {
+          final String errorMsg = "unable to make directory: " + nameDir;
+          log.error(errorMsg);
+          throw new ExecutorException(errorMsg);
+        }
         runCommand(driver, nameNodeTask, "bin/hdfs-mesos-namenode " + messageStr);
       }
       startProcess(driver, nameNodeTask);
