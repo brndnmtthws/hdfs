@@ -178,14 +178,14 @@ public abstract class AbstractNodeExecutor implements Executor {
    */
   protected void startProcess(ExecutorDriver driver, Task task) {
     reloadConfig();
-    if (task.process == null) {
+    if (task.getProcess() == null) {
       try {
-        ProcessBuilder processBuilder = new ProcessBuilder("sh", "-c", task.cmd);
-        task.process = processBuilder.start();
-        redirectProcess(task.process);
+        ProcessBuilder processBuilder = new ProcessBuilder("sh", "-c", task.getCmd());
+        task.setProcess(processBuilder.start());
+        redirectProcess(task.getProcess());
       } catch (IOException e) {
         log.error(e);
-        task.process.destroy();
+        task.getProcess().destroy();
         sendTaskFailed(driver, task);
       }
     } else {
@@ -252,15 +252,15 @@ public abstract class AbstractNodeExecutor implements Executor {
         log.info("Finished running command, exited with status " + exitCode);
       } else {
         log.error("Unable to run command: " + command);
-        if (task.process != null) {
-          task.process.destroy();
+        if (task.getProcess() != null) {
+          task.getProcess().destroy();
         }
         sendTaskFailed(driver, task);
       }
     } catch (InterruptedException | IOException e) {
       log.error(e);
-      if (task.process != null) {
-        task.process.destroy();
+      if (task.getProcess() != null) {
+        task.getProcess().destroy();
       }
       sendTaskFailed(driver, task);
     }
@@ -276,7 +276,7 @@ public abstract class AbstractNodeExecutor implements Executor {
    */
   private void sendTaskFailed(ExecutorDriver driver, Task task) {
     driver.sendStatusUpdate(TaskStatus.newBuilder()
-        .setTaskId(task.taskInfo.getTaskId())
+        .setTaskId(task.getTaskInfo().getTaskId())
         .setState(TaskState.TASK_FAILED)
         .build());
   }
@@ -303,19 +303,4 @@ public abstract class AbstractNodeExecutor implements Executor {
     log.error(this.getClass().getName() + ".error: " + message);
   }
 
-  /**
-   * The task class for use within the executor
-   */
-  public class Task {
-    public TaskInfo taskInfo;
-    public String cmd;
-    public Process process;
-
-    Task(TaskInfo taskInfo) {
-      this.taskInfo = taskInfo;
-      this.cmd = taskInfo.getData().toStringUtf8();
-      log.info(String.format("Launching task, taskId=%s cmd='%s'", taskInfo.getTaskId().getValue(),
-          cmd));
-    }
-  }
 }

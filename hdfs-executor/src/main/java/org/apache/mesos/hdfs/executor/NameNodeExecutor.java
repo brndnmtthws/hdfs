@@ -54,16 +54,17 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
   public void launchTask(final ExecutorDriver driver, final TaskInfo taskInfo) {
     executorInfo = taskInfo.getExecutor();
     Task task = new Task(taskInfo);
+    log.info(String.format("Launching task, taskId=%s cmd='%s'", taskInfo.getTaskId().getValue(), task.getCmd()));
     if (taskInfo.getTaskId().getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
       nameNodeTask = task;
       driver.sendStatusUpdate(TaskStatus.newBuilder()
-          .setTaskId(nameNodeTask.taskInfo.getTaskId())
+          .setTaskId(nameNodeTask.getTaskInfo().getTaskId())
           .setState(TaskState.TASK_RUNNING)
           .build());
     } else if (taskInfo.getTaskId().getValue().contains(HDFSConstants.ZKFC_NODE_ID)) {
       zkfcNodeTask = task;
       driver.sendStatusUpdate(TaskStatus.newBuilder()
-          .setTaskId(zkfcNodeTask.taskInfo.getTaskId())
+          .setTaskId(zkfcNodeTask.getTaskInfo().getTaskId())
           .setState(TaskState.TASK_RUNNING)
           .build());
     }
@@ -79,9 +80,9 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
       task = zkfcNodeTask;
     }
 
-    if (task != null && task.process != null) {
-      task.process.destroy();
-      task.process = null;
+    if (task != null && task.getProcess() != null) {
+      task.getProcess().destroy();
+      task.setProcess(null);
     }
     driver.sendStatusUpdate(TaskStatus.newBuilder()
         .setTaskId(taskId)
@@ -94,10 +95,10 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
     // TODO(elingg) let's shut down the driver more gracefully
     log.info("Executor asked to shutdown");
     if (nameNodeTask != null) {
-      killTask(d, nameNodeTask.taskInfo.getTaskId());
+      killTask(d, nameNodeTask.getTaskInfo().getTaskId());
     }
     if (zkfcNodeTask != null) {
-      killTask(d, zkfcNodeTask.taskInfo.getTaskId());
+      killTask(d, zkfcNodeTask.getTaskInfo().getTaskId());
     }
   }
 
@@ -124,7 +125,7 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
       startProcess(driver, nameNodeTask);
       startProcess(driver, zkfcNodeTask);
       driver.sendStatusUpdate(TaskStatus.newBuilder()
-          .setTaskId(nameNodeTask.taskInfo.getTaskId())
+          .setTaskId(nameNodeTask.getTaskInfo().getTaskId())
           .setState(TaskState.TASK_RUNNING)
           .setMessage(messageStr)
           .build());
