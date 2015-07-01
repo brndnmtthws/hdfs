@@ -265,7 +265,7 @@ public class HdfsFrameworkConfig {
     if (configServerPortString == null) {
       configServerPortString = getConf().get("mesos.hdfs.config.server.port", "8765");
     }
-    return Integer.valueOf(configServerPortString);
+    return Integer.parseInt(configServerPortString);
   }
 
   public int getReconciliationTimeout() {
