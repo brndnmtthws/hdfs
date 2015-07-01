@@ -24,6 +24,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -294,7 +295,7 @@ public abstract class AbstractNodeExecutor implements Executor {
   @Override
   public void frameworkMessage(ExecutorDriver driver, byte[] msg) {
     reloadConfig();
-    String messageStr = new String(msg);
+    String messageStr = new String(msg, Charset.defaultCharset());
     log.info("Executor received framework message: " + messageStr);
   }
 

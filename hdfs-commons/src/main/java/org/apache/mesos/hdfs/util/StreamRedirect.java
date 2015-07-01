@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.nio.charset.Charset;
 
 public class StreamRedirect extends Thread {
   InputStream stream;
@@ -17,7 +18,7 @@ public class StreamRedirect extends Thread {
 
   public void run() {
     try {
-      InputStreamReader streamReader = new InputStreamReader(stream);
+      InputStreamReader streamReader = new InputStreamReader(stream, Charset.defaultCharset());
       BufferedReader streamBuffer = new BufferedReader(streamReader);
 
       String streamLine = null;
