@@ -92,8 +92,10 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     try {
       persistentState.setFrameworkId(frameworkId);
     } catch (InterruptedException | ExecutionException e) {
-      log.error("Error setting framework id in persistent state", e);
-      throw new SchedulerException(e);
+      // these are zk exceptions... we are unable to maintain state.
+      final String msg = "Error setting framework id in persistent state";
+      log.error(msg, e);
+      throw new SchedulerException(msg);
     }
     log.info("Registered framework frameworkId=" + frameworkId.getValue());
     // reconcile tasks upon registration
@@ -252,8 +254,9 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         frameworkInfo.setId(frameworkID);
       }
     } catch (InterruptedException | ExecutionException | InvalidProtocolBufferException e) {
-      log.error("Error recovering framework id", e);
-      throw new SchedulerException(e);
+      final String msg = "Error recovering framework id";
+      log.error(msg, e);
+      throw new SchedulerException(msg);
     }
 
     MesosSchedulerDriver driver = new MesosSchedulerDriver(this, frameworkInfo.build(),
