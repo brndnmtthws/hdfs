@@ -45,6 +45,9 @@ import java.util.concurrent.ExecutionException;
 public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
   public static final Log log = LogFactory.getLog(Scheduler.class);
+
+  private static final int SECONDS_FROM_MILLIS = 1000;
+
   private final HdfsFrameworkConfig frameworkConfig;
   private final LiveState liveState;
   private final PersistentState persistentState;
@@ -601,7 +604,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     // different slaves to reregister upon master failover.
     driver.reconcileTasks(Collections.<Protos.TaskStatus>emptyList());
     Timer timer = new Timer();
-    timer.schedule(new ReconcileStateTask(), frameworkConfig.getReconciliationTimeout() * 1000);
+    timer.schedule(new ReconcileStateTask(), frameworkConfig.getReconciliationTimeout() * SECONDS_FROM_MILLIS);
   }
 
   private class ReconcileStateTask extends TimerTask {
