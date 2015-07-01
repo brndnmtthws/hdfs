@@ -41,7 +41,7 @@ public class PersistentState {
   private static final String NAMENODE_TASKNAMES_KEY = "nameNodeTaskNames";
   private static final String JOURNALNODE_TASKNAMES_KEY = "journalNodeTaskNames";
   private ZooKeeperState zkState;
-  private HdfsFrameworkConfig conf;
+  private HdfsFrameworkConfig frameworkConfig;
   // TODO (elingg) we need to also track ZKFC's state
 
   private Timestamp deadJournalNodeTimeStamp = null;
@@ -49,11 +49,11 @@ public class PersistentState {
   private Timestamp deadDataNodeTimeStamp = null;
 
   @Inject
-  public PersistentState(HdfsFrameworkConfig conf) {
-    MesosNativeLibrary.load(conf.getNativeLibrary());
-    this.zkState = new ZooKeeperState(conf.getStateZkServers(),
-        conf.getStateZkTimeout(), TimeUnit.MILLISECONDS, "/hdfs-mesos/" + conf.getFrameworkName());
-    this.conf = conf;
+  public PersistentState(HdfsFrameworkConfig frameworkConfig) {
+    MesosNativeLibrary.load(frameworkConfig.getNativeLibrary());
+    this.zkState = new ZooKeeperState(frameworkConfig.getStateZkServers(),
+        frameworkConfig.getStateZkTimeout(), TimeUnit.MILLISECONDS, "/hdfs-mesos/" + frameworkConfig.getFrameworkName());
+    this.frameworkConfig = frameworkConfig;
     resetDeadNodeTimeStamps();
   }
 
@@ -75,7 +75,7 @@ public class PersistentState {
   }
 
   private void resetDeadNodeTimeStamps() {
-    Date date = DateUtils.addSeconds(new Date(), conf.getDeadNodeTimeout());
+    Date date = DateUtils.addSeconds(new Date(), frameworkConfig.getDeadNodeTimeout());
 
     if (getDeadJournalNodes().size() > 0) {
       deadJournalNodeTimeStamp = new Timestamp(date.getTime());
@@ -249,7 +249,7 @@ public class PersistentState {
           HashMap<String, String> journalNodeTaskNames = getJournalNodeTaskNames();
           journalNodeTaskNames.remove(taskId);
           setJournalNodeTaskNames(journalNodeTaskNames);
-          Date date = DateUtils.addSeconds(new Date(), conf.getDeadNodeTimeout());
+          Date date = DateUtils.addSeconds(new Date(), frameworkConfig.getDeadNodeTimeout());
           deadJournalNodeTimeStamp = new Timestamp(date.getTime());
           return;
         }
@@ -265,7 +265,7 @@ public class PersistentState {
           HashMap<String, String> nameNodeTaskNames = getNameNodeTaskNames();
           nameNodeTaskNames.remove(taskId);
           setNameNodeTaskNames(nameNodeTaskNames);
-          Date date = DateUtils.addSeconds(new Date(), conf.getDeadNodeTimeout());
+          Date date = DateUtils.addSeconds(new Date(), frameworkConfig.getDeadNodeTimeout());
           deadNameNodeTimeStamp = new Timestamp(date.getTime());
           return;
         }
@@ -278,7 +278,7 @@ public class PersistentState {
         if (entry.getValue() != null && entry.getValue().equals(taskId)) {
           dataNodes.put(entry.getKey(), null);
           setDataNodes(dataNodes);
-          Date date = DateUtils.addSeconds(new Date(), conf.getDeadNodeTimeout());
+          Date date = DateUtils.addSeconds(new Date(), frameworkConfig.getDeadNodeTimeout());
           deadDataNodeTimeStamp = new Timestamp(date.getTime());
           return;
         }

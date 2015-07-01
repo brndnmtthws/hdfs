@@ -45,17 +45,17 @@ import java.util.concurrent.ExecutionException;
 public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
   public static final Log log = LogFactory.getLog(Scheduler.class);
-  private final HdfsFrameworkConfig conf;
+  private final HdfsFrameworkConfig frameworkConfig;
   private final LiveState liveState;
   private final PersistentState persistentState;
   private final DnsResolver dnsResolver;
 
   @Inject
-  public Scheduler(HdfsFrameworkConfig conf, LiveState liveState, PersistentState persistentState) {
-    this.conf = conf;
+  public Scheduler(HdfsFrameworkConfig frameworkConfig, LiveState liveState, PersistentState persistentState) {
+    this.frameworkConfig = frameworkConfig;
     this.liveState = liveState;
     this.persistentState = persistentState;
-    this.dnsResolver = new DnsResolver(this, conf);
+    this.dnsResolver = new DnsResolver(this, frameworkConfig);
   }
 
   @Override
@@ -137,7 +137,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
         case RECONCILING_TASKS:
           break;
         case JOURNAL_NODES:
-          if (liveState.getJournalNodeSize() == conf.getJournalNodeCount()) {
+          if (liveState.getJournalNodeSize() == frameworkConfig.getJournalNodeCount()) {
             // TODO (elingg) move the reload to correctCurrentPhase and make it idempotent
             reloadConfigsOnAllRunningTasks(driver);
             correctCurrentPhase();
@@ -240,10 +240,10 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   @Override
   public void run() {
     FrameworkInfo.Builder frameworkInfo = FrameworkInfo.newBuilder()
-        .setName(conf.getFrameworkName())
-        .setFailoverTimeout(conf.getFailoverTimeout())
-        .setUser(conf.getHdfsUser())
-        .setRole(conf.getHdfsRole())
+        .setName(frameworkConfig.getFrameworkName())
+        .setFailoverTimeout(frameworkConfig.getFailoverTimeout())
+        .setUser(frameworkConfig.getHdfsUser())
+        .setRole(frameworkConfig.getHdfsRole())
         .setCheckpoint(true);
 
     try {
@@ -257,7 +257,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     }
 
     MesosSchedulerDriver driver = new MesosSchedulerDriver(this, frameworkInfo.build(),
-        conf.getMesosMasterUri());
+        frameworkConfig.getMesosMasterUri());
     driver.run();
   }
 
@@ -313,7 +313,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     }
     if (taskType.equals(HDFSConstants.JOURNAL_NODE_ID)) {
       Collection<String> journalNodeTaskNames = persistentState.getJournalNodeTaskNames().values();
-      for (int i = 1; i <= conf.getJournalNodeCount(); i++) {
+      for (int i = 1; i <= frameworkConfig.getJournalNodeCount(); i++) {
         if (!journalNodeTaskNames.contains(HDFSConstants.JOURNAL_NODE_ID + i)) {
           return HDFSConstants.JOURNAL_NODE_ID + i;
         }
@@ -327,7 +327,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
   private ExecutorInfo createExecutor(String taskIdName, String nodeName, String executorName,
       List<Resource> resources) {
-    int confServerPort = conf.getConfigServerPort();
+    int confServerPort = frameworkConfig.getConfigServerPort();
     return ExecutorInfo
         .newBuilder()
         .setName(nodeName + " executor")
@@ -341,14 +341,14 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
                         CommandInfo.URI
                             .newBuilder()
                             .setValue(
-                                String.format("http://%s:%d/%s", conf.getFrameworkHostAddress(),
+                                String.format("http://%s:%d/%s", frameworkConfig.getFrameworkHostAddress(),
                                     confServerPort,
                                     HDFSConstants.HDFS_BINARY_FILE_NAME))
                             .build(),
                         CommandInfo.URI
                             .newBuilder()
                             .setValue(
-                                String.format("http://%s:%d/%s", conf.getFrameworkHostAddress(),
+                                String.format("http://%s:%d/%s", frameworkConfig.getFrameworkHostAddress(),
                                     confServerPort,
                                     HDFSConstants.HDFS_CONFIG_FILE_NAME))
                             .build()))
@@ -356,22 +356,22 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
                     .addAllVariables(Arrays.asList(
                         Environment.Variable.newBuilder()
                             .setName("HADOOP_OPTS")
-                            .setValue(conf.getJvmOpts()).build(),
+                            .setValue(frameworkConfig.getJvmOpts()).build(),
                         Environment.Variable.newBuilder()
                             .setName("HADOOP_HEAPSIZE")
-                            .setValue(String.format("%d", conf.getHadoopHeapSize())).build(),
+                            .setValue(String.format("%d", frameworkConfig.getHadoopHeapSize())).build(),
                         Environment.Variable.newBuilder()
                             .setName("HADOOP_NAMENODE_OPTS")
-                            .setValue("-Xmx" + conf.getNameNodeHeapSize()
-                                + "m -Xms" + conf.getNameNodeHeapSize() + "m").build(),
+                            .setValue("-Xmx" + frameworkConfig.getNameNodeHeapSize()
+                                + "m -Xms" + frameworkConfig.getNameNodeHeapSize() + "m").build(),
                         Environment.Variable.newBuilder()
                             .setName("HADOOP_DATANODE_OPTS")
-                            .setValue("-Xmx" + conf.getDataNodeHeapSize()
-                                + "m -Xms" + conf.getDataNodeHeapSize() + "m").build(),
+                            .setValue("-Xmx" + frameworkConfig.getDataNodeHeapSize()
+                                + "m -Xms" + frameworkConfig.getDataNodeHeapSize() + "m").build(),
                         Environment.Variable.newBuilder()
                             .setName("EXECUTOR_OPTS")
-                            .setValue("-Xmx" + conf.getExecutorHeap()
-                                + "m -Xms" + conf.getExecutorHeap() + "m").build())))
+                            .setValue("-Xmx" + frameworkConfig.getExecutorHeap()
+                                + "m -Xms" + frameworkConfig.getExecutorHeap() + "m").build())))
                 .setValue(
                     "env ; cd hdfs-mesos-* && "
                         + "exec `if [ -z \"$JAVA_HOME\" ]; then echo java; "
@@ -384,42 +384,42 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
   private List<Resource> getExecutorResources() {
     return Arrays.asList(
-        Resource.newBuilder()
-            .setName("cpus")
-            .setType(Value.Type.SCALAR)
-            .setScalar(Value.Scalar.newBuilder()
-                .setValue(conf.getExecutorCpus()).build())
-            .setRole(conf.getHdfsRole())
-            .build(),
-        Resource.newBuilder()
-            .setName("mem")
-            .setType(Value.Type.SCALAR)
-            .setScalar(Value.Scalar.newBuilder()
-                .setValue(conf.getExecutorHeap() * conf.getJvmOverhead()).build())
-            .setRole(conf.getHdfsRole())
-            .build());
+      Resource.newBuilder()
+        .setName("cpus")
+        .setType(Value.Type.SCALAR)
+        .setScalar(Value.Scalar.newBuilder()
+          .setValue(frameworkConfig.getExecutorCpus()).build())
+        .setRole(frameworkConfig.getHdfsRole())
+        .build(),
+      Resource.newBuilder()
+        .setName("mem")
+        .setType(Value.Type.SCALAR)
+        .setScalar(Value.Scalar.newBuilder()
+          .setValue(frameworkConfig.getExecutorHeap() * frameworkConfig.getJvmOverhead()).build())
+        .setRole(frameworkConfig.getHdfsRole())
+        .build());
   }
 
   private List<Resource> getTaskResources(String taskName) {
     return Arrays.asList(
-        Resource.newBuilder()
-            .setName("cpus")
-            .setType(Value.Type.SCALAR)
-            .setScalar(Value.Scalar.newBuilder()
-                .setValue(conf.getTaskCpus(taskName)).build())
-            .setRole(conf.getHdfsRole())
-            .build(),
-        Resource.newBuilder()
-            .setName("mem")
-            .setType(Value.Type.SCALAR)
-            .setScalar(Value.Scalar.newBuilder()
-                .setValue(conf.getTaskHeapSize(taskName) * conf.getJvmOverhead()).build())
-            .setRole(conf.getHdfsRole())
-            .build());
+      Resource.newBuilder()
+        .setName("cpus")
+        .setType(Value.Type.SCALAR)
+        .setScalar(Value.Scalar.newBuilder()
+          .setValue(frameworkConfig.getTaskCpus(taskName)).build())
+        .setRole(frameworkConfig.getHdfsRole())
+        .build(),
+      Resource.newBuilder()
+        .setName("mem")
+        .setType(Value.Type.SCALAR)
+        .setScalar(Value.Scalar.newBuilder()
+          .setValue(frameworkConfig.getTaskHeapSize(taskName) * frameworkConfig.getJvmOverhead()).build())
+        .setRole(frameworkConfig.getHdfsRole())
+        .build());
   }
 
   private boolean tryToLaunchJournalNode(SchedulerDriver driver, Offer offer) {
-    if (offerNotEnoughResources(offer, conf.getJournalNodeCpus(), conf.getJournalNodeHeapSize())) {
+    if (offerNotEnoughResources(offer, frameworkConfig.getJournalNodeCpus(), frameworkConfig.getJournalNodeHeapSize())) {
       log.info("Offer does not have enough resources");
       return false;
     }
@@ -430,8 +430,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     log.info(deadJournalNodes);
 
     if (deadJournalNodes.isEmpty()) {
-      if (persistentState.getJournalNodes().size() == conf.getJournalNodeCount()) {
-        log.info(String.format("Already running %s journalnodes", conf.getJournalNodeCount()));
+      if (persistentState.getJournalNodes().size() == frameworkConfig.getJournalNodeCount()) {
+        log.info(String.format("Already running %s journalnodes", frameworkConfig.getJournalNodeCount()));
       } else if (persistentState.journalNodeRunningOnSlave(offer.getHostname())) {
         log.info(String.format("Already running journalnode on %s", offer.getHostname()));
       } else if (persistentState.dataNodeRunningOnSlave(offer.getHostname())) {
@@ -456,8 +456,8 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
   private boolean tryToLaunchNameNode(SchedulerDriver driver, Offer offer) {
     if (offerNotEnoughResources(offer,
-        (conf.getNameNodeCpus() + conf.getZkfcCpus()),
-        (conf.getNameNodeHeapSize() + conf.getZkfcHeapSize()))) {
+      (frameworkConfig.getNameNodeCpus() + frameworkConfig.getZkfcCpus()),
+      (frameworkConfig.getNameNodeHeapSize() + frameworkConfig.getZkfcHeapSize()))) {
       log.info("Offer does not have enough resources");
       return false;
     }
@@ -493,7 +493,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   }
 
   private boolean tryToLaunchDataNode(SchedulerDriver driver, Offer offer) {
-    if (offerNotEnoughResources(offer, conf.getDataNodeCpus(), conf.getDataNodeHeapSize())) {
+    if (offerNotEnoughResources(offer, frameworkConfig.getDataNodeCpus(), frameworkConfig.getDataNodeHeapSize())) {
       log.info("Offer does not have enough resources");
       return false;
     }
@@ -555,7 +555,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   }
 
   private void reloadConfigsOnAllRunningTasks(SchedulerDriver driver) {
-    if (conf.usingNativeHadoopBinaries())
+    if (frameworkConfig.usingNativeHadoopBinaries())
       return;
     for (Protos.TaskStatus taskStatus : liveState.getRunningTasks().values()) {
       sendMessageTo(driver, taskStatus.getTaskId(), taskStatus.getSlaveId(),
@@ -564,7 +564,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   }
 
   private void correctCurrentPhase() {
-    if (liveState.getJournalNodeSize() < conf.getJournalNodeCount()) {
+    if (liveState.getJournalNodeSize() < frameworkConfig.getJournalNodeCount()) {
       liveState.transitionTo(AcquisitionPhase.JOURNAL_NODES);
     } else if (liveState.getNameNodeSize() < HDFSConstants.TOTAL_NAME_NODES) {
       liveState.transitionTo(AcquisitionPhase.START_NAME_NODES);
@@ -579,12 +579,12 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   private boolean offerNotEnoughResources(Offer offer, double cpus, int mem) {
     for (Resource offerResource : offer.getResourcesList()) {
       if (offerResource.getName().equals("cpus") &&
-          cpus + conf.getExecutorCpus() > offerResource.getScalar().getValue()) {
+          cpus + frameworkConfig.getExecutorCpus() > offerResource.getScalar().getValue()) {
         return true;
       }
       if (offerResource.getName().equals("mem") &&
-          ((mem * conf.getJvmOverhead())
-              + (conf.getExecutorHeap() * conf.getJvmOverhead())
+          ((mem * frameworkConfig.getJvmOverhead())
+              + (frameworkConfig.getExecutorHeap() * frameworkConfig.getJvmOverhead())
               > offerResource.getScalar().getValue())) {
         return true;
       }
@@ -598,7 +598,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     // different slaves to reregister upon master failover.
     driver.reconcileTasks(Collections.<Protos.TaskStatus>emptyList());
     Timer timer = new Timer();
-    timer.schedule(new ReconcileStateTask(), conf.getReconciliationTimeout() * 1000);
+    timer.schedule(new ReconcileStateTask(), frameworkConfig.getReconciliationTimeout() * 1000);
   }
 
   private class ReconcileStateTask extends TimerTask {
