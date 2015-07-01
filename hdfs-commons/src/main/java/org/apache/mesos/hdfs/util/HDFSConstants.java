@@ -33,4 +33,6 @@ public class HDFSConstants {
   // HDFS Config File Name
   public static final String HDFS_CONFIG_FILE_NAME = "hdfs-site.xml";
 
+  private HDFSConstants() {
+  }
 }
