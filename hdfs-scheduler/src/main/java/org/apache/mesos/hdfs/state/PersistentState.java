@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 
 @Singleton
 public class PersistentState {
-  public static final Log log = LogFactory.getLog(PersistentState.class);
+  private final Log log = LogFactory.getLog(PersistentState.class);
   private static final String FRAMEWORK_ID_KEY = "frameworkId";
   private static final String NAMENODES_KEY = "nameNodes";
   private static final String JOURNALNODES_KEY = "journalNodes";
@@ -114,7 +114,7 @@ public class PersistentState {
 
   private void removeDeadDataNodes() {
     deadDataNodeTimeStamp = null;
-    HashMap<String, String> dataNodes = getDataNodes();
+    Map<String, String> dataNodes = getDataNodes();
     List<String> deadDataHosts = getDeadDataNodes();
     for (String deadDataHost : deadDataHosts) {
       dataNodes.remove(deadDataHost);
@@ -162,7 +162,7 @@ public class PersistentState {
       removeDeadDataNodes();
       return new ArrayList<>();
     } else {
-      HashMap<String, String> dataNodes = getDataNodes();
+      Map<String, String> dataNodes = getDataNodes();
       Set<String> dataHosts = dataNodes.keySet();
       List<String> deadDataHosts = new ArrayList<>();
       for (String dataHost : dataHosts) {
@@ -183,15 +183,15 @@ public class PersistentState {
     return getHashMap(NAMENODES_KEY);
   }
 
-  public HashMap<String, String> getJournalNodeTaskNames() {
+  public Map<String, String> getJournalNodeTaskNames() {
     return getHashMap(JOURNALNODE_TASKNAMES_KEY);
   }
 
-  public HashMap<String, String> getNameNodeTaskNames() {
+  public Map<String, String> getNameNodeTaskNames() {
     return getHashMap(NAMENODE_TASKNAMES_KEY);
   }
 
-  public HashMap<String, String> getDataNodes() {
+  public Map<String, String> getDataNodes() {
     return getHashMap(DATANODES_KEY);
   }
 
@@ -212,7 +212,7 @@ public class PersistentState {
         Map<String, String> nameNodes = getNameNodes();
         nameNodes.put(hostname, taskId.getValue());
         setNameNodes(nameNodes);
-        HashMap<String, String> nameNodeTaskNames = getNameNodeTaskNames();
+        Map<String, String> nameNodeTaskNames = getNameNodeTaskNames();
         nameNodeTaskNames.put(taskId.getValue(), taskName);
         setNameNodeTaskNames(nameNodeTaskNames);
         break;
@@ -220,12 +220,12 @@ public class PersistentState {
         Map<String, String> journalNodes = getJournalNodes();
         journalNodes.put(hostname, taskId.getValue());
         setJournalNodes(journalNodes);
-        HashMap<String, String> journalNodeTaskNames = getJournalNodeTaskNames();
+        Map<String, String> journalNodeTaskNames = getJournalNodeTaskNames();
         journalNodeTaskNames.put(taskId.getValue(), taskName);
         setJournalNodeTaskNames(journalNodeTaskNames);
         break;
       case HDFSConstants.DATA_NODE_ID:
-        HashMap<String, String> dataNodes = getDataNodes();
+        Map<String, String> dataNodes = getDataNodes();
         dataNodes.put(hostname, taskId.getValue());
         setDataNodes(dataNodes);
         break;
@@ -246,7 +246,7 @@ public class PersistentState {
         if (entry.getValue() != null && entry.getValue().equals(taskId)) {
           journalNodes.put(entry.getKey(), null);
           setJournalNodes(journalNodes);
-          HashMap<String, String> journalNodeTaskNames = getJournalNodeTaskNames();
+          Map<String, String> journalNodeTaskNames = getJournalNodeTaskNames();
           journalNodeTaskNames.remove(taskId);
           setJournalNodeTaskNames(journalNodeTaskNames);
           Date date = DateUtils.addSeconds(new Date(), frameworkConfig.getDeadNodeTimeout());
@@ -262,7 +262,7 @@ public class PersistentState {
         if (entry.getValue() != null && entry.getValue().equals(taskId)) {
           nameNodes.put(entry.getKey(), null);
           setNameNodes(nameNodes);
-          HashMap<String, String> nameNodeTaskNames = getNameNodeTaskNames();
+          Map<String, String> nameNodeTaskNames = getNameNodeTaskNames();
           nameNodeTaskNames.remove(taskId);
           setNameNodeTaskNames(nameNodeTaskNames);
           Date date = DateUtils.addSeconds(new Date(), frameworkConfig.getDeadNodeTimeout());
@@ -272,7 +272,7 @@ public class PersistentState {
       }
     }
 
-    HashMap<String, String> dataNodes = getDataNodes();
+    Map<String, String> dataNodes = getDataNodes();
     if (dataNodes.values().contains(taskId)) {
       for (Map.Entry<String, String> entry : dataNodes.entrySet()) {
         if (entry.getValue() != null && entry.getValue().equals(taskId)) {
@@ -314,7 +314,7 @@ public class PersistentState {
     }
   }
 
-  private void setNameNodeTaskNames(HashMap<String, String> nameNodeTaskNames) {
+  private void setNameNodeTaskNames(Map<String, String> nameNodeTaskNames) {
     try {
       set(NAMENODE_TASKNAMES_KEY, nameNodeTaskNames);
     } catch (Exception e) {
@@ -322,7 +322,7 @@ public class PersistentState {
     }
   }
 
-  private void setJournalNodeTaskNames(HashMap<String, String> journalNodeTaskNames) {
+  private void setJournalNodeTaskNames(Map<String, String> journalNodeTaskNames) {
     try {
       set(JOURNALNODE_TASKNAMES_KEY, journalNodeTaskNames);
     } catch (Exception e) {
@@ -330,7 +330,7 @@ public class PersistentState {
     }
   }
 
-  private void setDataNodes(HashMap<String, String> dataNodes) {
+  private void setDataNodes(Map<String, String> dataNodes) {
     try {
       set(DATANODES_KEY, dataNodes);
     } catch (Exception e) {
@@ -338,7 +338,7 @@ public class PersistentState {
     }
   }
 
-  private HashMap<String, String> getHashMap(String key) {
+  private Map<String, String> getHashMap(String key) {
     try {
       HashMap<String, String> nodesMap = get(key);
       if (nodesMap == null) {

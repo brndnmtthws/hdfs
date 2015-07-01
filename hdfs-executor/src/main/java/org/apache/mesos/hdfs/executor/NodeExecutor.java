@@ -18,7 +18,7 @@ import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
  * The executor for a Basic Node (either a Journal Node or Data Node).
  */
 public class NodeExecutor extends AbstractNodeExecutor {
-  public static final Log log = LogFactory.getLog(NodeExecutor.class);
+  private final Log log = LogFactory.getLog(NodeExecutor.class);
   private Task task;
 
   /**

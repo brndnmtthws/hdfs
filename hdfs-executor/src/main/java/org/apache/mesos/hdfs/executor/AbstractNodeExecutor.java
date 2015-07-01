@@ -32,7 +32,7 @@ import java.nio.file.Paths;
 
 public abstract class AbstractNodeExecutor implements Executor {
 
-  public static final Log log = LogFactory.getLog(AbstractNodeExecutor.class);
+  private final Log log = LogFactory.getLog(AbstractNodeExecutor.class);
   protected ExecutorInfo executorInfo;
   protected HdfsFrameworkConfig hdfsFrameworkConfig;
 
@@ -62,8 +62,9 @@ public abstract class AbstractNodeExecutor implements Executor {
       FrameworkInfo frameworkInfo, SlaveInfo slaveInfo) {
     // Set up data dir
     setUpDataDir();
-    if (!hdfsFrameworkConfig.usingNativeHadoopBinaries())
+    if (!hdfsFrameworkConfig.usingNativeHadoopBinaries()) {
       createSymbolicLink();
+    }
     log.info("Executor registered with the slave");
   }
 
@@ -77,7 +78,7 @@ public abstract class AbstractNodeExecutor implements Executor {
 
     // Create secondary data dir if it does not exist
     File secondaryDataDir = new File(hdfsFrameworkConfig.getSecondaryDataDir());
-    FileUtils.createDir(dataDir);
+    FileUtils.createDir(secondaryDataDir);
   }
 
 
@@ -110,18 +111,15 @@ public abstract class AbstractNodeExecutor implements Executor {
           log.info("Unable to unlink old sym link. Link may not exist. Exit code: " + exitCode);
         }
       } catch (IOException e) {
-        log.fatal("Could not unlink " + hdfsBinaryPath + ": " + e);
-        System.exit(1);
+        log.fatal("Could not unlink " + hdfsBinaryPath, e);
+        throw e;
       }
 
       // Delete the file if it exists
-      if (hdfsBinaryDir.exists()) {
-        if (!FileUtils.deleteFile(hdfsBinaryDir)) {
-          final String msg = "unable to delete file: " + hdfsBinaryDir;
-          log.error(msg);
-          throw new ExecutorException(msg);
-        }
-
+      if (hdfsBinaryDir.exists() && !FileUtils.deleteFile(hdfsBinaryDir)) {
+        final String msg = "unable to delete file: " + hdfsBinaryDir;
+        log.error(msg);
+        throw new ExecutorException(msg);
       }
 
       // Create symbolic link
@@ -131,8 +129,8 @@ public abstract class AbstractNodeExecutor implements Executor {
       log.info("The symbolic link path is: " + hdfsLinkDirPath);
       // Adding binary to the PATH environment variable
       addBinaryToPath(hdfsBinaryPath);
-    } catch (Exception e) {
-      log.fatal("Error creating the symbolic link to hdfs binary: " + e);
+    } catch (IOException | InterruptedException e ) {
+      log.fatal("Error creating the symbolic link to hdfs binary", e);
       System.exit(1);
     }
   }
@@ -143,8 +141,9 @@ public abstract class AbstractNodeExecutor implements Executor {
    * Mesos slave packaging.
    */
   private void addBinaryToPath(String hdfsBinaryPath) throws IOException, InterruptedException {
-    if (hdfsFrameworkConfig.usingNativeHadoopBinaries())
+    if (hdfsFrameworkConfig.usingNativeHadoopBinaries()) {
       return;
+    }
     String pathEnvVarLocation = "/usr/bin/hadoop";
     String scriptContent = "#!/bin/bash \n" + hdfsBinaryPath + "/bin/hadoop \"$@\"";
     FileWriter fileWriter = new FileWriter(pathEnvVarLocation);
@@ -172,7 +171,7 @@ public abstract class AbstractNodeExecutor implements Executor {
         task.setProcess(processBuilder.start());
         redirectProcess(task.getProcess());
       } catch (IOException e) {
-        log.error(e);
+        log.error("unable start process", e);
         task.getProcess().destroy();
         sendTaskFailed(driver, task);
       }
@@ -185,7 +184,7 @@ public abstract class AbstractNodeExecutor implements Executor {
    * Reloads the cluster configuration so the executor has the correct configuration info.
    */
   protected void reloadConfig() {
-    if (hdfsFrameworkConfig.usingNativeHadoopBinaries()) return;
+    if (hdfsFrameworkConfig.usingNativeHadoopBinaries()) { return; }
     // Find config URI
     String configUri = "";
     for (CommandInfo.URI uri : executorInfo.getCommand().getUrisList()) {
@@ -246,7 +245,7 @@ public abstract class AbstractNodeExecutor implements Executor {
         sendTaskFailed(driver, task);
       }
     } catch (InterruptedException | IOException e) {
-      log.error(e);
+      log.error("unable to run command", e);
       if (task.getProcess() != null) {
         task.getProcess().destroy();
       }

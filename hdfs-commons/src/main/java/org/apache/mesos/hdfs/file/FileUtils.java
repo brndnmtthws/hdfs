@@ -6,20 +6,20 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 
 /**
- * @author kensipe
+ * Used for file system operations
  */
-public class FileUtils {
+public final class FileUtils {
 
-  private static final Logger logger = LoggerFactory.getLogger(FileUtils.class);
+  private static final Logger LOG = LoggerFactory.getLogger(FileUtils.class);
 
-  public FileUtils() {
+  private FileUtils() {
   }
 
   public static void createDir(File dataDir) {
     if (dataDir.exists()) {
-      logger.warn("data dir exits:" + dataDir);
+      LOG.warn("data dir exits:" + dataDir);
     } else if (!dataDir.mkdirs()) {
-      logger.error("unable to create dir: " + dataDir);
+      LOG.error("unable to create dir: " + dataDir);
     }
   }
 

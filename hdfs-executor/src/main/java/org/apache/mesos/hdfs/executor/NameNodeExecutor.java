@@ -23,7 +23,7 @@ import java.nio.charset.Charset;
  * The executor for the Primary Name Node Machine.
  */
 public class NameNodeExecutor extends AbstractNodeExecutor {
-  public static final Log log = LogFactory.getLog(NameNodeExecutor.class);
+  private final Log log = LogFactory.getLog(NameNodeExecutor.class);
 
   private Task nameNodeTask;
   // TODO better handling in livestate and persistent state of zkfc task. Right now they are

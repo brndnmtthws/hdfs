@@ -15,7 +15,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class DnsResolver {
-  public static final Log log = LogFactory.getLog(Scheduler.class);
+  private final Log log = LogFactory.getLog(Scheduler.class);
 
   static final int NN_TIMER_PERIOD = 10000;
 
@@ -28,7 +28,7 @@ public class DnsResolver {
   }
 
   public boolean journalNodesResolvable() {
-    if (!conf.usingMesosDns()) return true; //short circuit since Mesos handles this otherwise
+    if (!conf.usingMesosDns()) { return true; } //short circuit since Mesos handles this otherwise
     Set<String> hosts = new HashSet<>();
     for (int i = 1; i <= conf.getJournalNodeCount(); i++) {
       hosts.add(HDFSConstants.JOURNAL_NODE_ID + i + "." + conf.getFrameworkName() + "." + conf.getMesosDnsDomain());
@@ -49,7 +49,7 @@ public class DnsResolver {
   }
 
   public boolean nameNodesResolvable() {
-    if (!conf.usingMesosDns()) return true; //short circuit since Mesos handles this otherwise
+    if (!conf.usingMesosDns()) { return true; } //short circuit since Mesos handles this otherwise
     Set<String> hosts = new HashSet<>();
     for (int i = 1; i <= HDFSConstants.TOTAL_NAME_NODES; i++) {
       hosts.add(HDFSConstants.NAME_NODE_ID + i + "." + conf.getFrameworkName() + "." + conf.getMesosDnsDomain());
@@ -76,6 +76,8 @@ public class DnsResolver {
       scheduler.sendMessageTo(driver, taskId, slaveID, message);
       return;
     }
+
+    Timer timer = new Timer();
     class PreNNInitTask extends TimerTask {
       @Override
       public void run() {
@@ -85,7 +87,6 @@ public class DnsResolver {
         }
       }
     }
-    Timer timer = new Timer();
     PreNNInitTask task = new PreNNInitTask();
     timer.scheduleAtFixedRate(task, 0, NN_TIMER_PERIOD);
   }

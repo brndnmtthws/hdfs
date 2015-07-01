@@ -45,7 +45,7 @@ import java.util.concurrent.ExecutionException;
 // TODO (elingg) remove as much logic as possible from Scheduler to clean up code
 public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
 
-  public static final Log log = LogFactory.getLog(Scheduler.class);
+  private final Log log = LogFactory.getLog(Scheduler.class);
 
   private static final int SECONDS_FROM_MILLIS = 1000;
 
@@ -99,7 +99,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       // these are zk exceptions... we are unable to maintain state.
       final String msg = "Error setting framework id in persistent state";
       log.error(msg, e);
-      throw new SchedulerException(msg);
+      throw new SchedulerException(msg, e);
     }
     log.info("Registered framework frameworkId=" + frameworkId.getValue());
     // reconcile tasks upon registration
@@ -260,7 +260,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
     } catch (InterruptedException | ExecutionException | InvalidProtocolBufferException e) {
       final String msg = "Error recovering framework id";
       log.error(msg, e);
-      throw new SchedulerException(msg);
+      throw new SchedulerException(msg, e);
     }
 
     MesosSchedulerDriver driver = new MesosSchedulerDriver(this, frameworkInfo.build(),
@@ -562,8 +562,9 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
   }
 
   private void reloadConfigsOnAllRunningTasks(SchedulerDriver driver) {
-    if (frameworkConfig.usingNativeHadoopBinaries())
+    if (frameworkConfig.usingNativeHadoopBinaries()) {
       return;
+    }
     for (Protos.TaskStatus taskStatus : liveState.getRunningTasks().values()) {
       sendMessageTo(driver, taskStatus.getTaskId(), taskStatus.getSlaveId(),
           HDFSConstants.RELOAD_CONFIG);

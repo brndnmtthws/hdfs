@@ -16,7 +16,7 @@ import java.util.Set;
 
 @Singleton
 public class LiveState {
-  public static final Log log = LogFactory.getLog(LiveState.class);
+  private final Log log = LogFactory.getLog(LiveState.class);
 
   private Set<Protos.TaskID> stagingTasks = new HashSet<>();
   private AcquisitionPhase currentAcquisitionPhase = AcquisitionPhase.RECONCILING_TASKS;

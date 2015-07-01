@@ -8,7 +8,7 @@ import org.apache.mesos.hdfs.config.ConfigServer;
  * Handlers special case exceptions for the scheduler (which is on another thread).
  */
 public class SchedulerExceptionHandler implements Thread.UncaughtExceptionHandler {
-  public final Log log = LogFactory.getLog(ConfigServer.class);
+  private final Log log = LogFactory.getLog(ConfigServer.class);
 
   @Override
   public void uncaughtException(Thread t, Throwable e) {

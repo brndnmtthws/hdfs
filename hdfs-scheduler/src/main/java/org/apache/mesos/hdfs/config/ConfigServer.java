@@ -28,7 +28,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 public class ConfigServer {
-  public final Log log = LogFactory.getLog(ConfigServer.class);
+  private final Log log = LogFactory.getLog(ConfigServer.class);
 
   private Server server;
   private Engine engine;
@@ -36,12 +36,11 @@ public class ConfigServer {
   private PersistentState persistentState;
 
   @Inject
-  public ConfigServer(HdfsFrameworkConfig frameworkConfig) throws Exception {
+  public ConfigServer(HdfsFrameworkConfig frameworkConfig)  {
     this(frameworkConfig, new PersistentState(frameworkConfig));
   }
 
-  public ConfigServer(HdfsFrameworkConfig frameworkConfig, PersistentState persistentState)
-      throws Exception {
+  public ConfigServer(HdfsFrameworkConfig frameworkConfig, PersistentState persistentState)  {
     this.frameworkConfig = frameworkConfig;
     this.persistentState = persistentState;
     engine = new Engine();
@@ -60,17 +59,17 @@ public class ConfigServer {
     } catch (Exception e) {
       final String msg = "unable to start jetty server";
       log.error(msg, e);
-      throw new ConfigServerException(msg);
+      throw new ConfigServerException(msg, e);
     }
   }
 
-  public void stop() throws Exception {
+  public void stop() throws ConfigServerException {
     try {
       server.stop();
     } catch (Exception e) {
       final String msg = "unable to stop the jetty service";
       log.debug(msg, e);
-      throw new ConfigServerException(msg);
+      throw new ConfigServerException(msg, e);
     }
   }
 

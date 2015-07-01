@@ -1,6 +1,6 @@
 package org.apache.mesos.hdfs.util;
 
-public class HDFSConstants {
+public final class HDFSConstants {
 
   // Total number of NameNodes
   // Note: We do not currently support more or less than 2 NameNodes

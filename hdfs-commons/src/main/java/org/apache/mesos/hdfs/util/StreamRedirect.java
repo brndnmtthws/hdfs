@@ -14,10 +14,10 @@ import java.nio.charset.Charset;
  * Can be used to redirect the STDOUT and STDERR of a started process. Used for the executors.
  */
 public class StreamRedirect extends Thread {
-  public final Log log = LogFactory.getLog(StreamRedirect.class);
+  private final Log log = LogFactory.getLog(StreamRedirect.class);
 
-  InputStream stream;
-  PrintStream outputStream;
+  private InputStream stream;
+  private PrintStream outputStream;
 
   public StreamRedirect(InputStream stream, PrintStream outputStream) {
     this.stream = stream;

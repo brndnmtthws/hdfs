@@ -38,7 +38,7 @@ public class HdfsFrameworkConfig {
   private static final int DEFAULT_RECONCILIATION_TIMEOUT = 30;
   private static final int DEFAULT_DEADNODE_TIMEOUT = 90;
 
-  public final Log log = LogFactory.getLog(HdfsFrameworkConfig.class);
+  private final Log log = LogFactory.getLog(HdfsFrameworkConfig.class);
 
   public HdfsFrameworkConfig(Configuration conf) {
     setConf(conf);
