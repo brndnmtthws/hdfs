@@ -93,7 +93,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       persistentState.setFrameworkId(frameworkId);
     } catch (InterruptedException | ExecutionException e) {
       log.error("Error setting framework id in persistent state", e);
-      throw new RuntimeException(e);
+      throw new SchedulerException(e);
     }
     log.info("Registered framework frameworkId=" + frameworkId.getValue());
     // reconcile tasks upon registration
@@ -253,7 +253,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       }
     } catch (InterruptedException | ExecutionException | InvalidProtocolBufferException e) {
       log.error("Error recovering framework id", e);
-      throw new RuntimeException(e);
+      throw new SchedulerException(e);
     }
 
     MesosSchedulerDriver driver = new MesosSchedulerDriver(this, frameworkInfo.build(),
@@ -309,7 +309,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       }
       String errorStr = "Cluster is in inconsistent state. Trying to launch more namenodes, but they are all already running.";
       log.error(errorStr);
-      throw new RuntimeException(errorStr);
+      throw new SchedulerException(errorStr);
     }
     if (taskType.equals(HDFSConstants.JOURNAL_NODE_ID)) {
       Collection<String> journalNodeTaskNames = persistentState.getJournalNodeTaskNames().values();
@@ -320,7 +320,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       }
       String errorStr = "Cluster is in inconsistent state. Trying to launch more journalnodes, but they all are already running.";
       log.error(errorStr);
-      throw new RuntimeException(errorStr);
+      throw new SchedulerException(errorStr);
     }
     return taskType;
   }

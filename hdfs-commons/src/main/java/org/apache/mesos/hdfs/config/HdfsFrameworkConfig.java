@@ -81,7 +81,7 @@ public class HdfsFrameworkConfig extends Configured {
       case "journalnode":
         return getJournalNodeHeapSize();
       default:
-        throw new RuntimeException("Invalid taskName=" + taskName);
+        throw new ConfigurationException("Invalid taskName=" + taskName);
     }
   }
 
@@ -136,7 +136,7 @@ public class HdfsFrameworkConfig extends Configured {
       case "journalnode":
         return getJournalNodeCpus();
       default:
-        throw new RuntimeException("Invalid taskName=" + taskName);
+        throw new ConfigurationException("Invalid taskName=" + taskName);
     }
   }
 
@@ -200,7 +200,7 @@ public class HdfsFrameworkConfig extends Configured {
       try {
         hostAddress = InetAddress.getLocalHost().getHostAddress();
       } catch (UnknownHostException e) {
-        throw new RuntimeException(e);
+        throw new ConfigurationException(e);
       }
     }
     return hostAddress;
