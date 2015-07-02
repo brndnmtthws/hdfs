@@ -2,7 +2,7 @@ package org.apache.mesos.hdfs.util;
 
 import org.apache.mesos.Protos;
 import org.apache.mesos.SchedulerDriver;
-import org.apache.mesos.hdfs.Scheduler;
+import org.apache.mesos.hdfs.scheduler.Scheduler;
 
 /**
  * Used with timers to send a message in the future.  It is immutable.

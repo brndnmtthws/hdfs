@@ -4,7 +4,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.Protos;
 import org.apache.mesos.SchedulerDriver;
-import org.apache.mesos.hdfs.Scheduler;
+import org.apache.mesos.hdfs.scheduler.Scheduler;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
 
 import java.io.IOException;
@@ -12,7 +12,6 @@ import java.net.InetAddress;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Timer;
-import java.util.TimerTask;
 
 public class DnsResolver {
   private final Log log = LogFactory.getLog(Scheduler.class);

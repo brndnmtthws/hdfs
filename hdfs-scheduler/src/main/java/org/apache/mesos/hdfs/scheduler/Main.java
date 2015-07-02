@@ -1,4 +1,4 @@
-package org.apache.mesos.hdfs;
+package org.apache.mesos.hdfs.scheduler;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;

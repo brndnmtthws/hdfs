@@ -11,6 +11,7 @@ import org.apache.mesos.Protos;
 import org.apache.mesos.Protos.FrameworkID;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
 import org.apache.mesos.hdfs.util.HDFSConstants;
+import org.apache.mesos.state.State;
 import org.apache.mesos.state.Variable;
 import org.apache.mesos.state.ZooKeeperState;
 
@@ -34,13 +35,15 @@ import java.util.concurrent.TimeUnit;
 @Singleton
 public class PersistentState {
   private final Log log = LogFactory.getLog(PersistentState.class);
+
   private static final String FRAMEWORK_ID_KEY = "frameworkId";
   private static final String NAMENODES_KEY = "nameNodes";
   private static final String JOURNALNODES_KEY = "journalNodes";
   private static final String DATANODES_KEY = "dataNodes";
   private static final String NAMENODE_TASKNAMES_KEY = "nameNodeTaskNames";
   private static final String JOURNALNODE_TASKNAMES_KEY = "journalNodeTaskNames";
-  private ZooKeeperState zkState;
+
+  private State zkState;
   private HdfsFrameworkConfig frameworkConfig;
   // TODO (elingg) we need to also track ZKFC's state
 
@@ -57,8 +60,7 @@ public class PersistentState {
     resetDeadNodeTimeStamps();
   }
 
-  public FrameworkID getFrameworkID() throws InterruptedException, ExecutionException,
-      InvalidProtocolBufferException {
+  public FrameworkID getFrameworkID() throws InterruptedException, ExecutionException, InvalidProtocolBufferException {
     byte[] existingFrameworkId = zkState.fetch(FRAMEWORK_ID_KEY).get().value();
     if (existingFrameworkId.length > 0) {
       return FrameworkID.parseFrom(existingFrameworkId);

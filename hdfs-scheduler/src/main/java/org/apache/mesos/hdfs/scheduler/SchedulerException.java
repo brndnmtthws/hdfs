@@ -1,4 +1,4 @@
-package org.apache.mesos.hdfs;
+package org.apache.mesos.hdfs.scheduler;
 
 /**
  * Exceptions in the scheduler which likely result in the scheduler being shutdown.

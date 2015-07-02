@@ -1,4 +1,4 @@
-package org.apache.mesos.hdfs;
+package org.apache.mesos.hdfs.scheduler;
 
 import com.google.inject.Inject;
 import com.google.protobuf.ByteString;
@@ -263,8 +263,7 @@ public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
       throw new SchedulerException(msg, e);
     }
 
-    MesosSchedulerDriver driver = new MesosSchedulerDriver(this, frameworkInfo.build(),
-        frameworkConfig.getMesosMasterUri());
+    MesosSchedulerDriver driver = new MesosSchedulerDriver(this, frameworkInfo.build(), frameworkConfig.getMesosMasterUri());
     driver.run();
   }
 
