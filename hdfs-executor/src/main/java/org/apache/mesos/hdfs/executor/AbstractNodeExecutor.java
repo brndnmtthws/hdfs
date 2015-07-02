@@ -34,6 +34,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+/**
+ * The base for several types of HDFS executors.  It also contains the main which is consistent for all executors.
+ */
 public abstract class AbstractNodeExecutor implements Executor {
 
   private final Log log = LogFactory.getLog(AbstractNodeExecutor.class);
@@ -133,7 +136,7 @@ public abstract class AbstractNodeExecutor implements Executor {
       log.info("The symbolic link path is: " + hdfsLinkDirPath);
       // Adding binary to the PATH environment variable
       addBinaryToPath(hdfsBinaryPath);
-    } catch (IOException | InterruptedException e ) {
+    } catch (IOException | InterruptedException e) {
       final String msg = "Error creating the symbolic link to hdfs binary";
       shutdownExecutor(1, msg, e);
     }
@@ -201,7 +204,9 @@ public abstract class AbstractNodeExecutor implements Executor {
    * Reloads the cluster configuration so the executor has the correct configuration info.
    */
   protected void reloadConfig() {
-    if (hdfsFrameworkConfig.usingNativeHadoopBinaries()) { return; }
+    if (hdfsFrameworkConfig.usingNativeHadoopBinaries()) {
+      return;
+    }
     // Find config URI
     String configUri = "";
     for (CommandInfo.URI uri : executorInfo.getCommand().getUrisList()) {

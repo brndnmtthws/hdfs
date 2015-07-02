@@ -7,7 +7,7 @@ import org.apache.mesos.hdfs.scheduler.Scheduler;
 import java.util.TimerTask;
 
 /**
- * Used for a NameNode init timer to see if DNS is complete
+ * Used for a NameNode init timer to see if DNS is complete.
  */
 public class PreNNInitTask extends TimerTask {
 

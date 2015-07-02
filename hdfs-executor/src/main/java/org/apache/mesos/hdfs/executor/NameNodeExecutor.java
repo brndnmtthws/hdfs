@@ -26,7 +26,7 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
   private final Log log = LogFactory.getLog(NameNodeExecutor.class);
 
   private Task nameNodeTask;
-  // TODO better handling in livestate and persistent state of zkfc task. Right now they are
+  // TODO (elingg) better handling in livestate and persistent state of zkfc task. Right now they are
   // chained.
   private Task zkfcNodeTask;
 
@@ -49,8 +49,11 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
   }
 
   /**
-   * Add tasks to the task list and then start the tasks in the following order : 1) Start Journal
-   * Node 2) Receive Activate Message 3) Start Name Node 4) Start ZKFC Node
+   * Add tasks to the task list and then start the tasks in the following order.
+   * 1) Start Journal Node
+   * 2) Receive Activate Message
+   * 3) Start Name Node
+   * 4) Start ZKFC Node
    */
   @Override
   public void launchTask(final ExecutorDriver driver, final TaskInfo taskInfo) {

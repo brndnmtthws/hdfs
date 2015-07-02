@@ -1,5 +1,8 @@
 package org.apache.mesos.hdfs.util;
 
+/**
+ * Constants for HDFS.
+ */
 public final class HDFSConstants {
 
   // Total number of NameNodes

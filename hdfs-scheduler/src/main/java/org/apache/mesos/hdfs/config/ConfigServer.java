@@ -27,6 +27,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+/**
+ * This is the HTTP service which allows executors to fetch the configuration for hdfs-site.xml.
+ */
 public class ConfigServer {
   private final Log log = LogFactory.getLog(ConfigServer.class);
 

@@ -14,6 +14,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Manages the "Live" state of running tasks.
+ */
 @Singleton
 public class LiveState {
   private final Log log = LogFactory.getLog(LiveState.class);

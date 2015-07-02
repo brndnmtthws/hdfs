@@ -32,6 +32,9 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Manages the persists needs of the scheduler.  It handles frameworkID and the list of tasks on each host.
+ */
 @Singleton
 public class PersistentState {
   private final Log log = LogFactory.getLog(PersistentState.class);
@@ -52,15 +55,17 @@ public class PersistentState {
   private Timestamp deadDataNodeTimeStamp = null;
 
   @Inject
-  public PersistentState(HdfsFrameworkConfig hdfsFrameworkConfig) {
-    MesosNativeLibrary.load(hdfsFrameworkConfig.getNativeLibrary());
-    this.zkState = new ZooKeeperState(hdfsFrameworkConfig.getStateZkServers(),
-        hdfsFrameworkConfig.getStateZkTimeout(), TimeUnit.MILLISECONDS, "/hdfs-mesos/" + hdfsFrameworkConfig.getFrameworkName());
-    this.hdfsFrameworkConfig = hdfsFrameworkConfig;
+  public PersistentState(HdfsFrameworkConfig frameworkConfig) {
+    MesosNativeLibrary.load(frameworkConfig.getNativeLibrary());
+    this.zkState = new ZooKeeperState(frameworkConfig.getStateZkServers(),
+      frameworkConfig.getStateZkTimeout(), TimeUnit.MILLISECONDS, "/hdfs-mesos/" +
+      frameworkConfig.getFrameworkName());
+    this.frameworkConfig = frameworkConfig;
     resetDeadNodeTimeStamps();
   }
 
-  public FrameworkID getFrameworkID() throws InterruptedException, ExecutionException, InvalidProtocolBufferException {
+  public FrameworkID getFrameworkID()
+    throws InterruptedException, ExecutionException, InvalidProtocolBufferException {
     byte[] existingFrameworkId = zkState.fetch(FRAMEWORK_ID_KEY).get().value();
     if (existingFrameworkId.length > 0) {
       return FrameworkID.parseFrom(existingFrameworkId);
@@ -70,7 +75,7 @@ public class PersistentState {
   }
 
   public void setFrameworkId(FrameworkID frameworkId) throws InterruptedException,
-      ExecutionException {
+    ExecutionException {
     Variable value = zkState.fetch(FRAMEWORK_ID_KEY).get();
     value = value.mutate(frameworkId.toByteArray());
     zkState.store(value).get();
@@ -132,8 +137,8 @@ public class PersistentState {
       removeDeadJournalNodes();
     } else {
       Map<String, String> journalNodes = getJournalNodes();
-      for(Map.Entry<String, String> journalNode : journalNodes.entrySet()) {
-        if(journalNode.getValue() == null) {
+      for (Map.Entry<String, String> journalNode : journalNodes.entrySet()) {
+        if (journalNode.getValue() == null) {
           deadJournalHosts.add(journalNode.getKey());
         }
       }
@@ -148,8 +153,8 @@ public class PersistentState {
       removeDeadNameNodes();
     } else {
       Map<String, String> nameNodes = getNameNodes();
-      for(Map.Entry<String,String> nameNode : nameNodes.entrySet()) {
-        if(nameNode.getValue() == null) {
+      for (Map.Entry<String, String> nameNode : nameNodes.entrySet()) {
+        if (nameNode.getValue() == null) {
           deadNameHosts.add(nameNode.getKey());
         }
       }
@@ -164,8 +169,8 @@ public class PersistentState {
       removeDeadDataNodes();
     } else {
       Map<String, String> dataNodes = getDataNodes();
-      for(Map.Entry<String, String> dataNode : dataNodes.entrySet()) {
-        if(dataNode.getValue() == null) {
+      for (Map.Entry<String, String> dataNode : dataNodes.entrySet()) {
+        if (dataNode.getValue() == null) {
           deadDataHosts.add(dataNode.getKey());
         }
       }
@@ -361,7 +366,7 @@ public class PersistentState {
    */
   @SuppressWarnings("unchecked")
   private <T extends Object> T get(String key) throws InterruptedException, ExecutionException,
-      IOException, ClassNotFoundException {
+    IOException, ClassNotFoundException {
     byte[] existingNodes = zkState.fetch(key).get().value();
     if (existingNodes.length > 0) {
       ByteArrayInputStream bis = new ByteArrayInputStream(existingNodes);
@@ -384,14 +389,14 @@ public class PersistentState {
   }
 
   /**
-   * Set serializable object in store
+   * Set serializable object in store.
    *
    * @throws ExecutionException
    * @throws InterruptedException
    * @throws IOException
    */
   private <T extends Object> void set(String key, T object) throws InterruptedException,
-      ExecutionException, IOException {
+    ExecutionException, IOException {
     Variable value = zkState.fetch(key).get();
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
     ObjectOutputStream out = null;

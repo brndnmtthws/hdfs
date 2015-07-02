@@ -42,9 +42,11 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
 
-// TODO (elingg) remove as much logic as possible from Scheduler to clean up code
+/**
+ *  HDFS Mesos Framework Scheduler class implementation.
+ */
 public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
-
+// TODO (elingg) remove as much logic as possible from Scheduler to clean up code
   private final Log log = LogFactory.getLog(HdfsScheduler.class);
 
   private static final int SECONDS_FROM_MILLIS = 1000;
@@ -263,7 +265,13 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
       throw new SchedulerException(msg, e);
     }
 
+<<<<<<< HEAD
     MesosSchedulerDriver driver = new MesosSchedulerDriver(this, frameworkInfo.build(), hdfsFrameworkConfig.getMesosMasterUri());
+=======
+    MesosSchedulerDriver driver = new MesosSchedulerDriver(this,
+      frameworkInfo.build(),
+      frameworkConfig.getMesosMasterUri());
+>>>>>>> added checkstyles and fixed all checkstyle issues
     driver.run();
   }
 
@@ -313,7 +321,8 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
           return HDFSConstants.NAME_NODE_ID + i;
         }
       }
-      String errorStr = "Cluster is in inconsistent state. Trying to launch more namenodes, but they are all already running.";
+      String errorStr = "Cluster is in inconsistent state. Trying to launch more namenodes, " +
+        "but they are all already running.";
       log.error(errorStr);
       throw new SchedulerException(errorStr);
     }
@@ -324,7 +333,8 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
           return HDFSConstants.JOURNAL_NODE_ID + i;
         }
       }
-      String errorStr = "Cluster is in inconsistent state. Trying to launch more journalnodes, but they all are already running.";
+      String errorStr = "Cluster is in inconsistent state. Trying to launch more journalnodes, " +
+        "but they all are already running.";
       log.error(errorStr);
       throw new SchedulerException(errorStr);
     }
@@ -425,7 +435,12 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
   }
 
   private boolean tryToLaunchJournalNode(SchedulerDriver driver, Offer offer) {
+<<<<<<< HEAD
     if (offerNotEnoughResources(offer, hdfsFrameworkConfig.getJournalNodeCpus(), hdfsFrameworkConfig.getJournalNodeHeapSize())) {
+=======
+    if (offerNotEnoughResources(offer, frameworkConfig.getJournalNodeCpus(),
+      frameworkConfig.getJournalNodeHeapSize())) {
+>>>>>>> added checkstyles and fixed all checkstyle issues
       log.info("Offer does not have enough resources");
       return false;
     }

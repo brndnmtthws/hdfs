@@ -3,7 +3,7 @@ package org.apache.mesos.hdfs.executor;
 import org.apache.mesos.Protos;
 
 /**
- * The Task class for use within the executor
+ * The Task class for use within the executor.
  */
 public class Task {
 

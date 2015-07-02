@@ -7,7 +7,7 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * Used for file system operations
+ * Used for hdfs file system operations.
  */
 public final class FileUtils {
 

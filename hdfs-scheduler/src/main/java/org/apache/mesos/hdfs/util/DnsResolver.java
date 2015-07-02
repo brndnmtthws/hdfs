@@ -4,7 +4,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.Protos;
 import org.apache.mesos.SchedulerDriver;
-import org.apache.mesos.hdfs.scheduler.HdfsScheduler;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
 import org.apache.mesos.hdfs.scheduler.Scheduler;
 
@@ -14,6 +13,9 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Timer;
 
+/**
+ * Provides DNS resolving specific to HDFS.
+ */
 public class DnsResolver {
   private final Log log = LogFactory.getLog(HdfsScheduler.class);
 
