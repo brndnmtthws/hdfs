@@ -20,30 +20,26 @@
         </Match>
 
         <Match>
-            <Class name="org.apache.mesos.hdfs.SchedulerExceptionHandler"/>
+            <Class name="org.apache.mesos.hdfs.scheduler.SchedulerExceptionHandler"/>
             <Bug pattern="DM_EXIT"/>
-            <!-- don't like this, there are outstanding questions on if we need to system.exit for this method -->
         </Match>
 
         <Match>
             <Class name="org.apache.mesos.hdfs.executor.AbstractNodeExecutor"/>
             <Method name="shutdownExecutor"/>
             <Bug pattern="DM_EXIT"/>
-            <!-- don't like this, there are outstanding questions on if we need to system.exit for this method -->
         </Match>
 
         <Match>
             <Class name="org.apache.mesos.hdfs.executor.AbstractNodeExecutor"/>
             <Method name="startProcess"/>
             <Bug pattern="DM_EXIT"/>
-            <!-- don't like this, there are outstanding questions on if we need to system.exit for this method -->
         </Match>
 
         <Match>
             <Class name="org.apache.mesos.hdfs.executor.AbstractNodeExecutor"/>
             <Method name="createSymbolicLink"/>
             <Bug pattern="DM_EXIT"/>
-            <!-- don't like this, there are outstanding questions on if we need to system.exit for this method -->
         </Match>
 
 

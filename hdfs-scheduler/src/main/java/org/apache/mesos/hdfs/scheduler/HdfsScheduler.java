@@ -43,9 +43,9 @@ import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
 
 // TODO (elingg) remove as much logic as possible from Scheduler to clean up code
-public class Scheduler implements org.apache.mesos.Scheduler, Runnable {
+public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
 
-  private final Log log = LogFactory.getLog(Scheduler.class);
+  private final Log log = LogFactory.getLog(HdfsScheduler.class);
 
   private static final int SECONDS_FROM_MILLIS = 1000;
 
