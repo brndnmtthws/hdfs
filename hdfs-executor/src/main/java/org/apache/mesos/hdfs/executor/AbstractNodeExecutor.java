@@ -25,7 +25,6 @@ import org.apache.mesos.hdfs.util.StreamRedirect;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
@@ -57,7 +56,7 @@ public abstract class AbstractNodeExecutor implements Executor {
   public static void main(String[] args) {
     Injector injector = Guice.createInjector();
     MesosExecutorDriver driver = new MesosExecutorDriver(
-        injector.getInstance(AbstractNodeExecutor.class));
+      injector.getInstance(AbstractNodeExecutor.class));
     System.exit(driver.run() == Status.DRIVER_STOPPED ? 0 : 1);
   }
 
@@ -66,7 +65,7 @@ public abstract class AbstractNodeExecutor implements Executor {
    */
   @Override
   public void registered(ExecutorDriver driver, ExecutorInfo executorInfo,
-      FrameworkInfo frameworkInfo, SlaveInfo slaveInfo) {
+    FrameworkInfo frameworkInfo, SlaveInfo slaveInfo) {
     // Set up data dir
     setUpDataDir();
     if (!hdfsFrameworkConfig.usingNativeHadoopBinaries()) {
@@ -105,7 +104,7 @@ public abstract class AbstractNodeExecutor implements Executor {
 
       // Delete and recreate directory for symbolic link every time
       String hdfsBinaryPath = hdfsFrameworkConfig.getFrameworkMountPath()
-          + "/" + HDFSConstants.HDFS_BINARY_DIR;
+        + "/" + HDFSConstants.HDFS_BINARY_DIR;
       File hdfsBinaryDir = new File(hdfsBinaryPath);
 
       // Try to delete the symbolic link in case a dangling link is present
@@ -221,7 +220,7 @@ public abstract class AbstractNodeExecutor implements Executor {
     try {
       log.info(String.format("Reloading hdfs-site.xml from %s", configUri));
       ProcessBuilder processBuilder = new ProcessBuilder("sh", "-c",
-          String.format("curl -o hdfs-site.xml %s && cp hdfs-site.xml etc/hadoop/", configUri));
+        String.format("curl -o hdfs-site.xml %s && cp hdfs-site.xml etc/hadoop/", configUri));
       Process process = processBuilder.start();
       //TODO(nicgrayson) check if the config has changed
       redirectProcess(process);
@@ -285,9 +284,9 @@ public abstract class AbstractNodeExecutor implements Executor {
    */
   private void sendTaskFailed(ExecutorDriver driver, Task task) {
     driver.sendStatusUpdate(TaskStatus.newBuilder()
-        .setTaskId(task.getTaskInfo().getTaskId())
-        .setState(TaskState.TASK_FAILED)
-        .build());
+      .setTaskId(task.getTaskInfo().getTaskId())
+      .setState(TaskState.TASK_FAILED)
+      .build());
   }
 
   @Override

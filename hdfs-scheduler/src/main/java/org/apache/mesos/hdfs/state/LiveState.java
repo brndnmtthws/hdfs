@@ -64,6 +64,7 @@ public class LiveState {
     runningTasks.remove(taskId.getValue());
   }
 
+  @SuppressWarnings("PMD")
   public void updateTaskForStatus(Protos.TaskStatus status) {
     // TODO (elingg) Use Starting Status when the task is running, but not initialized. Use running
     // status when the task is initialized so that we can differentiate during the reconciliation
