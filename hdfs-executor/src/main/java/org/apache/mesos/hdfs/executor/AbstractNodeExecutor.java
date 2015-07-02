@@ -3,6 +3,7 @@ package org.apache.mesos.hdfs.executor;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.Executor;
@@ -23,8 +24,11 @@ import org.apache.mesos.hdfs.util.StreamRedirect;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -116,7 +120,7 @@ public abstract class AbstractNodeExecutor implements Executor {
       }
 
       // Delete the file if it exists
-      if (hdfsBinaryDir.exists() && !FileUtils.deleteFile(hdfsBinaryDir)) {
+      if (hdfsBinaryDir.exists() && !FileUtils.deleteDirectory(hdfsBinaryDir)) {
         final String msg = "unable to delete file: " + hdfsBinaryDir;
         log.error(msg);
         throw new ExecutorException(msg);
@@ -130,8 +134,8 @@ public abstract class AbstractNodeExecutor implements Executor {
       // Adding binary to the PATH environment variable
       addBinaryToPath(hdfsBinaryPath);
     } catch (IOException | InterruptedException e ) {
-      log.fatal("Error creating the symbolic link to hdfs binary", e);
-      System.exit(1);
+      final String msg = "Error creating the symbolic link to hdfs binary";
+      shutdownExecutor(1, msg, e);
     }
   }
 
@@ -146,7 +150,9 @@ public abstract class AbstractNodeExecutor implements Executor {
     }
     String pathEnvVarLocation = "/usr/bin/hadoop";
     String scriptContent = "#!/bin/bash \n" + hdfsBinaryPath + "/bin/hadoop \"$@\"";
-    FileWriter fileWriter = new FileWriter(pathEnvVarLocation);
+
+    File file = new File(pathEnvVarLocation);
+    Writer fileWriter = new OutputStreamWriter(new FileOutputStream(file), "UTF-8");
     BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
     bufferedWriter.write(scriptContent);
     bufferedWriter.close();
@@ -154,10 +160,21 @@ public abstract class AbstractNodeExecutor implements Executor {
     Process process = processBuilder.start();
     int exitCode = process.waitFor();
     if (exitCode != 0) {
-      log.fatal("Error creating the symbolic link to hdfs binary."
-          + "Failure running 'chmod a+x " + pathEnvVarLocation + "'");
-      System.exit(1);
+      final String msg = "Error creating the symbolic link to hdfs binary."
+        + "Failure running 'chmod a+x " + pathEnvVarLocation + "'";
+      shutdownExecutor(1, msg);
     }
+  }
+
+  private void shutdownExecutor(int statusCode, String message) {
+    shutdownExecutor(statusCode, message, null);
+  }
+
+  private void shutdownExecutor(int statusCode, String message, Exception e) {
+    if (StringUtils.isNotBlank(message)) {
+      log.fatal(message, e);
+    }
+    System.exit(statusCode);
   }
 
   /**

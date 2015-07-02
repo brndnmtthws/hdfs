@@ -116,7 +116,7 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
             .format("NameNode data directory %s already exists, not formatting",
               nameDir));
       } else {
-        FileUtils.deleteFile(nameDir);
+        FileUtils.deleteDirectory(nameDir);
         if (!nameDir.mkdirs()) {
           final String errorMsg = "unable to make directory: " + nameDir;
           log.error(errorMsg);

@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 
 /**
  * Used for file system operations
@@ -26,14 +27,20 @@ public final class FileUtils {
   /**
    * Delete a file or directory.
    */
-  public static boolean deleteFile(File fileToDelete) {
-    if (fileToDelete.isDirectory()) {
-      String[] entries = fileToDelete.list();
-      for (String entry : entries) {
-        File childFile = new File(fileToDelete.getPath(), entry);
-        deleteFile(childFile);
+  public static boolean deleteDirectory(File fileToDelete) {
+    boolean deleted = false;
+
+    try {
+      if (fileToDelete.isDirectory()) {
+        org.apache.commons.io.FileUtils.deleteDirectory(fileToDelete);
+        deleted = true;
+      } else {
+        LOG.error("File is not a directory: " + fileToDelete);
       }
+    } catch (IOException e) {
+      LOG.error("unable to delete directory: " + fileToDelete);
     }
-    return fileToDelete.delete();
+
+    return deleted;
   }
 }
