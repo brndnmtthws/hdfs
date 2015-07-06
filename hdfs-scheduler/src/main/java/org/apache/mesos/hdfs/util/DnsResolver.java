@@ -79,9 +79,8 @@ public class DnsResolver {
       scheduler.sendMessageTo(driver, taskId, slaveID, message);
       return;
     }
-    FutureMessage futureMessage = new FutureMessage(driver, scheduler, taskId, slaveID, message);
     Timer timer = new Timer();
-    PreNNInitTask task = new PreNNInitTask(futureMessage, this);
+    PreNNInitTask task = new PreNNInitTask(this, scheduler, driver, taskId, slaveID, message);
     timer.scheduleAtFixedRate(task, 0, NN_TIMER_PERIOD);
   }
 }
