@@ -12,7 +12,7 @@ public class SchedulerExceptionHandler implements Thread.UncaughtExceptionHandle
 
   @Override
   public void uncaughtException(Thread t, Throwable e) {
-    log.error("scheduler exiting due to uncaught exception", e);
+    log.error("Scheduler exiting due to uncaught exception", e);
     System.exit(2);
   }
 }

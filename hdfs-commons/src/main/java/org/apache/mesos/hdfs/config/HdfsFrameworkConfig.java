@@ -19,8 +19,7 @@ public class HdfsFrameworkConfig {
 
   private Configuration hadoopConfig;
 
-  private static final int DEFAULT_HEAP_SIZE = 512;
-  private static final int DEFAULT_HADOOP_HEAP_SIZE = DEFAULT_HEAP_SIZE;
+  private static final int DEFAULT_HADOOP_HEAP_SIZE = 512;
   private static final int DEFAULT_EXECUTOR_HEAP_SIZE = 256;
   private static final int DEFAULT_DATANODE_HEAP_SIZE = 1024;
   private static final int DEFAULT_NAMENODE_HEAP_SIZE = 4096;
@@ -107,7 +106,7 @@ public class HdfsFrameworkConfig {
   }
 
   public int getTaskHeapSize(String taskName) {
-    int size = DEFAULT_HEAP_SIZE;
+    int size;
     switch (taskName) {
       case "zkfc":
         size = getZkfcHeapSize();

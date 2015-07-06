@@ -32,32 +32,31 @@ public class ConfigServer {
 
   private Server server;
   private Engine engine;
-  private HdfsFrameworkConfig frameworkConfig;
+  private HdfsFrameworkConfig hdfsFrameworkConfig;
   private PersistentState persistentState;
 
   @Inject
-  public ConfigServer(HdfsFrameworkConfig frameworkConfig)  {
-    this(frameworkConfig, new PersistentState(frameworkConfig));
+  public ConfigServer(HdfsFrameworkConfig hdfsFrameworkConfig) {
+    this(hdfsFrameworkConfig, new PersistentState(hdfsFrameworkConfig));
   }
 
-  public ConfigServer(HdfsFrameworkConfig frameworkConfig, PersistentState persistentState)  {
-    this.frameworkConfig = frameworkConfig;
+  public ConfigServer(HdfsFrameworkConfig hdfsFrameworkConfig, PersistentState persistentState) {
+    this.hdfsFrameworkConfig = hdfsFrameworkConfig;
     this.persistentState = persistentState;
     engine = new Engine();
-    server = new Server(frameworkConfig.getConfigServerPort());
+    server = new Server(hdfsFrameworkConfig.getConfigServerPort());
     ResourceHandler resourceHandler = new ResourceHandler();
-    resourceHandler.setResourceBase(frameworkConfig.getExecutorPath());
+    resourceHandler.setResourceBase(hdfsFrameworkConfig.getExecutorPath());
     HandlerList handlers = new HandlerList();
     handlers.setHandlers(new Handler[]{
-        resourceHandler, new ServeHdfsConfigHandler()});
+      resourceHandler, new ServeHdfsConfigHandler()});
     server.setHandler(handlers);
 
     try {
       server.start();
 
-      // NOPMD jetty throws a generic exception, we have to catch it!
     } catch (Exception e) {
-      final String msg = "unable to start jetty server";
+      final String msg = "Unable to start jetty server";
       log.error(msg, e);
       throw new ConfigServerException(msg, e);
     }
@@ -67,21 +66,21 @@ public class ConfigServer {
     try {
       server.stop();
     } catch (Exception e) {
-      final String msg = "unable to stop the jetty service";
-      log.debug(msg, e);
+      final String msg = "Unable to stop the jetty service";
+      log.error(msg, e);
       throw new ConfigServerException(msg, e);
     }
   }
 
   private class ServeHdfsConfigHandler extends AbstractHandler {
     public synchronized void handle(String target, Request baseRequest, HttpServletRequest request,
-        HttpServletResponse response) throws IOException {
+      HttpServletResponse response) throws IOException {
 
-      File confFile = new File(frameworkConfig.getConfigPath());
+      File confFile = new File(hdfsFrameworkConfig.getConfigPath());
 
       if (!confFile.exists()) {
         throw new FileNotFoundException("Couldn't file config file: " + confFile.getPath()
-            + ". Please make sure it exists.");
+          + ". Please make sure it exists.");
       }
 
       String content = new String(Files.readAllBytes(Paths.get(confFile.getPath())), Charset.defaultCharset());
@@ -104,15 +103,15 @@ public class ConfigServer {
       String journalNodeString = getJournalNodes(journalNodes);
 
       model.put("journalnodes", journalNodeString);
-      model.put("frameworkName", frameworkConfig.getFrameworkName());
-      model.put("dataDir", frameworkConfig.getDataDir());
-      model.put("haZookeeperQuorum", frameworkConfig.getHaZookeeperQuorum());
+      model.put("frameworkName", hdfsFrameworkConfig.getFrameworkName());
+      model.put("dataDir", hdfsFrameworkConfig.getDataDir());
+      model.put("haZookeeperQuorum", hdfsFrameworkConfig.getHaZookeeperQuorum());
 
       content = engine.transform(content, model);
 
       response.setContentType("application/octet-stream;charset=utf-8");
       response.setHeader("Content-Disposition", "attachment; filename=\"" +
-          HDFSConstants.HDFS_CONFIG_FILE_NAME + "\" ");
+        HDFSConstants.HDFS_CONFIG_FILE_NAME + "\" ");
       response.setHeader("Content-Transfer-Encoding", "binary");
       response.setHeader("Content-Length", Integer.toString(content.length()));
 
@@ -122,17 +121,17 @@ public class ConfigServer {
     }
 
     private String getJournalNodes(Set<String> journalNodes) {
-         StringBuilder journalNodeStringBuilder = new StringBuilder("");
-         for (String jn : journalNodes) {
-           journalNodeStringBuilder.append(jn).append(":8485;");
-         }
-         String journalNodeString = journalNodeStringBuilder.toString();
+      StringBuilder journalNodeStringBuilder = new StringBuilder("");
+      for (String jn : journalNodes) {
+        journalNodeStringBuilder.append(jn).append(":8485;");
+      }
+      String journalNodeString = journalNodeStringBuilder.toString();
 
-         if (!journalNodeString.isEmpty()) {
-           // Chop the trailing ,
-           journalNodeString = journalNodeString.substring(0, journalNodeString.length() - 1);
-         }
-         return journalNodeString;
-       }
+      if (!journalNodeString.isEmpty()) {
+        // Chop the trailing ,
+        journalNodeString = journalNodeString.substring(0, journalNodeString.length() - 1);
+      }
+      return journalNodeString;
+    }
   }
 }

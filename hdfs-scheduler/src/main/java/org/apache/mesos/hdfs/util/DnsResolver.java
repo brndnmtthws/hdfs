@@ -4,8 +4,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.Protos;
 import org.apache.mesos.SchedulerDriver;
-import org.apache.mesos.hdfs.scheduler.Scheduler;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
+import org.apache.mesos.hdfs.scheduler.Scheduler;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -19,18 +19,20 @@ public class DnsResolver {
   static final int NN_TIMER_PERIOD = 10000;
 
   private final Scheduler scheduler;
-  private final HdfsFrameworkConfig conf;
+  private final HdfsFrameworkConfig hdfsFrameworkConfig;
 
-  public DnsResolver(Scheduler scheduler, HdfsFrameworkConfig conf) {
+  public DnsResolver(Scheduler scheduler, HdfsFrameworkConfig hdfsFrameworkConfig) {
     this.scheduler = scheduler;
-    this.conf = conf;
+    this.hdfsFrameworkConfig = hdfsFrameworkConfig;
   }
 
   public boolean journalNodesResolvable() {
-    if (!conf.usingMesosDns()) { return true; } //short circuit since Mesos handles this otherwise
+    if (!hdfsFrameworkConfig.usingMesosDns()) {
+      return true;
+    } //short circuit since Mesos handles this otherwise
     Set<String> hosts = new HashSet<>();
-    for (int i = 1; i <= conf.getJournalNodeCount(); i++) {
-      hosts.add(HDFSConstants.JOURNAL_NODE_ID + i + "." + conf.getFrameworkName() + "." + conf.getMesosDnsDomain());
+    for (int i = 1; i <= hdfsFrameworkConfig.getJournalNodeCount(); i++) {
+      hosts.add(HDFSConstants.JOURNAL_NODE_ID + i + "." + hdfsFrameworkConfig.getFrameworkName() + "." + hdfsFrameworkConfig.getMesosDnsDomain());
     }
     boolean success = true;
     for (String host : hosts) {
@@ -48,10 +50,12 @@ public class DnsResolver {
   }
 
   public boolean nameNodesResolvable() {
-    if (!conf.usingMesosDns()) { return true; } //short circuit since Mesos handles this otherwise
+    if (!hdfsFrameworkConfig.usingMesosDns()) {
+      return true;
+    } //short circuit since Mesos handles this otherwise
     Set<String> hosts = new HashSet<>();
     for (int i = 1; i <= HDFSConstants.TOTAL_NAME_NODES; i++) {
-      hosts.add(HDFSConstants.NAME_NODE_ID + i + "." + conf.getFrameworkName() + "." + conf.getMesosDnsDomain());
+      hosts.add(HDFSConstants.NAME_NODE_ID + i + "." + hdfsFrameworkConfig.getFrameworkName() + "." + hdfsFrameworkConfig.getMesosDnsDomain());
     }
     boolean success = true;
     for (String host : hosts) {
@@ -69,8 +73,8 @@ public class DnsResolver {
   }
 
   public void sendMessageAfterNNResolvable(final SchedulerDriver driver,
-      final Protos.TaskID taskId, final Protos.SlaveID slaveID, final String message) {
-    if (!conf.usingMesosDns()) {
+    final Protos.TaskID taskId, final Protos.SlaveID slaveID, final String message) {
+    if (!hdfsFrameworkConfig.usingMesosDns()) {
       // short circuit since Mesos handles this otherwise
       scheduler.sendMessageTo(driver, taskId, slaveID, message);
       return;

@@ -171,7 +171,7 @@ public abstract class AbstractNodeExecutor implements Executor {
         task.setProcess(processBuilder.start());
         redirectProcess(task.getProcess());
       } catch (IOException e) {
-        log.error("unable start process", e);
+        log.error("Unable to start process:", e);
         task.getProcess().destroy();
         sendTaskFailed(driver, task);
       }
@@ -245,7 +245,7 @@ public abstract class AbstractNodeExecutor implements Executor {
         sendTaskFailed(driver, task);
       }
     } catch (InterruptedException | IOException e) {
-      log.error("unable to run command", e);
+      log.error("Unable to run command:", e);
       if (task.getProcess() != null) {
         task.getProcess().destroy();
       }

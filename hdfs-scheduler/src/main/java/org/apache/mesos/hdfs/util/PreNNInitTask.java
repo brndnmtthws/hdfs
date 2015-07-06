@@ -1,8 +1,5 @@
 package org.apache.mesos.hdfs.util;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.TimerTask;
 
 /**
@@ -10,7 +7,6 @@ import java.util.TimerTask;
  */
 public class PreNNInitTask extends TimerTask {
 
-  private final Logger logger = LoggerFactory.getLogger(getClass());
   private DnsResolver dnsResolver;
   private FutureMessage futureMessage;
 

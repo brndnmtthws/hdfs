@@ -5,9 +5,6 @@ package org.apache.mesos.hdfs.config;
  */
 public class ConfigServerException extends RuntimeException {
 
-  public ConfigServerException() {
-  }
-
   public ConfigServerException(Throwable cause) {
     super(cause);
   }

@@ -11,10 +11,6 @@ public final class Main {
 
   private SchedulerExceptionHandler schedulerExceptionHandler = new SchedulerExceptionHandler();
 
-  // utility class
-  private Main() {
-  }
-
   public static void main(String[] args)  {
     new Main().start();
   }
@@ -22,14 +18,12 @@ public final class Main {
   private void start() {
     Injector injector = Guice.createInjector();
     getSchedulerThread(injector).start();
-
     injector.getInstance(ConfigServer.class);
   }
 
   private Thread getSchedulerThread(Injector injector) {
     Thread scheduler = new Thread(injector.getInstance(Scheduler.class));
     scheduler.setName("HdfsScheduler");
-
     scheduler.setUncaughtExceptionHandler(schedulerExceptionHandler);
     return scheduler;
   }
