@@ -2,6 +2,8 @@ package org.apache.mesos.hdfs.scheduler;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.hdfs.config.ConfigServer;
 
 /**
@@ -9,9 +11,9 @@ import org.apache.mesos.hdfs.config.ConfigServer;
  */
 public final class Main {
 
-  private SchedulerExceptionHandler schedulerExceptionHandler = new SchedulerExceptionHandler();
+  private final Log log = LogFactory.getLog(Main.class);
 
-  public static void main(String[] args)  {
+  public static void main(String[] args) {
     new Main().start();
   }
 
@@ -24,7 +26,18 @@ public final class Main {
   private Thread getSchedulerThread(Injector injector) {
     Thread scheduler = new Thread(injector.getInstance(Scheduler.class));
     scheduler.setName("HdfsScheduler");
-    scheduler.setUncaughtExceptionHandler(schedulerExceptionHandler);
+    scheduler.setUncaughtExceptionHandler(getUncaughtExceptionHandler());
     return scheduler;
+  }
+
+  private Thread.UncaughtExceptionHandler getUncaughtExceptionHandler() {
+
+    return new Thread.UncaughtExceptionHandler() {
+      @Override
+      public void uncaughtException(Thread t, Throwable e) {
+        log.error("Scheduler exiting due to uncaught exception", e);
+        System.exit(2);
+      }
+    };
   }
 }
