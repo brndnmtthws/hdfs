@@ -12,16 +12,18 @@ import org.apache.mesos.Protos.TaskID;
 import org.apache.mesos.Protos.TaskInfo;
 import org.apache.mesos.Protos.TaskState;
 import org.apache.mesos.Protos.TaskStatus;
-import org.apache.mesos.hdfs.config.SchedulerConf;
+import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
+import org.apache.mesos.hdfs.file.FileUtils;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 
 import java.io.File;
+import java.nio.charset.Charset;
 
 /**
  * The executor for the Primary Name Node Machine.
  */
 public class NameNodeExecutor extends AbstractNodeExecutor {
-  public static final Log log = LogFactory.getLog(NameNodeExecutor.class);
+  private final Log log = LogFactory.getLog(NameNodeExecutor.class);
 
   private Task nameNodeTask;
   // TODO better handling in livestate and persistent state of zkfc task. Right now they are
@@ -32,8 +34,8 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
    * The constructor for the primary name node which saves the configuration.
    */
   @Inject
-  NameNodeExecutor(SchedulerConf schedulerConf) {
-    super(schedulerConf);
+  NameNodeExecutor(HdfsFrameworkConfig hdfsFrameworkConfig) {
+    super(hdfsFrameworkConfig);
   }
 
   /**
@@ -54,16 +56,17 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
   public void launchTask(final ExecutorDriver driver, final TaskInfo taskInfo) {
     executorInfo = taskInfo.getExecutor();
     Task task = new Task(taskInfo);
+    log.info(String.format("Launching task, taskId=%s cmd='%s'", taskInfo.getTaskId().getValue(), task.getCmd()));
     if (taskInfo.getTaskId().getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
       nameNodeTask = task;
       driver.sendStatusUpdate(TaskStatus.newBuilder()
-          .setTaskId(nameNodeTask.taskInfo.getTaskId())
+          .setTaskId(nameNodeTask.getTaskInfo().getTaskId())
           .setState(TaskState.TASK_RUNNING)
           .build());
     } else if (taskInfo.getTaskId().getValue().contains(HDFSConstants.ZKFC_NODE_ID)) {
       zkfcNodeTask = task;
       driver.sendStatusUpdate(TaskStatus.newBuilder()
-          .setTaskId(zkfcNodeTask.taskInfo.getTaskId())
+          .setTaskId(zkfcNodeTask.getTaskInfo().getTaskId())
           .setState(TaskState.TASK_RUNNING)
           .build());
     }
@@ -79,9 +82,9 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
       task = zkfcNodeTask;
     }
 
-    if (task != null && task.process != null) {
-      task.process.destroy();
-      task.process = null;
+    if (task != null && task.getProcess() != null) {
+      task.getProcess().destroy();
+      task.setProcess(null);
     }
     driver.sendStatusUpdate(TaskStatus.newBuilder()
         .setTaskId(taskId)
@@ -94,33 +97,37 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
     // TODO(elingg) let's shut down the driver more gracefully
     log.info("Executor asked to shutdown");
     if (nameNodeTask != null) {
-      killTask(d, nameNodeTask.taskInfo.getTaskId());
+      killTask(d, nameNodeTask.getTaskInfo().getTaskId());
     }
     if (zkfcNodeTask != null) {
-      killTask(d, zkfcNodeTask.taskInfo.getTaskId());
+      killTask(d, zkfcNodeTask.getTaskInfo().getTaskId());
     }
   }
 
   @Override
   public void frameworkMessage(ExecutorDriver driver, byte[] msg) {
     super.frameworkMessage(driver, msg);
-    String messageStr = new String(msg);
-    File nameDir = new File(schedulerConf.getDataDir() + "/name");
+    String messageStr = new String(msg, Charset.defaultCharset());
+    File nameDir = new File(hdfsFrameworkConfig.getDataDir() + "/name");
     if (messageStr.equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)
         || messageStr.equals(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE)) {
       if (nameDir.exists() && messageStr.equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)) {
         log.info(String
             .format("NameNode data directory %s already exists, not formatting",
-                nameDir));
+              nameDir));
       } else {
-        deleteFile(nameDir);
-        nameDir.mkdirs();
+        FileUtils.deleteFile(nameDir);
+        if (!nameDir.mkdirs()) {
+          final String errorMsg = "unable to make directory: " + nameDir;
+          log.error(errorMsg);
+          throw new ExecutorException(errorMsg);
+        }
         runCommand(driver, nameNodeTask, "bin/hdfs-mesos-namenode " + messageStr);
       }
       startProcess(driver, nameNodeTask);
       startProcess(driver, zkfcNodeTask);
       driver.sendStatusUpdate(TaskStatus.newBuilder()
-          .setTaskId(nameNodeTask.taskInfo.getTaskId())
+          .setTaskId(nameNodeTask.getTaskInfo().getTaskId())
           .setState(TaskState.TASK_RUNNING)
           .setMessage(messageStr)
           .build());

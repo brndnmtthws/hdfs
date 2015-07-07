@@ -12,21 +12,21 @@ import org.apache.mesos.Protos.TaskID;
 import org.apache.mesos.Protos.TaskInfo;
 import org.apache.mesos.Protos.TaskState;
 import org.apache.mesos.Protos.TaskStatus;
-import org.apache.mesos.hdfs.config.SchedulerConf;
+import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
 
 /**
  * The executor for a Basic Node (either a Journal Node or Data Node).
  */
 public class NodeExecutor extends AbstractNodeExecutor {
-  public static final Log log = LogFactory.getLog(NodeExecutor.class);
+  private final Log log = LogFactory.getLog(NodeExecutor.class);
   private Task task;
 
   /**
    * The constructor for the node which saves the configuration.
    */
   @Inject
-  NodeExecutor(SchedulerConf schedulerConf) {
-    super(schedulerConf);
+  NodeExecutor(HdfsFrameworkConfig hdfsFrameworkConfig) {
+    super(hdfsFrameworkConfig);
   }
 
   /**
@@ -56,9 +56,9 @@ public class NodeExecutor extends AbstractNodeExecutor {
   @Override
   public void killTask(ExecutorDriver driver, TaskID taskId) {
     log.info("Killing task : " + taskId.getValue());
-    if (task.process != null && taskId.equals(task.taskInfo.getTaskId())) {
-      task.process.destroy();
-      task.process = null;
+    if (task.getProcess() != null && taskId.equals(task.getTaskInfo().getTaskId())) {
+      task.getProcess().destroy();
+      task.setProcess(null);
     }
     driver.sendStatusUpdate(TaskStatus.newBuilder()
         .setTaskId(taskId)
@@ -71,7 +71,7 @@ public class NodeExecutor extends AbstractNodeExecutor {
     // TODO(elingg) let's shut down the driver more gracefully
     log.info("Executor asked to shutdown");
     if (task != null) {
-      killTask(d, task.taskInfo.getTaskId());
+      killTask(d, task.getTaskInfo().getTaskId());
     }
   }
 }

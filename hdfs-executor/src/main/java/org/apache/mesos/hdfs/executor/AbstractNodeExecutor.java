@@ -16,7 +16,8 @@ import org.apache.mesos.Protos.Status;
 import org.apache.mesos.Protos.TaskInfo;
 import org.apache.mesos.Protos.TaskState;
 import org.apache.mesos.Protos.TaskStatus;
-import org.apache.mesos.hdfs.config.SchedulerConf;
+import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
+import org.apache.mesos.hdfs.file.FileUtils;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 import org.apache.mesos.hdfs.util.StreamRedirect;
 
@@ -24,22 +25,23 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public abstract class AbstractNodeExecutor implements Executor {
 
-  public static final Log log = LogFactory.getLog(AbstractNodeExecutor.class);
+  private final Log log = LogFactory.getLog(AbstractNodeExecutor.class);
   protected ExecutorInfo executorInfo;
-  protected SchedulerConf schedulerConf;
+  protected HdfsFrameworkConfig hdfsFrameworkConfig;
 
   /**
    * Constructor which takes in configuration.
    */
   @Inject
-  AbstractNodeExecutor(SchedulerConf schedulerConf) {
-    this.schedulerConf = schedulerConf;
+  AbstractNodeExecutor(HdfsFrameworkConfig hdfsFrameworkConfig) {
+    this.hdfsFrameworkConfig = hdfsFrameworkConfig;
   }
 
   /**
@@ -60,8 +62,9 @@ public abstract class AbstractNodeExecutor implements Executor {
       FrameworkInfo frameworkInfo, SlaveInfo slaveInfo) {
     // Set up data dir
     setUpDataDir();
-    if (!schedulerConf.usingNativeHadoopBinaries())
+    if (!hdfsFrameworkConfig.usingNativeHadoopBinaries()) {
       createSymbolicLink();
+    }
     log.info("Executor registered with the slave");
   }
 
@@ -70,31 +73,14 @@ public abstract class AbstractNodeExecutor implements Executor {
    */
   private void setUpDataDir() {
     // Create primary data dir if it does not exist
-    File dataDir = new File(schedulerConf.getDataDir());
-    if (!dataDir.exists()) {
-      dataDir.mkdirs();
-    }
+    File dataDir = new File(hdfsFrameworkConfig.getDataDir());
+    FileUtils.createDir(dataDir);
 
     // Create secondary data dir if it does not exist
-    File secondaryDataDir = new File(schedulerConf.getSecondaryDataDir());
-    if (!secondaryDataDir.exists()) {
-      secondaryDataDir.mkdirs();
-    }
+    File secondaryDataDir = new File(hdfsFrameworkConfig.getSecondaryDataDir());
+    FileUtils.createDir(secondaryDataDir);
   }
 
-  /**
-   * Delete a file or directory.
-   */
-  protected void deleteFile(File fileToDelete) {
-    if (fileToDelete.isDirectory()) {
-      String[] entries = fileToDelete.list();
-      for (String entry : entries) {
-        File childFile = new File(fileToDelete.getPath(), entry);
-        deleteFile(childFile);
-      }
-    }
-    fileToDelete.delete();
-  }
 
   /**
    * Create Symbolic Link for the HDFS binary.
@@ -107,13 +93,11 @@ public abstract class AbstractNodeExecutor implements Executor {
       Path sandboxHdfsBinaryPath = Paths.get(sandboxHdfsBinary.getAbsolutePath());
 
       // Create mesosphere opt dir (parent dir of the symbolic link) if it does not exist
-      File frameworkMountDir = new File(schedulerConf.getFrameworkMountPath());
-      if (!frameworkMountDir.exists()) {
-        frameworkMountDir.mkdirs();
-      }
+      File frameworkMountDir = new File(hdfsFrameworkConfig.getFrameworkMountPath());
+      FileUtils.createDir(frameworkMountDir);
 
       // Delete and recreate directory for symbolic link every time
-      String hdfsBinaryPath = schedulerConf.getFrameworkMountPath()
+      String hdfsBinaryPath = hdfsFrameworkConfig.getFrameworkMountPath()
           + "/" + HDFSConstants.HDFS_BINARY_DIR;
       File hdfsBinaryDir = new File(hdfsBinaryPath);
 
@@ -127,13 +111,15 @@ public abstract class AbstractNodeExecutor implements Executor {
           log.info("Unable to unlink old sym link. Link may not exist. Exit code: " + exitCode);
         }
       } catch (IOException e) {
-        log.fatal("Could not unlink " + hdfsBinaryPath + ": " + e);
-        System.exit(1);
+        log.fatal("Could not unlink " + hdfsBinaryPath, e);
+        throw e;
       }
 
       // Delete the file if it exists
-      if (hdfsBinaryDir.exists()) {
-        deleteFile(hdfsBinaryDir);
+      if (hdfsBinaryDir.exists() && !FileUtils.deleteFile(hdfsBinaryDir)) {
+        final String msg = "unable to delete file: " + hdfsBinaryDir;
+        log.error(msg);
+        throw new ExecutorException(msg);
       }
 
       // Create symbolic link
@@ -143,8 +129,8 @@ public abstract class AbstractNodeExecutor implements Executor {
       log.info("The symbolic link path is: " + hdfsLinkDirPath);
       // Adding binary to the PATH environment variable
       addBinaryToPath(hdfsBinaryPath);
-    } catch (Exception e) {
-      log.fatal("Error creating the symbolic link to hdfs binary: " + e);
+    } catch (IOException | InterruptedException e ) {
+      log.fatal("Error creating the symbolic link to hdfs binary", e);
       System.exit(1);
     }
   }
@@ -155,8 +141,9 @@ public abstract class AbstractNodeExecutor implements Executor {
    * Mesos slave packaging.
    */
   private void addBinaryToPath(String hdfsBinaryPath) throws IOException, InterruptedException {
-    if (schedulerConf.usingNativeHadoopBinaries())
+    if (hdfsFrameworkConfig.usingNativeHadoopBinaries()) {
       return;
+    }
     String pathEnvVarLocation = "/usr/bin/hadoop";
     String scriptContent = "#!/bin/bash \n" + hdfsBinaryPath + "/bin/hadoop \"$@\"";
     FileWriter fileWriter = new FileWriter(pathEnvVarLocation);
@@ -178,14 +165,14 @@ public abstract class AbstractNodeExecutor implements Executor {
    */
   protected void startProcess(ExecutorDriver driver, Task task) {
     reloadConfig();
-    if (task.process == null) {
+    if (task.getProcess() == null) {
       try {
-        ProcessBuilder processBuilder = new ProcessBuilder("sh", "-c", task.cmd);
-        task.process = processBuilder.start();
-        redirectProcess(task.process);
+        ProcessBuilder processBuilder = new ProcessBuilder("sh", "-c", task.getCmd());
+        task.setProcess(processBuilder.start());
+        redirectProcess(task.getProcess());
       } catch (IOException e) {
-        log.error(e);
-        task.process.destroy();
+        log.error("Unable to start process:", e);
+        task.getProcess().destroy();
         sendTaskFailed(driver, task);
       }
     } else {
@@ -197,7 +184,7 @@ public abstract class AbstractNodeExecutor implements Executor {
    * Reloads the cluster configuration so the executor has the correct configuration info.
    */
   protected void reloadConfig() {
-    if (schedulerConf.usingNativeHadoopBinaries()) return;
+    if (hdfsFrameworkConfig.usingNativeHadoopBinaries()) { return; }
     // Find config URI
     String configUri = "";
     for (CommandInfo.URI uri : executorInfo.getCommand().getUrisList()) {
@@ -252,15 +239,15 @@ public abstract class AbstractNodeExecutor implements Executor {
         log.info("Finished running command, exited with status " + exitCode);
       } else {
         log.error("Unable to run command: " + command);
-        if (task.process != null) {
-          task.process.destroy();
+        if (task.getProcess() != null) {
+          task.getProcess().destroy();
         }
         sendTaskFailed(driver, task);
       }
     } catch (InterruptedException | IOException e) {
-      log.error(e);
-      if (task.process != null) {
-        task.process.destroy();
+      log.error("Unable to run command:", e);
+      if (task.getProcess() != null) {
+        task.getProcess().destroy();
       }
       sendTaskFailed(driver, task);
     }
@@ -276,7 +263,7 @@ public abstract class AbstractNodeExecutor implements Executor {
    */
   private void sendTaskFailed(ExecutorDriver driver, Task task) {
     driver.sendStatusUpdate(TaskStatus.newBuilder()
-        .setTaskId(task.taskInfo.getTaskId())
+        .setTaskId(task.getTaskInfo().getTaskId())
         .setState(TaskState.TASK_FAILED)
         .build());
   }
@@ -294,7 +281,7 @@ public abstract class AbstractNodeExecutor implements Executor {
   @Override
   public void frameworkMessage(ExecutorDriver driver, byte[] msg) {
     reloadConfig();
-    String messageStr = new String(msg);
+    String messageStr = new String(msg, Charset.defaultCharset());
     log.info("Executor received framework message: " + messageStr);
   }
 
@@ -303,19 +290,4 @@ public abstract class AbstractNodeExecutor implements Executor {
     log.error(this.getClass().getName() + ".error: " + message);
   }
 
-  /**
-   * The task class for use within the executor
-   */
-  public class Task {
-    public TaskInfo taskInfo;
-    public String cmd;
-    public Process process;
-
-    Task(TaskInfo taskInfo) {
-      this.taskInfo = taskInfo;
-      this.cmd = taskInfo.getData().toStringUtf8();
-      log.info(String.format("Launching task, taskId=%s cmd='%s'", taskInfo.getTaskId().getValue(),
-          cmd));
-    }
-  }
 }

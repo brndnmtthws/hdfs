@@ -1,22 +1,57 @@
 package org.apache.mesos.hdfs.config;
 
 import com.google.inject.Singleton;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Properties;
 
+/**
+ * Provides executor configurations for launching processes at the slave leveraging hadoop
+ * configurations.
+ */
 @Singleton
-public class SchedulerConf extends Configured {
+public class HdfsFrameworkConfig {
 
-  public SchedulerConf(Configuration conf) {
+  private Configuration hadoopConfig;
+
+  private static final int DEFAULT_HADOOP_HEAP_SIZE = 512;
+  private static final int DEFAULT_EXECUTOR_HEAP_SIZE = 256;
+  private static final int DEFAULT_DATANODE_HEAP_SIZE = 1024;
+  private static final int DEFAULT_NAMENODE_HEAP_SIZE = 4096;
+
+  private static final double DEFAULT_CPUS = 0.5;
+  private static final double DEFAULT_EXECUTOR_CPUS = DEFAULT_CPUS;
+  private static final double DEFAULT_NAMENODE_CPUS = 1;
+  private static final double DEFAULT_JOURNAL_CPUS = 1;
+  private static final double DEFAULT_DATANODE_CPUS = 1;
+
+  private static final double DEFAULT_JVM_OVERHEAD = 1.35;
+  private static final int DEFAULT_JOURNAL_NODE_COUNT = 3;
+  private static final int DEFAULT_FAILOVER_TIMEOUT = 31449600;
+  private static final int DEFAULT_ZK_TIME_MS = 20000;
+  private static final int DEFAULT_RECONCILIATION_TIMEOUT = 30;
+  private static final int DEFAULT_DEADNODE_TIMEOUT = 90;
+
+  private final Log log = LogFactory.getLog(HdfsFrameworkConfig.class);
+
+  public HdfsFrameworkConfig(Configuration conf) {
     setConf(conf);
   }
 
-  public SchedulerConf() {
+  private void setConf(Configuration conf) {
+    this.hadoopConfig = conf;
+  }
+
+  private Configuration getConf() {
+    return hadoopConfig;
+  }
+
+  public HdfsFrameworkConfig() {
     // The path is configurable via the mesos.conf.path system property
     // so it can be changed when starting up the scheduler via bash
     Properties props = System.getProperties();
@@ -47,11 +82,11 @@ public class SchedulerConf extends Configured {
   }
 
   public int getHadoopHeapSize() {
-    return getConf().getInt("mesos.hdfs.hadoop.heap.size", 512);
+    return getConf().getInt("mesos.hdfs.hadoop.heap.size", DEFAULT_HADOOP_HEAP_SIZE);
   }
 
   public int getDataNodeHeapSize() {
-    return getConf().getInt("mesos.hdfs.datanode.heap.size", 1024);
+    return getConf().getInt("mesos.hdfs.datanode.heap.size", DEFAULT_DATANODE_HEAP_SIZE);
   }
 
   public int getJournalNodeHeapSize() {
@@ -59,11 +94,11 @@ public class SchedulerConf extends Configured {
   }
 
   public int getNameNodeHeapSize() {
-    return getConf().getInt("mesos.hdfs.namenode.heap.size", 4096);
+    return getConf().getInt("mesos.hdfs.namenode.heap.size", DEFAULT_NAMENODE_HEAP_SIZE);
   }
 
   public int getExecutorHeap() {
-    return getConf().getInt("mesos.hdfs.executor.heap.size", 256);
+    return getConf().getInt("mesos.hdfs.executor.heap.size", DEFAULT_EXECUTOR_HEAP_SIZE);
   }
 
   public int getZkfcHeapSize() {
@@ -71,42 +106,50 @@ public class SchedulerConf extends Configured {
   }
 
   public int getTaskHeapSize(String taskName) {
+    int size;
     switch (taskName) {
       case "zkfc":
-        return getZkfcHeapSize();
+        size = getZkfcHeapSize();
+        break;
       case "namenode":
-        return getNameNodeHeapSize();
+        size = getNameNodeHeapSize();
+        break;
       case "datanode":
-        return getDataNodeHeapSize();
+        size = getDataNodeHeapSize();
+        break;
       case "journalnode":
-        return getJournalNodeHeapSize();
+        size = getJournalNodeHeapSize();
+        break;
       default:
-        throw new RuntimeException("Invalid taskName=" + taskName);
+        final String msg = "Invalid request for heapsize for taskName = " + taskName;
+        log.error(msg);
+        throw new ConfigurationException(msg);
     }
+    return size;
   }
 
   public double getJvmOverhead() {
-    return getConf().getDouble("mesos.hdfs.jvm.overhead", 1.35);
+    return getConf().getDouble("mesos.hdfs.jvm.overhead", DEFAULT_JVM_OVERHEAD);
   }
 
   public String getJvmOpts() {
     return getConf().get(
-        "mesos.hdfs.jvm.opts", ""
-            + "-XX:+UseConcMarkSweepGC "
-            + "-XX:+CMSClassUnloadingEnabled "
-            + "-XX:+UseTLAB "
-            + "-XX:+AggressiveOpts "
-            + "-XX:+UseCompressedOops "
-            + "-XX:+UseFastEmptyMethods "
-            + "-XX:+UseFastAccessorMethods "
-            + "-Xss256k "
-            + "-XX:+AlwaysPreTouch "
-            + "-XX:+UseParNewGC "
-            + "-Djava.library.path=/usr/lib:/usr/local/lib:lib/native");
+      "mesos.hdfs.jvm.opts", ""
+        + "-XX:+UseConcMarkSweepGC "
+        + "-XX:+CMSClassUnloadingEnabled "
+        + "-XX:+UseTLAB "
+        + "-XX:+AggressiveOpts "
+        + "-XX:+UseCompressedOops "
+        + "-XX:+UseFastEmptyMethods "
+        + "-XX:+UseFastAccessorMethods "
+        + "-Xss256k "
+        + "-XX:+AlwaysPreTouch "
+        + "-XX:+UseParNewGC "
+        + "-Djava.library.path=/usr/lib:/usr/local/lib:lib/native");
   }
 
   public double getExecutorCpus() {
-    return getConf().getDouble("mesos.hdfs.executor.cpus", 0.5);
+    return getConf().getDouble("mesos.hdfs.executor.cpus", DEFAULT_EXECUTOR_CPUS);
   }
 
   public double getZkfcCpus() {
@@ -114,34 +157,42 @@ public class SchedulerConf extends Configured {
   }
 
   public double getNameNodeCpus() {
-    return getConf().getDouble("mesos.hdfs.namenode.cpus", 1);
+    return getConf().getDouble("mesos.hdfs.namenode.cpus", DEFAULT_NAMENODE_CPUS);
   }
 
   public double getJournalNodeCpus() {
-    return getConf().getDouble("mesos.hdfs.journalnode.cpus", 1);
+    return getConf().getDouble("mesos.hdfs.journalnode.cpus", DEFAULT_JOURNAL_CPUS);
   }
 
   public double getDataNodeCpus() {
-    return getConf().getDouble("mesos.hdfs.datanode.cpus", 1);
+    return getConf().getDouble("mesos.hdfs.datanode.cpus", DEFAULT_DATANODE_CPUS);
   }
 
   public double getTaskCpus(String taskName) {
+    double cpus = DEFAULT_CPUS;
     switch (taskName) {
       case "zkfc":
-        return getZkfcCpus();
+        cpus = getZkfcCpus();
+        break;
       case "namenode":
-        return getNameNodeCpus();
+        cpus = getNameNodeCpus();
+        break;
       case "datanode":
-        return getDataNodeCpus();
+        cpus = getDataNodeCpus();
+        break;
       case "journalnode":
-        return getJournalNodeCpus();
+        cpus = getJournalNodeCpus();
+        break;
       default:
-        throw new RuntimeException("Invalid taskName=" + taskName);
+        final String msg = "Invalid request for CPUs for taskName= " + taskName;
+        log.error(msg);
+        throw new ConfigurationException(msg);
     }
+    return cpus;
   }
 
   public int getJournalNodeCount() {
-    return getConf().getInt("mesos.hdfs.journalnode.count", 3);
+    return getConf().getInt("mesos.hdfs.journalnode.count", DEFAULT_JOURNAL_NODE_COUNT);
   }
 
   public String getFrameworkName() {
@@ -149,7 +200,7 @@ public class SchedulerConf extends Configured {
   }
 
   public long getFailoverTimeout() {
-    return getConf().getLong("mesos.failover.timeout.sec", 31449600);
+    return getConf().getLong("mesos.failover.timeout.sec", DEFAULT_FAILOVER_TIMEOUT);
   }
 
   // TODO(elingg) Most likely this user name will change to HDFS
@@ -183,7 +234,7 @@ public class SchedulerConf extends Configured {
   }
 
   public int getStateZkTimeout() {
-    return getConf().getInt("mesos.hdfs.state.zk.timeout.ms", 20000);
+    return getConf().getInt("mesos.hdfs.state.zk.timeout.ms", DEFAULT_ZK_TIME_MS);
   }
 
   public String getNativeLibrary() {
@@ -200,7 +251,7 @@ public class SchedulerConf extends Configured {
       try {
         hostAddress = InetAddress.getLocalHost().getHostAddress();
       } catch (UnknownHostException e) {
-        throw new RuntimeException(e);
+        throw new ConfigurationException(e);
       }
     }
     return hostAddress;
@@ -213,14 +264,14 @@ public class SchedulerConf extends Configured {
     if (configServerPortString == null) {
       configServerPortString = getConf().get("mesos.hdfs.config.server.port", "8765");
     }
-    return Integer.valueOf(configServerPortString);
+    return Integer.parseInt(configServerPortString);
   }
 
   public int getReconciliationTimeout() {
-    return getConf().getInt("mesos.reconciliation.timeout.seconds", 30);
+    return getConf().getInt("mesos.reconciliation.timeout.seconds", DEFAULT_RECONCILIATION_TIMEOUT);
   }
 
   public int getDeadNodeTimeout() {
-    return getConf().getInt("mesos.hdfs.deadnode.timeout.seconds", 90);
+    return getConf().getInt("mesos.hdfs.deadnode.timeout.seconds", DEFAULT_DEADNODE_TIMEOUT);
   }
 }
