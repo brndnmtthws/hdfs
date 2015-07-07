@@ -5,7 +5,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.Protos;
 import org.apache.mesos.SchedulerDriver;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
-import org.apache.mesos.hdfs.scheduler.Scheduler;
+import org.apache.mesos.hdfs.scheduler.HdfsScheduler;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -17,14 +17,14 @@ import java.util.Timer;
  * Provides DNS resolving specific to HDFS.
  */
 public class DnsResolver {
-  private final Log log = LogFactory.getLog(HdfsScheduler.class);
+  private final Log log = LogFactory.getLog(DnsResolver.class);
 
   static final int NN_TIMER_PERIOD = 10000;
 
-  private final Scheduler scheduler;
+  private final HdfsScheduler scheduler;
   private final HdfsFrameworkConfig hdfsFrameworkConfig;
 
-  public DnsResolver(Scheduler scheduler, HdfsFrameworkConfig hdfsFrameworkConfig) {
+  public DnsResolver(HdfsScheduler scheduler, HdfsFrameworkConfig hdfsFrameworkConfig) {
     this.scheduler = scheduler;
     this.hdfsFrameworkConfig = hdfsFrameworkConfig;
   }

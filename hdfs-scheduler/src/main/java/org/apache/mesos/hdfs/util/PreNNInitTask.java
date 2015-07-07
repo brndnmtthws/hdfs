@@ -2,7 +2,7 @@ package org.apache.mesos.hdfs.util;
 
 import org.apache.mesos.Protos;
 import org.apache.mesos.SchedulerDriver;
-import org.apache.mesos.hdfs.scheduler.Scheduler;
+import org.apache.mesos.hdfs.scheduler.HdfsScheduler;
 
 import java.util.TimerTask;
 
@@ -12,13 +12,13 @@ import java.util.TimerTask;
 public class PreNNInitTask extends TimerTask {
 
   private final DnsResolver dnsResolver;
-  private final Scheduler scheduler;
+  private final HdfsScheduler scheduler;
   private final SchedulerDriver driver;
   private final Protos.TaskID taskId;
   private final Protos.SlaveID slaveID;
   private final String message;
 
-  public PreNNInitTask(DnsResolver dnsResolver, Scheduler scheduler, SchedulerDriver driver, Protos.TaskID taskId,
+  public PreNNInitTask(DnsResolver dnsResolver, HdfsScheduler scheduler, SchedulerDriver driver, Protos.TaskID taskId,
     Protos.SlaveID slaveID, String message) {
     this.dnsResolver = dnsResolver;
     this.scheduler = scheduler;

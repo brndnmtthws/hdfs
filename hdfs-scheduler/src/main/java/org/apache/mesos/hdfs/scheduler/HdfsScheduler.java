@@ -57,7 +57,7 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
   private final DnsResolver dnsResolver;
 
   @Inject
-  public Scheduler(HdfsFrameworkConfig hdfsFrameworkConfig, LiveState liveState, PersistentState persistentState) {
+  public HdfsScheduler(HdfsFrameworkConfig hdfsFrameworkConfig, LiveState liveState, PersistentState persistentState) {
     this.hdfsFrameworkConfig = hdfsFrameworkConfig;
     this.liveState = liveState;
     this.persistentState = persistentState;
@@ -248,11 +248,11 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
   @Override
   public void run() {
     FrameworkInfo.Builder frameworkInfo = FrameworkInfo.newBuilder()
-        .setName(hdfsFrameworkConfig.getFrameworkName())
-        .setFailoverTimeout(hdfsFrameworkConfig.getFailoverTimeout())
-        .setUser(hdfsFrameworkConfig.getHdfsUser())
-        .setRole(hdfsFrameworkConfig.getHdfsRole())
-        .setCheckpoint(true);
+      .setName(hdfsFrameworkConfig.getFrameworkName())
+      .setFailoverTimeout(hdfsFrameworkConfig.getFailoverTimeout())
+      .setUser(hdfsFrameworkConfig.getHdfsUser())
+      .setRole(hdfsFrameworkConfig.getHdfsRole())
+      .setCheckpoint(true);
 
     try {
       FrameworkID frameworkID = persistentState.getFrameworkID();
@@ -265,9 +265,7 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
       throw new SchedulerException(msg, e);
     }
 
-    MesosSchedulerDriver driver = new MesosSchedulerDriver(this,
-      frameworkInfo.build(),
-      frameworkConfig.getMesosMasterUri());
+    MesosSchedulerDriver driver = new MesosSchedulerDriver(this, frameworkInfo.build(), hdfsFrameworkConfig.getMesosMasterUri());
     driver.run();
   }
 
@@ -317,8 +315,7 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
           return HDFSConstants.NAME_NODE_ID + i;
         }
       }
-      String errorStr = "Cluster is in inconsistent state. Trying to launch more namenodes, " +
-        "but they are all already running.";
+      String errorStr = "Cluster is in inconsistent state. Trying to launch more namenodes, but they are all already running.";
       log.error(errorStr);
       throw new SchedulerException(errorStr);
     }
@@ -329,8 +326,7 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
           return HDFSConstants.JOURNAL_NODE_ID + i;
         }
       }
-      String errorStr = "Cluster is in inconsistent state. Trying to launch more journalnodes, " +
-        "but they all are already running.";
+      String errorStr = "Cluster is in inconsistent state. Trying to launch more journalnodes, but they all are already running.";
       log.error(errorStr);
       throw new SchedulerException(errorStr);
     }
@@ -338,7 +334,7 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
   }
 
   private ExecutorInfo createExecutor(String taskIdName, String nodeName, String executorName,
-      List<Resource> resources) {
+    List<Resource> resources) {
     int confServerPort = hdfsFrameworkConfig.getConfigServerPort();
     return ExecutorInfo
       .newBuilder()
@@ -352,51 +348,15 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
             Arrays.asList(
               CommandInfo.URI
                 .newBuilder()
-                .addAllUris(
-                    Arrays.asList(
-                        CommandInfo.URI
-                            .newBuilder()
-                            .setValue(
-                                String.format("http://%s:%d/%s", hdfsFrameworkConfig.getFrameworkHostAddress(),
-                                    confServerPort,
-                                    HDFSConstants.HDFS_BINARY_FILE_NAME))
-                            .build(),
-                        CommandInfo.URI
-                            .newBuilder()
-                            .setValue(
-                                String.format("http://%s:%d/%s", hdfsFrameworkConfig.getFrameworkHostAddress(),
-                                    confServerPort,
-                                    HDFSConstants.HDFS_CONFIG_FILE_NAME))
-                            .build()))
-                .setEnvironment(Environment.newBuilder()
-                    .addAllVariables(Arrays.asList(
-                        Environment.Variable.newBuilder()
-                            .setName("HADOOP_OPTS")
-                            .setValue(hdfsFrameworkConfig.getJvmOpts()).build(),
-                        Environment.Variable.newBuilder()
-                            .setName("HADOOP_HEAPSIZE")
-                            .setValue(String.format("%d", hdfsFrameworkConfig.getHadoopHeapSize())).build(),
-                        Environment.Variable.newBuilder()
-                            .setName("HADOOP_NAMENODE_OPTS")
-                            .setValue("-Xmx" + hdfsFrameworkConfig.getNameNodeHeapSize()
-                                + "m -Xms" + hdfsFrameworkConfig.getNameNodeHeapSize() + "m").build(),
-                        Environment.Variable.newBuilder()
-                            .setName("HADOOP_DATANODE_OPTS")
-                            .setValue("-Xmx" + hdfsFrameworkConfig.getDataNodeHeapSize()
-                                + "m -Xms" + hdfsFrameworkConfig.getDataNodeHeapSize() + "m").build(),
-                        Environment.Variable.newBuilder()
-                            .setName("EXECUTOR_OPTS")
-                            .setValue("-Xmx" + hdfsFrameworkConfig.getExecutorHeap()
-                                + "m -Xms" + hdfsFrameworkConfig.getExecutorHeap() + "m").build())))
                 .setValue(
-                  String.format("http://%s:%d/%s", frameworkConfig.getFrameworkHostAddress(),
+                  String.format("http://%s:%d/%s", hdfsFrameworkConfig.getFrameworkHostAddress(),
                     confServerPort,
                     HDFSConstants.HDFS_BINARY_FILE_NAME))
                 .build(),
               CommandInfo.URI
                 .newBuilder()
                 .setValue(
-                  String.format("http://%s:%d/%s", frameworkConfig.getFrameworkHostAddress(),
+                  String.format("http://%s:%d/%s", hdfsFrameworkConfig.getFrameworkHostAddress(),
                     confServerPort,
                     HDFSConstants.HDFS_CONFIG_FILE_NAME))
                 .build()))
@@ -404,22 +364,22 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
             .addAllVariables(Arrays.asList(
               Environment.Variable.newBuilder()
                 .setName("HADOOP_OPTS")
-                .setValue(frameworkConfig.getJvmOpts()).build(),
+                .setValue(hdfsFrameworkConfig.getJvmOpts()).build(),
               Environment.Variable.newBuilder()
                 .setName("HADOOP_HEAPSIZE")
-                .setValue(String.format("%d", frameworkConfig.getHadoopHeapSize())).build(),
+                .setValue(String.format("%d", hdfsFrameworkConfig.getHadoopHeapSize())).build(),
               Environment.Variable.newBuilder()
                 .setName("HADOOP_NAMENODE_OPTS")
-                .setValue("-Xmx" + frameworkConfig.getNameNodeHeapSize()
-                  + "m -Xms" + frameworkConfig.getNameNodeHeapSize() + "m").build(),
+                .setValue("-Xmx" + hdfsFrameworkConfig.getNameNodeHeapSize()
+                  + "m -Xms" + hdfsFrameworkConfig.getNameNodeHeapSize() + "m").build(),
               Environment.Variable.newBuilder()
                 .setName("HADOOP_DATANODE_OPTS")
-                .setValue("-Xmx" + frameworkConfig.getDataNodeHeapSize()
-                  + "m -Xms" + frameworkConfig.getDataNodeHeapSize() + "m").build(),
+                .setValue("-Xmx" + hdfsFrameworkConfig.getDataNodeHeapSize()
+                  + "m -Xms" + hdfsFrameworkConfig.getDataNodeHeapSize() + "m").build(),
               Environment.Variable.newBuilder()
                 .setName("EXECUTOR_OPTS")
-                .setValue("-Xmx" + frameworkConfig.getExecutorHeap()
-                  + "m -Xms" + frameworkConfig.getExecutorHeap() + "m").build())))
+                .setValue("-Xmx" + hdfsFrameworkConfig.getExecutorHeap()
+                  + "m -Xms" + hdfsFrameworkConfig.getExecutorHeap() + "m").build())))
           .setValue(
             "env ; cd hdfs-mesos-* && "
               + "exec `if [ -z \"$JAVA_HOME\" ]; then echo java; "
@@ -628,13 +588,13 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
   private boolean offerNotEnoughResources(Offer offer, double cpus, int mem) {
     for (Resource offerResource : offer.getResourcesList()) {
       if (offerResource.getName().equals("cpus") &&
-          cpus + hdfsFrameworkConfig.getExecutorCpus() > offerResource.getScalar().getValue()) {
+        cpus + hdfsFrameworkConfig.getExecutorCpus() > offerResource.getScalar().getValue()) {
         return true;
       }
       if (offerResource.getName().equals("mem") &&
-          ((mem * hdfsFrameworkConfig.getJvmOverhead())
-              + (hdfsFrameworkConfig.getExecutorHeap() * hdfsFrameworkConfig.getJvmOverhead())
-              > offerResource.getScalar().getValue())) {
+        (mem * hdfsFrameworkConfig.getJvmOverhead())
+          + (hdfsFrameworkConfig.getExecutorHeap() * hdfsFrameworkConfig.getJvmOverhead())
+          > offerResource.getScalar().getValue()) {
         return true;
       }
     }
