@@ -21,6 +21,7 @@ subprojects {
   apply plugin: 'application'
 
   apply from: "$rootDir/gradle/quality.gradle"
+  apply from: "$rootDir/gradle/spock.gradle"
 
   sourceCompatibility = '1.7'
   targetCompatibility = '1.7'
