@@ -20,7 +20,7 @@
         </Match>
 
         <Match>
-            <Class name="org.apache.mesos.hdfs.scheduler.SchedulerExceptionHandler"/>
+            <Class name="org.apache.mesos.hdfs.scheduler.Main$1"/>
             <Bug pattern="DM_EXIT"/>
         </Match>
 

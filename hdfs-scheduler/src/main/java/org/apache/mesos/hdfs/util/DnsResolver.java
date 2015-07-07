@@ -35,7 +35,8 @@ public class DnsResolver {
     } //short circuit since Mesos handles this otherwise
     Set<String> hosts = new HashSet<>();
     for (int i = 1; i <= hdfsFrameworkConfig.getJournalNodeCount(); i++) {
-      hosts.add(HDFSConstants.JOURNAL_NODE_ID + i + "." + hdfsFrameworkConfig.getFrameworkName() + "." + hdfsFrameworkConfig.getMesosDnsDomain());
+      hosts.add(HDFSConstants.JOURNAL_NODE_ID + i + "." + hdfsFrameworkConfig.getFrameworkName() +
+        "." + hdfsFrameworkConfig.getMesosDnsDomain());
     }
     boolean success = true;
     for (String host : hosts) {
@@ -58,7 +59,8 @@ public class DnsResolver {
     } //short circuit since Mesos handles this otherwise
     Set<String> hosts = new HashSet<>();
     for (int i = 1; i <= HDFSConstants.TOTAL_NAME_NODES; i++) {
-      hosts.add(HDFSConstants.NAME_NODE_ID + i + "." + hdfsFrameworkConfig.getFrameworkName() + "." + hdfsFrameworkConfig.getMesosDnsDomain());
+      hosts.add(HDFSConstants.NAME_NODE_ID + i + "." + hdfsFrameworkConfig.getFrameworkName() +
+        "." + hdfsFrameworkConfig.getMesosDnsDomain());
     }
     boolean success = true;
     for (String host : hosts) {

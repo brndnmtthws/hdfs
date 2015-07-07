@@ -265,7 +265,8 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
       throw new SchedulerException(msg, e);
     }
 
-    MesosSchedulerDriver driver = new MesosSchedulerDriver(this, frameworkInfo.build(), hdfsFrameworkConfig.getMesosMasterUri());
+    MesosSchedulerDriver driver = new MesosSchedulerDriver(this,
+      frameworkInfo.build(), hdfsFrameworkConfig.getMesosMasterUri());
     driver.run();
   }
 
@@ -315,7 +316,8 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
           return HDFSConstants.NAME_NODE_ID + i;
         }
       }
-      String errorStr = "Cluster is in inconsistent state. Trying to launch more namenodes, but they are all already running.";
+      String errorStr = "Cluster is in inconsistent state. " +
+        "Trying to launch more namenodes, but they are all already running.";
       log.error(errorStr);
       throw new SchedulerException(errorStr);
     }
@@ -326,7 +328,8 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
           return HDFSConstants.JOURNAL_NODE_ID + i;
         }
       }
-      String errorStr = "Cluster is in inconsistent state. Trying to launch more journalnodes, but they all are already running.";
+      String errorStr = "Cluster is in inconsistent state. " +
+        "Trying to launch more journalnodes, but they all are already running.";
       log.error(errorStr);
       throw new SchedulerException(errorStr);
     }
@@ -421,13 +424,15 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
         .setName("mem")
         .setType(Value.Type.SCALAR)
         .setScalar(Value.Scalar.newBuilder()
-          .setValue(hdfsFrameworkConfig.getTaskHeapSize(taskName) * hdfsFrameworkConfig.getJvmOverhead()).build())
+          .setValue(hdfsFrameworkConfig.getTaskHeapSize(taskName) *
+            hdfsFrameworkConfig.getJvmOverhead()).build())
         .setRole(hdfsFrameworkConfig.getHdfsRole())
         .build());
   }
 
   private boolean tryToLaunchJournalNode(SchedulerDriver driver, Offer offer) {
-    if (offerNotEnoughResources(offer, hdfsFrameworkConfig.getJournalNodeCpus(), hdfsFrameworkConfig.getJournalNodeHeapSize())) {
+    if (offerNotEnoughResources(offer, hdfsFrameworkConfig.getJournalNodeCpus(),
+      hdfsFrameworkConfig.getJournalNodeHeapSize())) {
       log.info("Offer does not have enough resources");
       return false;
     }
@@ -501,7 +506,8 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
   }
 
   private boolean tryToLaunchDataNode(SchedulerDriver driver, Offer offer) {
-    if (offerNotEnoughResources(offer, hdfsFrameworkConfig.getDataNodeCpus(), hdfsFrameworkConfig.getDataNodeHeapSize())) {
+    if (offerNotEnoughResources(offer, hdfsFrameworkConfig.getDataNodeCpus(),
+      hdfsFrameworkConfig.getDataNodeHeapSize())) {
       log.info("Offer does not have enough resources");
       return false;
     }

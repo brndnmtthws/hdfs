@@ -55,17 +55,17 @@ public class PersistentState {
   private Timestamp deadDataNodeTimeStamp = null;
 
   @Inject
-  public PersistentState(HdfsFrameworkConfig frameworkConfig) {
-    MesosNativeLibrary.load(frameworkConfig.getNativeLibrary());
-    this.zkState = new ZooKeeperState(frameworkConfig.getStateZkServers(),
-      frameworkConfig.getStateZkTimeout(), TimeUnit.MILLISECONDS, "/hdfs-mesos/" +
-      frameworkConfig.getFrameworkName());
-    this.frameworkConfig = frameworkConfig;
+  public PersistentState(HdfsFrameworkConfig hdfsFrameworkConfig) {
+    MesosNativeLibrary.load(hdfsFrameworkConfig.getNativeLibrary());
+    this.zkState = new ZooKeeperState(hdfsFrameworkConfig.getStateZkServers(),
+      hdfsFrameworkConfig.getStateZkTimeout(),
+      TimeUnit.MILLISECONDS,
+      "/hdfs-mesos/" + hdfsFrameworkConfig.getFrameworkName());
+    this.hdfsFrameworkConfig = hdfsFrameworkConfig;
     resetDeadNodeTimeStamps();
   }
 
-  public FrameworkID getFrameworkID()
-    throws InterruptedException, ExecutionException, InvalidProtocolBufferException {
+  public FrameworkID getFrameworkID() throws InterruptedException, ExecutionException, InvalidProtocolBufferException {
     byte[] existingFrameworkId = zkState.fetch(FRAMEWORK_ID_KEY).get().value();
     if (existingFrameworkId.length > 0) {
       return FrameworkID.parseFrom(existingFrameworkId);
