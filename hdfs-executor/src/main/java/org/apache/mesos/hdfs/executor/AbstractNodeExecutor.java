@@ -123,7 +123,7 @@ public abstract class AbstractNodeExecutor implements Executor {
 
       // Delete the file if it exists
       if (hdfsBinaryDir.exists() && !FileUtils.deleteDirectory(hdfsBinaryDir)) {
-        final String msg = "unable to delete file: " + hdfsBinaryDir;
+        String msg = "unable to delete file: " + hdfsBinaryDir;
         log.error(msg);
         throw new ExecutorException(msg);
       }
@@ -136,7 +136,7 @@ public abstract class AbstractNodeExecutor implements Executor {
       // Adding binary to the PATH environment variable
       addBinaryToPath(hdfsBinaryPath);
     } catch (IOException | InterruptedException e) {
-      final String msg = "Error creating the symbolic link to hdfs binary";
+      String msg = "Error creating the symbolic link to hdfs binary";
       shutdownExecutor(1, msg, e);
     }
   }
@@ -162,7 +162,7 @@ public abstract class AbstractNodeExecutor implements Executor {
     Process process = processBuilder.start();
     int exitCode = process.waitFor();
     if (exitCode != 0) {
-      final String msg = "Error creating the symbolic link to hdfs binary."
+      String msg = "Error creating the symbolic link to hdfs binary."
         + "Failure running 'chmod a+x " + pathEnvVarLocation + "'";
       shutdownExecutor(1, msg);
     }

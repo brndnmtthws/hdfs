@@ -38,7 +38,7 @@ public final class FileUtils {
         LOG.error("File is not a directory: " + fileToDelete);
       }
     } catch (IOException e) {
-      LOG.error("unable to delete directory: " + fileToDelete);
+      LOG.error("Unable to delete directory: " + fileToDelete);
     }
 
     return deleted;
