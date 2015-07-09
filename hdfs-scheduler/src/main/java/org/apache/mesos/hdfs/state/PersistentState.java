@@ -32,6 +32,9 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Manages the persists needs of the scheduler.  It handles frameworkID and the list of tasks on each host.
+ */
 @Singleton
 public class PersistentState {
   private final Log log = LogFactory.getLog(PersistentState.class);
@@ -55,7 +58,9 @@ public class PersistentState {
   public PersistentState(HdfsFrameworkConfig hdfsFrameworkConfig) {
     MesosNativeLibrary.load(hdfsFrameworkConfig.getNativeLibrary());
     this.zkState = new ZooKeeperState(hdfsFrameworkConfig.getStateZkServers(),
-        hdfsFrameworkConfig.getStateZkTimeout(), TimeUnit.MILLISECONDS, "/hdfs-mesos/" + hdfsFrameworkConfig.getFrameworkName());
+      hdfsFrameworkConfig.getStateZkTimeout(),
+      TimeUnit.MILLISECONDS,
+      "/hdfs-mesos/" + hdfsFrameworkConfig.getFrameworkName());
     this.hdfsFrameworkConfig = hdfsFrameworkConfig;
     resetDeadNodeTimeStamps();
   }
@@ -70,7 +75,7 @@ public class PersistentState {
   }
 
   public void setFrameworkId(FrameworkID frameworkId) throws InterruptedException,
-      ExecutionException {
+    ExecutionException {
     Variable value = zkState.fetch(FRAMEWORK_ID_KEY).get();
     value = value.mutate(frameworkId.toByteArray());
     zkState.store(value).get();
@@ -126,54 +131,54 @@ public class PersistentState {
   }
 
   public List<String> getDeadJournalNodes() {
+    List<String> deadJournalHosts = new ArrayList<>();
+
     if (deadJournalNodeTimeStamp != null && deadJournalNodeTimeStamp.before(new Date())) {
       removeDeadJournalNodes();
-      return new ArrayList<>();
     } else {
       Map<String, String> journalNodes = getJournalNodes();
-      Set<String> journalHosts = journalNodes.keySet();
-      List<String> deadJournalHosts = new ArrayList<>();
-      for (String journalHost : journalHosts) {
-        if (journalNodes.get(journalHost) == null) {
-          deadJournalHosts.add(journalHost);
+      final Set<Map.Entry<String, String>> journalEntries = journalNodes.entrySet();
+      for (Map.Entry<String, String> journalNode : journalEntries) {
+        if (journalNode.getValue() == null) {
+          deadJournalHosts.add(journalNode.getKey());
         }
       }
-      return deadJournalHosts;
     }
+    return deadJournalHosts;
   }
 
   public List<String> getDeadNameNodes() {
+    List<String> deadNameHosts = new ArrayList<>();
+
     if (deadNameNodeTimeStamp != null && deadNameNodeTimeStamp.before(new Date())) {
       removeDeadNameNodes();
-      return new ArrayList<>();
     } else {
       Map<String, String> nameNodes = getNameNodes();
-      Set<String> nameHosts = nameNodes.keySet();
-      List<String> deadNameHosts = new ArrayList<>();
-      for (String nameHost : nameHosts) {
-        if (nameNodes.get(nameHost) == null) {
-          deadNameHosts.add(nameHost);
+      final Set<Map.Entry<String, String>> nameNodeEntries = nameNodes.entrySet();
+      for (Map.Entry<String, String> nameNode : nameNodeEntries) {
+        if (nameNode.getValue() == null) {
+          deadNameHosts.add(nameNode.getKey());
         }
       }
-      return deadNameHosts;
     }
+    return deadNameHosts;
   }
 
   public List<String> getDeadDataNodes() {
+    List<String> deadDataHosts = new ArrayList<>();
+
     if (deadDataNodeTimeStamp != null && deadDataNodeTimeStamp.before(new Date())) {
       removeDeadDataNodes();
-      return new ArrayList<>();
     } else {
       Map<String, String> dataNodes = getDataNodes();
-      Set<String> dataHosts = dataNodes.keySet();
-      List<String> deadDataHosts = new ArrayList<>();
-      for (String dataHost : dataHosts) {
-        if (dataNodes.get(dataHost) == null) {
-          deadDataHosts.add(dataHost);
+      final Set<Map.Entry<String, String>> dataNodeEntries = dataNodes.entrySet();
+      for (Map.Entry<String, String> dataNode : dataNodeEntries) {
+        if (dataNode.getValue() == null) {
+          deadDataHosts.add(dataNode.getKey());
         }
       }
-      return deadDataHosts;
     }
+    return deadDataHosts;
   }
 
   // TODO (nicgrayson) add tests with in-memory state implementation for zookeeper
@@ -364,13 +369,15 @@ public class PersistentState {
    */
   @SuppressWarnings("unchecked")
   private <T extends Object> T get(String key) throws InterruptedException, ExecutionException,
-      IOException, ClassNotFoundException {
+    IOException, ClassNotFoundException {
     byte[] existingNodes = zkState.fetch(key).get().value();
     if (existingNodes.length > 0) {
       ByteArrayInputStream bis = new ByteArrayInputStream(existingNodes);
       ObjectInputStream in = null;
       try {
         in = new ObjectInputStream(bis);
+        // generic in java lose their runtime information, there is no way to get this casted without
+        // the need for the SuppressWarnings on the method.
         return (T) in.readObject();
       } finally {
         try {
@@ -387,14 +394,14 @@ public class PersistentState {
   }
 
   /**
-   * Set serializable object in store
+   * Set serializable object in store.
    *
    * @throws ExecutionException
    * @throws InterruptedException
    * @throws IOException
    */
   private <T extends Object> void set(String key, T object) throws InterruptedException,
-      ExecutionException, IOException {
+    ExecutionException, IOException {
     Variable value = zkState.fetch(key).get();
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
     ObjectOutputStream out = null;

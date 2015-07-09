@@ -14,6 +14,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Manages the "Live" state of running tasks.
+ */
 @Singleton
 public class LiveState {
   private final Log log = LogFactory.getLog(LiveState.class);
@@ -61,7 +64,9 @@ public class LiveState {
     runningTasks.remove(taskId.getValue());
   }
 
+  @SuppressWarnings("PMD")
   public void updateTaskForStatus(Protos.TaskStatus status) {
+    // todo:  (kgs) refactor to remove the pmd challenges with this code
     // TODO (elingg) Use Starting Status when the task is running, but not initialized. Use running
     // status when the task is initialized so that we can differentiate during the reconciliation
     // phase. Also, add the health checks which will kill the task if it doesn't properly

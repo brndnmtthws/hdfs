@@ -5,7 +5,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.mesos.Protos;
 import org.apache.mesos.SchedulerDriver;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
-import org.apache.mesos.hdfs.scheduler.Scheduler;
+import org.apache.mesos.hdfs.scheduler.HdfsScheduler;
 import org.apache.mesos.hdfs.state.AcquisitionPhase;
 import org.apache.mesos.hdfs.state.LiveState;
 import org.apache.mesos.hdfs.state.PersistentState;
@@ -50,7 +50,7 @@ public class TestScheduler {
   @Captor
   ArgumentCaptor<Collection<Protos.TaskInfo>> taskInfosCapture;
 
-  Scheduler scheduler;
+  HdfsScheduler scheduler;
 
   @Test
   public void statusUpdateWasStagingNowRunning() {
@@ -239,7 +239,7 @@ public class TestScheduler {
   @Before
   public void setup() {
     MockitoAnnotations.initMocks(this);
-    this.scheduler = new Scheduler(hdfsFrameworkConfig, liveState, persistentState);
+    this.scheduler = new HdfsScheduler(hdfsFrameworkConfig, liveState, persistentState);
   }
 
   private Protos.TaskID createTaskId(String id) {

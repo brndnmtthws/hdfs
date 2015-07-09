@@ -3,6 +3,7 @@ package org.apache.mesos.hdfs.executor;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.Executor;
@@ -23,13 +24,18 @@ import org.apache.mesos.hdfs.util.StreamRedirect;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+/**
+ * The base for several types of HDFS executors.  It also contains the main which is consistent for all executors.
+ */
 public abstract class AbstractNodeExecutor implements Executor {
 
   private final Log log = LogFactory.getLog(AbstractNodeExecutor.class);
@@ -50,7 +56,7 @@ public abstract class AbstractNodeExecutor implements Executor {
   public static void main(String[] args) {
     Injector injector = Guice.createInjector();
     MesosExecutorDriver driver = new MesosExecutorDriver(
-        injector.getInstance(AbstractNodeExecutor.class));
+      injector.getInstance(AbstractNodeExecutor.class));
     System.exit(driver.run() == Status.DRIVER_STOPPED ? 0 : 1);
   }
 
@@ -59,7 +65,7 @@ public abstract class AbstractNodeExecutor implements Executor {
    */
   @Override
   public void registered(ExecutorDriver driver, ExecutorInfo executorInfo,
-      FrameworkInfo frameworkInfo, SlaveInfo slaveInfo) {
+    FrameworkInfo frameworkInfo, SlaveInfo slaveInfo) {
     // Set up data dir
     setUpDataDir();
     if (!hdfsFrameworkConfig.usingNativeHadoopBinaries()) {
@@ -98,7 +104,7 @@ public abstract class AbstractNodeExecutor implements Executor {
 
       // Delete and recreate directory for symbolic link every time
       String hdfsBinaryPath = hdfsFrameworkConfig.getFrameworkMountPath()
-          + "/" + HDFSConstants.HDFS_BINARY_DIR;
+        + "/" + HDFSConstants.HDFS_BINARY_DIR;
       File hdfsBinaryDir = new File(hdfsBinaryPath);
 
       // Try to delete the symbolic link in case a dangling link is present
@@ -116,8 +122,8 @@ public abstract class AbstractNodeExecutor implements Executor {
       }
 
       // Delete the file if it exists
-      if (hdfsBinaryDir.exists() && !FileUtils.deleteFile(hdfsBinaryDir)) {
-        final String msg = "unable to delete file: " + hdfsBinaryDir;
+      if (hdfsBinaryDir.exists() && !FileUtils.deleteDirectory(hdfsBinaryDir)) {
+        String msg = "Unable to delete file: " + hdfsBinaryDir;
         log.error(msg);
         throw new ExecutorException(msg);
       }
@@ -129,9 +135,9 @@ public abstract class AbstractNodeExecutor implements Executor {
       log.info("The symbolic link path is: " + hdfsLinkDirPath);
       // Adding binary to the PATH environment variable
       addBinaryToPath(hdfsBinaryPath);
-    } catch (IOException | InterruptedException e ) {
-      log.fatal("Error creating the symbolic link to hdfs binary", e);
-      System.exit(1);
+    } catch (IOException | InterruptedException e) {
+      String msg = "Error creating the symbolic link to hdfs binary";
+      shutdownExecutor(1, msg, e);
     }
   }
 
@@ -146,7 +152,9 @@ public abstract class AbstractNodeExecutor implements Executor {
     }
     String pathEnvVarLocation = "/usr/bin/hadoop";
     String scriptContent = "#!/bin/bash \n" + hdfsBinaryPath + "/bin/hadoop \"$@\"";
-    FileWriter fileWriter = new FileWriter(pathEnvVarLocation);
+
+    File file = new File(pathEnvVarLocation);
+    Writer fileWriter = new OutputStreamWriter(new FileOutputStream(file), "UTF-8");
     BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
     bufferedWriter.write(scriptContent);
     bufferedWriter.close();
@@ -154,10 +162,21 @@ public abstract class AbstractNodeExecutor implements Executor {
     Process process = processBuilder.start();
     int exitCode = process.waitFor();
     if (exitCode != 0) {
-      log.fatal("Error creating the symbolic link to hdfs binary."
-          + "Failure running 'chmod a+x " + pathEnvVarLocation + "'");
-      System.exit(1);
+      String msg = "Error creating the symbolic link to hdfs binary."
+        + "Failure running 'chmod a+x " + pathEnvVarLocation + "'";
+      shutdownExecutor(1, msg);
     }
+  }
+
+  private void shutdownExecutor(int statusCode, String message) {
+    shutdownExecutor(statusCode, message, null);
+  }
+
+  private void shutdownExecutor(int statusCode, String message, Exception e) {
+    if (StringUtils.isNotBlank(message)) {
+      log.fatal(message, e);
+    }
+    System.exit(statusCode);
   }
 
   /**
@@ -184,7 +203,9 @@ public abstract class AbstractNodeExecutor implements Executor {
    * Reloads the cluster configuration so the executor has the correct configuration info.
    */
   protected void reloadConfig() {
-    if (hdfsFrameworkConfig.usingNativeHadoopBinaries()) { return; }
+    if (hdfsFrameworkConfig.usingNativeHadoopBinaries()) {
+      return;
+    }
     // Find config URI
     String configUri = "";
     for (CommandInfo.URI uri : executorInfo.getCommand().getUrisList()) {
@@ -199,7 +220,7 @@ public abstract class AbstractNodeExecutor implements Executor {
     try {
       log.info(String.format("Reloading hdfs-site.xml from %s", configUri));
       ProcessBuilder processBuilder = new ProcessBuilder("sh", "-c",
-          String.format("curl -o hdfs-site.xml %s && cp hdfs-site.xml etc/hadoop/", configUri));
+        String.format("curl -o hdfs-site.xml %s && cp hdfs-site.xml etc/hadoop/", configUri));
       Process process = processBuilder.start();
       //TODO(nicgrayson) check if the config has changed
       redirectProcess(process);
@@ -263,9 +284,9 @@ public abstract class AbstractNodeExecutor implements Executor {
    */
   private void sendTaskFailed(ExecutorDriver driver, Task task) {
     driver.sendStatusUpdate(TaskStatus.newBuilder()
-        .setTaskId(task.getTaskInfo().getTaskId())
-        .setState(TaskState.TASK_FAILED)
-        .build());
+      .setTaskId(task.getTaskInfo().getTaskId())
+      .setState(TaskState.TASK_FAILED)
+      .build());
   }
 
   @Override

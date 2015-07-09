@@ -5,7 +5,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.Protos;
 import org.apache.mesos.SchedulerDriver;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
-import org.apache.mesos.hdfs.scheduler.Scheduler;
+import org.apache.mesos.hdfs.scheduler.HdfsScheduler;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -13,15 +13,18 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Timer;
 
+/**
+ * Provides DNS resolving specific to HDFS.
+ */
 public class DnsResolver {
-  private final Log log = LogFactory.getLog(Scheduler.class);
+  private final Log log = LogFactory.getLog(DnsResolver.class);
 
   static final int NN_TIMER_PERIOD = 10000;
 
-  private final Scheduler scheduler;
+  private final HdfsScheduler scheduler;
   private final HdfsFrameworkConfig hdfsFrameworkConfig;
 
-  public DnsResolver(Scheduler scheduler, HdfsFrameworkConfig hdfsFrameworkConfig) {
+  public DnsResolver(HdfsScheduler scheduler, HdfsFrameworkConfig hdfsFrameworkConfig) {
     this.scheduler = scheduler;
     this.hdfsFrameworkConfig = hdfsFrameworkConfig;
   }
@@ -32,7 +35,8 @@ public class DnsResolver {
     } //short circuit since Mesos handles this otherwise
     Set<String> hosts = new HashSet<>();
     for (int i = 1; i <= hdfsFrameworkConfig.getJournalNodeCount(); i++) {
-      hosts.add(HDFSConstants.JOURNAL_NODE_ID + i + "." + hdfsFrameworkConfig.getFrameworkName() + "." + hdfsFrameworkConfig.getMesosDnsDomain());
+      hosts.add(HDFSConstants.JOURNAL_NODE_ID + i + "." + hdfsFrameworkConfig.getFrameworkName() +
+        "." + hdfsFrameworkConfig.getMesosDnsDomain());
     }
     boolean success = true;
     for (String host : hosts) {
@@ -55,7 +59,8 @@ public class DnsResolver {
     } //short circuit since Mesos handles this otherwise
     Set<String> hosts = new HashSet<>();
     for (int i = 1; i <= HDFSConstants.TOTAL_NAME_NODES; i++) {
-      hosts.add(HDFSConstants.NAME_NODE_ID + i + "." + hdfsFrameworkConfig.getFrameworkName() + "." + hdfsFrameworkConfig.getMesosDnsDomain());
+      hosts.add(HDFSConstants.NAME_NODE_ID + i + "." + hdfsFrameworkConfig.getFrameworkName() +
+        "." + hdfsFrameworkConfig.getMesosDnsDomain());
     }
     boolean success = true;
     for (String host : hosts) {
