@@ -376,6 +376,8 @@ public class PersistentState {
       ObjectInputStream in = null;
       try {
         in = new ObjectInputStream(bis);
+        // generic in java lose their runtime information, there is no way to get this casted without
+        // the need for the SuppressWarnings on the method.
         return (T) in.readObject();
       } finally {
         try {
