@@ -123,7 +123,7 @@ public abstract class AbstractNodeExecutor implements Executor {
 
       // Delete the file if it exists
       if (hdfsBinaryDir.exists() && !FileUtils.deleteDirectory(hdfsBinaryDir)) {
-        String msg = "unable to delete file: " + hdfsBinaryDir;
+        String msg = "Unable to delete file: " + hdfsBinaryDir;
         log.error(msg);
         throw new ExecutorException(msg);
       }
