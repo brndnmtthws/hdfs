@@ -137,7 +137,8 @@ public class PersistentState {
       removeDeadJournalNodes();
     } else {
       Map<String, String> journalNodes = getJournalNodes();
-      for (Map.Entry<String, String> journalNode : journalNodes.entrySet()) {
+      final Set<Map.Entry<String, String>> journalEntries = journalNodes.entrySet();
+      for (Map.Entry<String, String> journalNode : journalEntries) {
         if (journalNode.getValue() == null) {
           deadJournalHosts.add(journalNode.getKey());
         }
@@ -153,7 +154,8 @@ public class PersistentState {
       removeDeadNameNodes();
     } else {
       Map<String, String> nameNodes = getNameNodes();
-      for (Map.Entry<String, String> nameNode : nameNodes.entrySet()) {
+      final Set<Map.Entry<String, String>> nameNodeEntries = nameNodes.entrySet();
+      for (Map.Entry<String, String> nameNode : nameNodeEntries) {
         if (nameNode.getValue() == null) {
           deadNameHosts.add(nameNode.getKey());
         }
@@ -169,7 +171,8 @@ public class PersistentState {
       removeDeadDataNodes();
     } else {
       Map<String, String> dataNodes = getDataNodes();
-      for (Map.Entry<String, String> dataNode : dataNodes.entrySet()) {
+      final Set<Map.Entry<String, String>> dataNodeEntries = dataNodes.entrySet();
+      for (Map.Entry<String, String> dataNode : dataNodeEntries) {
         if (dataNode.getValue() == null) {
           deadDataHosts.add(dataNode.getKey());
         }
