@@ -66,6 +66,7 @@ public class LiveState {
 
   @SuppressWarnings("PMD")
   public void updateTaskForStatus(Protos.TaskStatus status) {
+    // todo:  (kgs) refactor to remove the pmd challenges with this code
     // TODO (elingg) Use Starting Status when the task is running, but not initialized. Use running
     // status when the task is initialized so that we can differentiate during the reconciliation
     // phase. Also, add the health checks which will kill the task if it doesn't properly
