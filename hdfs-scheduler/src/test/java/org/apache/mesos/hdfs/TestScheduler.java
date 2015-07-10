@@ -8,7 +8,7 @@ import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
 import org.apache.mesos.hdfs.scheduler.HdfsScheduler;
 import org.apache.mesos.hdfs.state.AcquisitionPhase;
 import org.apache.mesos.hdfs.state.LiveState;
-import org.apache.mesos.hdfs.state.PersistentState;
+import org.apache.mesos.hdfs.state.PersistenceManager;
 import org.apache.mesos.hdfs.util.DnsResolver;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 import org.junit.Before;
@@ -39,7 +39,7 @@ public class TestScheduler {
   SchedulerDriver driver;
 
   @Mock
-  PersistentState persistentState;
+  PersistenceManager persistenceManager;
 
   @Mock
   LiveState liveState;
@@ -152,7 +152,7 @@ public class TestScheduler {
     journalNodes.put("host1", "journalnode1");
     journalNodes.put("host2", "journalnode2");
     journalNodes.put("host3", "journalnode3");
-    when(persistentState.getJournalNodes()).thenReturn(journalNodes);
+    when(persistenceManager.getJournalNodes()).thenReturn(journalNodes);
 
     scheduler.resourceOffers(driver, Lists.newArrayList(createTestOffer(0)));
 
@@ -162,8 +162,8 @@ public class TestScheduler {
   @Test
   public void launchesNamenodeWhenInNamenode1Phase() {
     when(liveState.getCurrentAcquisitionPhase()).thenReturn(AcquisitionPhase.START_NAME_NODES);
-    when(persistentState.getNameNodeTaskNames()).thenReturn(new HashMap<String, String>());
-    when(persistentState.journalNodeRunningOnSlave("host0")).thenReturn(true);
+    when(persistenceManager.getNameNodeTaskNames()).thenReturn(new HashMap<String, String>());
+    when(persistenceManager.journalNodeRunningOnSlave("host0")).thenReturn(true);
     when(dnsResolver.journalNodesResolvable()).thenReturn(true);
 
     scheduler.resourceOffers(driver, Lists.newArrayList(createTestOffer(0)));
@@ -239,7 +239,7 @@ public class TestScheduler {
   @Before
   public void setup() {
     MockitoAnnotations.initMocks(this);
-    this.scheduler = new HdfsScheduler(hdfsFrameworkConfig, liveState, persistentState);
+    this.scheduler = new HdfsScheduler(hdfsFrameworkConfig, liveState, persistenceManager);
   }
 
   private Protos.TaskID createTaskId(String id) {

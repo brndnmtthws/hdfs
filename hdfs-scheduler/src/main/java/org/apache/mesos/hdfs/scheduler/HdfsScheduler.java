@@ -2,7 +2,6 @@ package org.apache.mesos.hdfs.scheduler;
 
 import com.google.inject.Inject;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.MesosSchedulerDriver;
@@ -27,7 +26,8 @@ import org.apache.mesos.SchedulerDriver;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
 import org.apache.mesos.hdfs.state.AcquisitionPhase;
 import org.apache.mesos.hdfs.state.LiveState;
-import org.apache.mesos.hdfs.state.PersistentState;
+import org.apache.mesos.hdfs.state.PersistenceException;
+import org.apache.mesos.hdfs.state.PersistenceManager;
 import org.apache.mesos.hdfs.util.DnsResolver;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 
@@ -40,7 +40,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ExecutionException;
 
 /**
  * HDFS Mesos Framework Scheduler class implementation.
@@ -53,11 +52,13 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
 
   private final HdfsFrameworkConfig hdfsFrameworkConfig;
   private final LiveState liveState;
-  private final PersistentState persistentState;
+  private final PersistenceManager persistentState;
   private final DnsResolver dnsResolver;
 
   @Inject
-  public HdfsScheduler(HdfsFrameworkConfig hdfsFrameworkConfig, LiveState liveState, PersistentState persistentState) {
+  public HdfsScheduler(HdfsFrameworkConfig hdfsFrameworkConfig,
+    LiveState liveState, PersistenceManager persistentState) {
+
     this.hdfsFrameworkConfig = hdfsFrameworkConfig;
     this.liveState = liveState;
     this.persistentState = persistentState;
@@ -97,7 +98,7 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
   public void registered(SchedulerDriver driver, FrameworkID frameworkId, MasterInfo masterInfo) {
     try {
       persistentState.setFrameworkId(frameworkId);
-    } catch (InterruptedException | ExecutionException e) {
+    } catch (PersistenceException e) {
       // these are zk exceptions... we are unable to maintain state.
       final String msg = "Error setting framework id in persistent state";
       log.error(msg, e);
@@ -255,11 +256,11 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
       .setCheckpoint(true);
 
     try {
-      FrameworkID frameworkID = persistentState.getFrameworkID();
+      FrameworkID frameworkID = persistentState.getFrameworkId();
       if (frameworkID != null) {
         frameworkInfo.setId(frameworkID);
       }
-    } catch (InterruptedException | ExecutionException | InvalidProtocolBufferException e) {
+    } catch (PersistenceException e) {
       final String msg = "Error recovering framework id";
       log.error(msg, e);
       throw new SchedulerException(msg, e);
