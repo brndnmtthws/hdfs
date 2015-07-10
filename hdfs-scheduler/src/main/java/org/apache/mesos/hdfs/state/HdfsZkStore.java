@@ -5,8 +5,6 @@ import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
 import org.apache.mesos.state.State;
 import org.apache.mesos.state.Variable;
 import org.apache.mesos.state.ZooKeeperState;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -21,15 +19,13 @@ import java.util.concurrent.TimeUnit;
  * throws exceptions to allow the manager to handle the logic.  It currently is tied to zookeeper, but should
  * be replaceable with any mesos state abstraction.
  */
-public class HdfsState {
-
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+public class HdfsZkStore implements HdfsStore {
 
   private State state;
   private static final String FRAMEWORK_ID_KEY = "frameworkId";
 
 
-  public HdfsState(HdfsFrameworkConfig hdfsFrameworkConfig) {
+  public HdfsZkStore(HdfsFrameworkConfig hdfsFrameworkConfig) {
 
     this.state = new ZooKeeperState(hdfsFrameworkConfig.getStateZkServers(),
       hdfsFrameworkConfig.getStateZkTimeout(),
@@ -59,7 +55,7 @@ public class HdfsState {
    * @throws ClassNotFoundException
    */
   @SuppressWarnings("unchecked")
-  protected <T extends Object> T get(String key) throws InterruptedException, ExecutionException,
+  public <T extends Object> T get(String key) throws InterruptedException, ExecutionException,
     IOException, ClassNotFoundException {
 
     byte[] existingNodes = state.fetch(key).get().value();

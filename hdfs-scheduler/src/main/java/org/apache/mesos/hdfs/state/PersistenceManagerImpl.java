@@ -29,7 +29,7 @@ import java.util.concurrent.ExecutionException;
 public class PersistenceManagerImpl implements PersistenceManager {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
-  private HdfsState hdfsState;
+  private HdfsStore hdfsStore;
   private DeadNodeTracker deadNodeTracker;
 
   private static final String NAMENODES_KEY = "nameNodes";
@@ -44,7 +44,7 @@ public class PersistenceManagerImpl implements PersistenceManager {
   public PersistenceManagerImpl(HdfsFrameworkConfig hdfsFrameworkConfig) {
     MesosNativeLibrary.load(hdfsFrameworkConfig.getNativeLibrary());
 
-    this.hdfsState = new HdfsState(hdfsFrameworkConfig);
+    this.hdfsStore = new HdfsZkStore(hdfsFrameworkConfig);
 
     deadNodeTracker = new DeadNodeTracker(this, hdfsFrameworkConfig);
     deadNodeTracker.resetDeadNodeTimeStamps();
@@ -54,7 +54,7 @@ public class PersistenceManagerImpl implements PersistenceManager {
   public void setFrameworkId(Protos.FrameworkID id) {
 
     try {
-      hdfsState.setFrameworkId(id.toByteArray());
+      hdfsStore.setFrameworkId(id.toByteArray());
     } catch (ExecutionException | InterruptedException e) {
       logger.error("Unable to set frameworkId", e);
       throw new PersistenceException(e);
@@ -66,12 +66,11 @@ public class PersistenceManagerImpl implements PersistenceManager {
     Protos.FrameworkID frameworkID = null;
     byte[] existingFrameworkId;
     try {
-      existingFrameworkId = hdfsState.getFrameworkID();
+      existingFrameworkId = hdfsStore.getFrameworkID();
       if (existingFrameworkId.length > 0) {
         frameworkID = Protos.FrameworkID.parseFrom(existingFrameworkId);
       }
     } catch (InterruptedException | ExecutionException e) {
-      // todo:  (kgs) does it make sense to throw an exception, previous code did
       logger.error("Unable to get FrameworkID from state store.", e);
       throw new PersistenceException(e);
     } catch (InvalidProtocolBufferException e) {
@@ -282,7 +281,7 @@ public class PersistenceManagerImpl implements PersistenceManager {
 
   private Map<String, String> getNodesMap(String key) {
     try {
-      HashMap<String, String> nodesMap = hdfsState.get(key);
+      HashMap<String, String> nodesMap = hdfsStore.get(key);
       if (nodesMap == null) {
         return new HashMap<>();
       }
@@ -355,7 +354,7 @@ public class PersistenceManagerImpl implements PersistenceManager {
 
   private void setJournalNodes(Map<String, String> journalNodes) {
     try {
-      hdfsState.set(JOURNALNODES_KEY, journalNodes);
+      hdfsStore.set(JOURNALNODES_KEY, journalNodes);
     } catch (Exception e) {
       logger.error("Error while setting journal nodes in persistent state", e);
     }
@@ -363,7 +362,7 @@ public class PersistenceManagerImpl implements PersistenceManager {
 
   private void setJournalNodeTaskNames(Map<String, String> journalNodeTaskNames) {
     try {
-      hdfsState.set(JOURNALNODE_TASKNAMES_KEY, journalNodeTaskNames);
+      hdfsStore.set(JOURNALNODE_TASKNAMES_KEY, journalNodeTaskNames);
     } catch (Exception e) {
       logger.error("Error while setting journal node task names in persistent state", e);
     }
@@ -371,7 +370,7 @@ public class PersistenceManagerImpl implements PersistenceManager {
 
   private void setNameNodes(Map<String, String> nameNodes) {
     try {
-      hdfsState.set(NAMENODES_KEY, nameNodes);
+      hdfsStore.set(NAMENODES_KEY, nameNodes);
     } catch (Exception e) {
       logger.error("Error while setting name nodes in persistent state", e);
     }
@@ -379,7 +378,7 @@ public class PersistenceManagerImpl implements PersistenceManager {
 
   private void setNameNodeTaskNames(Map<String, String> nameNodeTaskNames) {
     try {
-      hdfsState.set(NAMENODE_TASKNAMES_KEY, nameNodeTaskNames);
+      hdfsStore.set(NAMENODE_TASKNAMES_KEY, nameNodeTaskNames);
     } catch (Exception e) {
       logger.error("Error while setting name node task names in persistent state", e);
     }
@@ -387,7 +386,7 @@ public class PersistenceManagerImpl implements PersistenceManager {
 
   private void setDataNodes(Map<String, String> dataNodes) {
     try {
-      hdfsState.set(DATANODES_KEY, dataNodes);
+      hdfsStore.set(DATANODES_KEY, dataNodes);
     } catch (Exception e) {
       logger.error("Error while setting data nodes in persistent state", e);
     }
