@@ -38,11 +38,7 @@ subprojects {
     hadoopVer = "2.5.0"
     slf4jVer = "1.7.10"
     logbackVer = "1.1.2"
-    jettyVer = "9.2.2.v20140723"
-    jodaTimeVer = "2.4"
-    jmteVer = "3.0"
     guiceVer = "3.0"
-    guavaVer = "18.0"
     junitVer = "4.11"
     mockitoVer = "1.9.5"
   }
@@ -68,11 +64,7 @@ subprojects {
       exclude group: "net.java.dev.jets3t", module: "jets3t"
     }
 
-    compile "org.eclipse.jetty:jetty-server:${jettyVer}"
-    compile "joda-time:joda-time:${jodaTimeVer}"
-    compile "com.floreysoft:jmte:${jmteVer}"
     compile "com.google.inject:guice:${guiceVer}"
-    compile "com.google.guava:guava:${guavaVer}"
 
     testCompile "junit:junit:${junitVer}"
     testCompile "org.mockito:mockito-all:${mockitoVer}"
