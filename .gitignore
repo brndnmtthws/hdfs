@@ -11,3 +11,6 @@ out/
 # gradle
 .gradle
 build/
+
+# vim swap files
+*.swp
