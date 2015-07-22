@@ -37,10 +37,6 @@ public class HdfsFrameworkConfig {
   private static final int DEFAULT_RECONCILIATION_TIMEOUT = 30;
   private static final int DEFAULT_DEADNODE_TIMEOUT = 90;
 
-  private static final String DEFAULT_JRE_URL = "https://downloads.mesosphere.io/java/jre-7u76-linux-x64.tar.gz";
-  private static final String DEFAULT_JRE_VERSION = "jre1.7.0_76";
-  private static final String DEFAULT_LD_LIBRARY_PATH = "/opt/mesosphere/lib";
-
   private final Log log = LogFactory.getLog(HdfsFrameworkConfig.class);
 
   public HdfsFrameworkConfig(Configuration conf) {
@@ -280,14 +276,14 @@ public class HdfsFrameworkConfig {
   }
 
   public String getJreUrl() {
-    return getConf().get("mesos.hdfs.jre-url", DEFAULT_JRE_URL);
+    return getConf().get("mesos.hdfs.jre-url", "https://downloads.mesosphere.io/java/jre-7u76-linux-x64.tar.gz");
   }
 
   public String getLdLibraryPath() {
-    return getConf().get("mesos.hdfs.ld-library-path", DEFAULT_LD_LIBRARY_PATH);
+    return getConf().get("mesos.hdfs.ld-library-path", "/usr/local/lib");
   }
 
   public String getJreVersion() {
-    return getConf().get("mesos.hdfs.jre-version", DEFAULT_JRE_VERSION);
+    return getConf().get("mesos.hdfs.jre-version", "jre1.7.0_76");
   }
 }
