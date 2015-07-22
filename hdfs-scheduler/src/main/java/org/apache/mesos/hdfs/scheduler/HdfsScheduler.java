@@ -339,6 +339,15 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
   private ExecutorInfo createExecutor(String taskIdName, String nodeName, String executorName,
     List<Resource> resources) {
     int confServerPort = hdfsFrameworkConfig.getConfigServerPort();
+
+    String cmd = "export JAVA_HOME=$MESOS_DIRECTORY/" + hdfsFrameworkConfig.getJreVersion()
+      + " && env ; cd hdfs-mesos-* && "
+      + "exec `if [ -z \"$JAVA_HOME\" ]; then echo java; "
+      + "else echo $JAVA_HOME/bin/java; fi` "
+      + "$HADOOP_OPTS "
+      + "$EXECUTOR_OPTS "
+      + "-cp lib/*.jar org.apache.mesos.hdfs.executor." + executorName;
+
     return ExecutorInfo
       .newBuilder()
       .setName(nodeName + " executor")
@@ -362,9 +371,16 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
                   String.format("http://%s:%d/%s", hdfsFrameworkConfig.getFrameworkHostAddress(),
                     confServerPort,
                     HDFSConstants.HDFS_CONFIG_FILE_NAME))
+                .build(),
+              CommandInfo.URI
+                .newBuilder()
+                .setValue(hdfsFrameworkConfig.getJreUrl())
                 .build()))
           .setEnvironment(Environment.newBuilder()
             .addAllVariables(Arrays.asList(
+              Environment.Variable.newBuilder()
+                .setName("LD_LIBRARY_PATH")
+                .setValue(hdfsFrameworkConfig.getLdLibraryPath()).build(),
               Environment.Variable.newBuilder()
                 .setName("HADOOP_OPTS")
                 .setValue(hdfsFrameworkConfig.getJvmOpts()).build(),
@@ -383,13 +399,7 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
                 .setName("EXECUTOR_OPTS")
                 .setValue("-Xmx" + hdfsFrameworkConfig.getExecutorHeap()
                   + "m -Xms" + hdfsFrameworkConfig.getExecutorHeap() + "m").build())))
-          .setValue(
-            "env ; cd hdfs-mesos-* && "
-              + "exec `if [ -z \"$JAVA_HOME\" ]; then echo java; "
-              + "else echo $JAVA_HOME/bin/java; fi` "
-              + "$HADOOP_OPTS "
-              + "$EXECUTOR_OPTS "
-              + "-cp lib/*.jar org.apache.mesos.hdfs.executor." + executorName).build())
+          .setValue(cmd).build())
       .build();
   }
 
