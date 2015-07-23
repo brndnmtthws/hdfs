@@ -31,7 +31,7 @@ subprojects {
   mainClassName = "org.apache.mesos.hdfs.scheduler.Main"
 
   group = "com.apache.mesos.hdfs"
-  version = "0.1.1"
+  version = "0.1.2"
 
   ext {
     mesosVer = "0.22.1"
