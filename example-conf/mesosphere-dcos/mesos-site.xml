@@ -84,4 +84,9 @@
     <name>mesos.native.library</name>
     <value>/opt/mesosphere/lib/libmesos.so</value>
   </property>
+  
+  <property>
+    <name>mesos.hdfs.ld-library-path</name>
+    <value>/opt/mesosphere/lib</value>
+  </property>
 </configuration>
