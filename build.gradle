@@ -1,5 +1,12 @@
 allprojects {
   apply plugin: 'idea'
+
+  group = "com.apache.mesos.hdfs"
+  version = "0.1.2"
+}
+
+task version << {
+	println "$version"
 }
 
 idea {
@@ -29,9 +36,6 @@ subprojects {
   [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
   mainClassName = "org.apache.mesos.hdfs.scheduler.Main"
-
-  group = "com.apache.mesos.hdfs"
-  version = "0.1.2"
 
   ext {
     mesosVer = "0.22.1"
