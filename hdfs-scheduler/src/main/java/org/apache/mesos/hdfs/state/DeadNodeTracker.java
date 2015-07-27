@@ -20,12 +20,12 @@ public class DeadNodeTracker {
   private Timestamp deadDataNodeTimeStamp = null;
 
   // todo:  (kgs) see if we can remove this dependency
-  private PersistenceManager persistenceManager;
+  private IPersistentStateStore persistenceStore;
   private HdfsFrameworkConfig hdfsFrameworkConfig;
 
 
-  public DeadNodeTracker(PersistenceManager persistenceManager, HdfsFrameworkConfig hdfsFrameworkConfig) {
-    this.persistenceManager = persistenceManager;
+  public DeadNodeTracker(IPersistentStateStore persistenceStore, HdfsFrameworkConfig hdfsFrameworkConfig) {
+    this.persistenceStore = persistenceStore;
     this.hdfsFrameworkConfig = hdfsFrameworkConfig;
   }
 
@@ -33,15 +33,15 @@ public class DeadNodeTracker {
   public void resetDeadNodeTimeStamps() {
     Date date = DateUtils.addSeconds(new Date(), hdfsFrameworkConfig.getDeadNodeTimeout());
 
-    if (persistenceManager.getDeadJournalNodes().size() > 0) {
+    if (persistenceStore.getDeadJournalNodes().size() > 0) {
       deadJournalNodeTimeStamp = new Timestamp(date.getTime());
     }
 
-    if (persistenceManager.getDeadNameNodes().size() > 0) {
+    if (persistenceStore.getDeadNameNodes().size() > 0) {
       deadNameNodeTimeStamp = new Timestamp(date.getTime());
     }
 
-    if (persistenceManager.getDeadDataNodes().size() > 0) {
+    if (persistenceStore.getDeadDataNodes().size() > 0) {
       deadDataNodeTimeStamp = new Timestamp(date.getTime());
     }
   }

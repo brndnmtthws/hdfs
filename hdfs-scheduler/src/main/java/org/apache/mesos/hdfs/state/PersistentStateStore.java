@@ -26,12 +26,13 @@ import java.util.concurrent.ExecutionException;
  */
 
 @Singleton
-public class PersistenceManagerImpl implements PersistenceManager {
+public class PersistentStateStore implements IPersistentStateStore {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private HdfsStore hdfsStore;
   private DeadNodeTracker deadNodeTracker;
 
+  private static final String FRAMEWORK_ID_KEY = "frameworkId";
   private static final String NAMENODES_KEY = "nameNodes";
   private static final String JOURNALNODES_KEY = "journalNodes";
   private static final String DATANODES_KEY = "dataNodes";
@@ -41,7 +42,7 @@ public class PersistenceManagerImpl implements PersistenceManager {
   // TODO (nicgrayson) add tests with in-memory state implementation for zookeeper
 
   @Inject
-  public PersistenceManagerImpl(HdfsFrameworkConfig hdfsFrameworkConfig) {
+  public PersistentStateStore(HdfsFrameworkConfig hdfsFrameworkConfig) {
     MesosNativeLibrary.load(hdfsFrameworkConfig.getNativeLibrary());
 
     this.hdfsStore = new HdfsZkStore(hdfsFrameworkConfig);
@@ -54,7 +55,7 @@ public class PersistenceManagerImpl implements PersistenceManager {
   public void setFrameworkId(Protos.FrameworkID id) {
 
     try {
-      hdfsStore.setFrameworkId(id.toByteArray());
+      hdfsStore.setRawValueForId(FRAMEWORK_ID_KEY, id.toByteArray());
     } catch (ExecutionException | InterruptedException e) {
       logger.error("Unable to set frameworkId", e);
       throw new PersistenceException(e);
@@ -66,7 +67,7 @@ public class PersistenceManagerImpl implements PersistenceManager {
     Protos.FrameworkID frameworkID = null;
     byte[] existingFrameworkId;
     try {
-      existingFrameworkId = hdfsStore.getFrameworkID();
+      existingFrameworkId = hdfsStore.getRawValueForId(FRAMEWORK_ID_KEY);
       if (existingFrameworkId.length > 0) {
         frameworkID = Protos.FrameworkID.parseFrom(existingFrameworkId);
       }

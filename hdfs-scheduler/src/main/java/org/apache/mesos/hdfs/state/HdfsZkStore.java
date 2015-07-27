@@ -22,7 +22,6 @@ import java.util.concurrent.TimeUnit;
 public class HdfsZkStore implements HdfsStore {
 
   private State state;
-  private static final String FRAMEWORK_ID_KEY = "frameworkId";
 
 
   public HdfsZkStore(HdfsFrameworkConfig hdfsFrameworkConfig) {
@@ -34,13 +33,13 @@ public class HdfsZkStore implements HdfsStore {
   }
 
 
-  public byte[] getFrameworkID() throws ExecutionException, InterruptedException {
-    byte[] existingFrameworkId = state.fetch(FRAMEWORK_ID_KEY).get().value();
-    return existingFrameworkId;
+  public byte[] getRawValueForId(String id) throws ExecutionException, InterruptedException {
+    byte[] value = state.fetch(id).get().value();
+    return value;
   }
 
-  public void setFrameworkId(byte[] frameworkId) throws ExecutionException, InterruptedException {
-    Variable value = state.fetch(FRAMEWORK_ID_KEY).get();
+  public void setRawValueForId(String id, byte[] frameworkId) throws ExecutionException, InterruptedException {
+    Variable value = state.fetch(id).get();
     value = value.mutate(frameworkId);
     state.store(value).get();
   }

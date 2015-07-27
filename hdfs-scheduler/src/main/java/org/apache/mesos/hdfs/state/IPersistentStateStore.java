@@ -9,7 +9,7 @@ import java.util.Set;
 /**
  * Entry point for persistence for the HDFS scheduler.
  */
-public interface PersistenceManager {
+public interface IPersistentStateStore {
 
   void setFrameworkId(Protos.FrameworkID id);
 

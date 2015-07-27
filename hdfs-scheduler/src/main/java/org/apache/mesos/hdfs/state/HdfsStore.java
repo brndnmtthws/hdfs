@@ -8,9 +8,10 @@ import java.util.concurrent.ExecutionException;
  */
 public interface HdfsStore {
 
-  byte[] getFrameworkID() throws ExecutionException, InterruptedException;
+  byte[] getRawValueForId(String id) throws ExecutionException, InterruptedException;
 
-  void setFrameworkId(byte[] frameworkId) throws ExecutionException, InterruptedException;
+  void setRawValueForId(String id,
+    byte[] frameworkId) throws ExecutionException, InterruptedException;
 
   <T extends Object> T get(String key) throws InterruptedException, ExecutionException,
     IOException, ClassNotFoundException;

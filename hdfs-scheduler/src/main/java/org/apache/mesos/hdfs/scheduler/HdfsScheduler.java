@@ -27,7 +27,7 @@ import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
 import org.apache.mesos.hdfs.state.AcquisitionPhase;
 import org.apache.mesos.hdfs.state.LiveState;
 import org.apache.mesos.hdfs.state.PersistenceException;
-import org.apache.mesos.hdfs.state.PersistenceManager;
+import org.apache.mesos.hdfs.state.IPersistentStateStore;
 import org.apache.mesos.hdfs.util.DnsResolver;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 
@@ -52,16 +52,16 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
 
   private final HdfsFrameworkConfig hdfsFrameworkConfig;
   private final LiveState liveState;
-  private final PersistenceManager persistentState;
+  private final IPersistentStateStore persistenceStore;
   private final DnsResolver dnsResolver;
 
   @Inject
   public HdfsScheduler(HdfsFrameworkConfig hdfsFrameworkConfig,
-    LiveState liveState, PersistenceManager persistentState) {
+    LiveState liveState, IPersistentStateStore persistenceStore) {
 
     this.hdfsFrameworkConfig = hdfsFrameworkConfig;
     this.liveState = liveState;
-    this.persistentState = persistentState;
+    this.persistenceStore = persistenceStore;
     this.dnsResolver = new DnsResolver(this, hdfsFrameworkConfig);
   }
 
@@ -97,7 +97,7 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
   @Override
   public void registered(SchedulerDriver driver, FrameworkID frameworkId, MasterInfo masterInfo) {
     try {
-      persistentState.setFrameworkId(frameworkId);
+      persistenceStore.setFrameworkId(frameworkId);
     } catch (PersistenceException e) {
       // these are zk exceptions... we are unable to maintain state.
       final String msg = "Error setting framework id in persistent state";
@@ -131,7 +131,7 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
 
     if (isTerminalState(status)) {
       liveState.removeRunningTask(status.getTaskId());
-      persistentState.removeTaskId(status.getTaskId().getValue());
+      persistenceStore.removeTaskId(status.getTaskId().getValue());
       // Correct the phase when a task dies after the reconcile period is over
       if (!liveState.getCurrentAcquisitionPhase().equals(AcquisitionPhase.RECONCILING_TASKS)) {
         correctCurrentPhase();
@@ -256,7 +256,7 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
       .setCheckpoint(true);
 
     try {
-      FrameworkID frameworkID = persistentState.getFrameworkId();
+      FrameworkID frameworkID = persistenceStore.getFrameworkId();
       if (frameworkID != null) {
         frameworkInfo.setId(frameworkID);
       }
@@ -302,7 +302,7 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
       tasks.add(task);
 
       liveState.addStagingTask(task.getTaskId());
-      persistentState.addHdfsNode(taskId, offer.getHostname(), taskType, taskName);
+      persistenceStore.addHdfsNode(taskId, offer.getHostname(), taskType, taskName);
     }
     driver.launchTasks(Arrays.asList(offer.getId()), tasks);
     return true;
@@ -311,7 +311,7 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
   private String getNextTaskName(String taskType) {
 
     if (taskType.equals(HDFSConstants.NAME_NODE_ID)) {
-      Collection<String> nameNodeTaskNames = persistentState.getNameNodeTaskNames().values();
+      Collection<String> nameNodeTaskNames = persistenceStore.getNameNodeTaskNames().values();
       for (int i = 1; i <= HDFSConstants.TOTAL_NAME_NODES; i++) {
         if (!nameNodeTaskNames.contains(HDFSConstants.NAME_NODE_ID + i)) {
           return HDFSConstants.NAME_NODE_ID + i;
@@ -323,7 +323,7 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
       throw new SchedulerException(errorStr);
     }
     if (taskType.equals(HDFSConstants.JOURNAL_NODE_ID)) {
-      Collection<String> journalNodeTaskNames = persistentState.getJournalNodeTaskNames().values();
+      Collection<String> journalNodeTaskNames = persistenceStore.getJournalNodeTaskNames().values();
       for (int i = 1; i <= hdfsFrameworkConfig.getJournalNodeCount(); i++) {
         if (!journalNodeTaskNames.contains(HDFSConstants.JOURNAL_NODE_ID + i)) {
           return HDFSConstants.JOURNAL_NODE_ID + i;
@@ -449,16 +449,16 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
     }
 
     boolean launch = false;
-    List<String> deadJournalNodes = persistentState.getDeadJournalNodes();
+    List<String> deadJournalNodes = persistenceStore.getDeadJournalNodes();
 
     log.info(deadJournalNodes);
 
     if (deadJournalNodes.isEmpty()) {
-      if (persistentState.getJournalNodes().size() == hdfsFrameworkConfig.getJournalNodeCount()) {
+      if (persistenceStore.getJournalNodes().size() == hdfsFrameworkConfig.getJournalNodeCount()) {
         log.info(String.format("Already running %s journalnodes", hdfsFrameworkConfig.getJournalNodeCount()));
-      } else if (persistentState.journalNodeRunningOnSlave(offer.getHostname())) {
+      } else if (persistenceStore.journalNodeRunningOnSlave(offer.getHostname())) {
         log.info(String.format("Already running journalnode on %s", offer.getHostname()));
-      } else if (persistentState.dataNodeRunningOnSlave(offer.getHostname())) {
+      } else if (persistenceStore.dataNodeRunningOnSlave(offer.getHostname())) {
         log.info(String.format("Cannot colocate journalnode and datanode on %s",
           offer.getHostname()));
       } else {
@@ -487,16 +487,16 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
     }
 
     boolean launch = false;
-    List<String> deadNameNodes = persistentState.getDeadNameNodes();
+    List<String> deadNameNodes = persistenceStore.getDeadNameNodes();
 
     if (deadNameNodes.isEmpty()) {
-      if (persistentState.getNameNodes().size() == HDFSConstants.TOTAL_NAME_NODES) {
+      if (persistenceStore.getNameNodes().size() == HDFSConstants.TOTAL_NAME_NODES) {
         log.info(String.format("Already running %s namenodes", HDFSConstants.TOTAL_NAME_NODES));
-      } else if (persistentState.nameNodeRunningOnSlave(offer.getHostname())) {
+      } else if (persistenceStore.nameNodeRunningOnSlave(offer.getHostname())) {
         log.info(String.format("Already running namenode on %s", offer.getHostname()));
-      } else if (persistentState.dataNodeRunningOnSlave(offer.getHostname())) {
+      } else if (persistenceStore.dataNodeRunningOnSlave(offer.getHostname())) {
         log.info(String.format("Cannot colocate namenode and datanode on %s", offer.getHostname()));
-      } else if (!persistentState.journalNodeRunningOnSlave(offer.getHostname())) {
+      } else if (!persistenceStore.journalNodeRunningOnSlave(offer.getHostname())) {
         log.info(String.format("We need to coloate the namenode with a journalnode and there is"
           + "no journalnode running on this host. %s", offer.getHostname()));
       } else {
@@ -524,14 +524,14 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
     }
 
     boolean launch = false;
-    List<String> deadDataNodes = persistentState.getDeadDataNodes();
+    List<String> deadDataNodes = persistenceStore.getDeadDataNodes();
     // TODO (elingg) Relax this constraint to only wait for DN's when the number of DN's is small
     // What number of DN's should we try to recover or should we remove this constraint
     // entirely?
     if (deadDataNodes.isEmpty()) {
-      if (persistentState.dataNodeRunningOnSlave(offer.getHostname())
-        || persistentState.nameNodeRunningOnSlave(offer.getHostname())
-        || persistentState.journalNodeRunningOnSlave(offer.getHostname())) {
+      if (persistenceStore.dataNodeRunningOnSlave(offer.getHostname())
+        || persistenceStore.nameNodeRunningOnSlave(offer.getHostname())
+        || persistenceStore.journalNodeRunningOnSlave(offer.getHostname())) {
         log.info(String.format("Already running hdfs task on %s", offer.getHostname()));
       } else {
         launch = true;
@@ -632,19 +632,19 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
     @Override
     public void run() {
       log.info("Current persistent state:");
-      log.info(String.format("JournalNodes: %s, %s", persistentState.getJournalNodes(),
-        persistentState.getJournalNodeTaskNames()));
-      log.info(String.format("NameNodes: %s, %s", persistentState.getNameNodes(),
-        persistentState.getNameNodeTaskNames()));
-      log.info(String.format("DataNodes: %s", persistentState.getDataNodes()));
+      log.info(String.format("JournalNodes: %s, %s", persistenceStore.getJournalNodes(),
+        persistenceStore.getJournalNodeTaskNames()));
+      log.info(String.format("NameNodes: %s, %s", persistenceStore.getNameNodes(),
+        persistenceStore.getNameNodeTaskNames()));
+      log.info(String.format("DataNodes: %s", persistenceStore.getDataNodes()));
 
-      Set<String> taskIds = persistentState.getAllTaskIds();
+      Set<String> taskIds = persistenceStore.getAllTaskIds();
       Set<String> runningTaskIds = liveState.getRunningTasks().keySet();
 
       for (String taskId : taskIds) {
         if (taskId != null && !runningTaskIds.contains(taskId)) {
           log.info("Removing task id: " + taskId);
-          persistentState.removeTaskId(taskId);
+          persistenceStore.removeTaskId(taskId);
         }
       }
       correctCurrentPhase();
