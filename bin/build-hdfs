@@ -129,7 +129,7 @@ cp $PROJ_DIR/conf/*.xml $BUILD_DIR/$DIST/etc/hadoop
 
 echo "Copying required hadoop dependencies into $BUILD_DIR/$DIST for the scheduler"
 cp $BUILD_CACHE_DIR/$HADOOP_DIR/bin/* $BUILD_DIR/$DIST/bin
-cp $BUILD_CACHE_DIR/$HADOOP_DIR/etc/* $BUILD_DIR/$DIST/etc
+cp -R $BUILD_CACHE_DIR/$HADOOP_DIR/etc/* $BUILD_DIR/$DIST/etc
 cp -R $BUILD_CACHE_DIR/$HADOOP_DIR/libexec $BUILD_DIR/$DIST
 mkdir -p $BUILD_DIR/$DIST/share/hadoop/common
 cp -R $BUILD_CACHE_DIR/$HADOOP_DIR/share/hadoop/common/hadoop-common-$HADOOP_VER.jar $BUILD_DIR/$DIST/share/hadoop/common
