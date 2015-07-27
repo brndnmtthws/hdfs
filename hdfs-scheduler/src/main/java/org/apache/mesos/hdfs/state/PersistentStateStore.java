@@ -19,6 +19,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
+import static org.apache.mesos.hdfs.util.NodeTypes.*;
+
 /**
  * Persistence is handled by the Persistent State classes.  This class does the following:.
  * 1) transforms raw types to hdfs types and protobuf types
@@ -33,9 +35,6 @@ public class PersistentStateStore implements IPersistentStateStore {
   private DeadNodeTracker deadNodeTracker;
 
   private static final String FRAMEWORK_ID_KEY = "frameworkId";
-  private static final String NAMENODES_KEY = "nameNodes";
-  private static final String JOURNALNODES_KEY = "journalNodes";
-  private static final String DATANODES_KEY = "dataNodes";
   private static final String NAMENODE_TASKNAMES_KEY = "nameNodeTaskNames";
   private static final String JOURNALNODE_TASKNAMES_KEY = "journalNodeTaskNames";
   // TODO (elingg) we need to also track ZKFC's state
@@ -47,8 +46,13 @@ public class PersistentStateStore implements IPersistentStateStore {
 
     this.hdfsStore = new HdfsZkStore(hdfsFrameworkConfig);
 
-    deadNodeTracker = new DeadNodeTracker(this, hdfsFrameworkConfig);
-    deadNodeTracker.resetDeadNodeTimeStamps();
+    deadNodeTracker = new DeadNodeTracker(hdfsFrameworkConfig);
+
+    int deadJournalNodes = getDeadJournalNodes().size();
+    int deadNameNodes = getDeadNameNodes().size();
+    int deadDataNodes = getDeadDataNodes().size();
+
+    deadNodeTracker.resetDeadNodeTimeStamps(deadJournalNodes, deadNameNodes, deadDataNodes);
   }
 
   @Override

@@ -2,74 +2,84 @@ package org.apache.mesos.hdfs.state;
 
 import org.apache.commons.lang.time.DateUtils;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.Timestamp;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.apache.mesos.hdfs.util.NodeTypes.*;
 
 /**
  *
  */
 public class DeadNodeTracker {
 
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private Map<String, Timestamp> timestampMap;
+  private String[] nodes = {JOURNALNODES_KEY, NAMENODES_KEY, DATANODES_KEY};
 
-  private Timestamp deadJournalNodeTimeStamp = null;
-  private Timestamp deadNameNodeTimeStamp = null;
-  private Timestamp deadDataNodeTimeStamp = null;
-
-  // todo:  (kgs) see if we can remove this dependency
-  private IPersistentStateStore persistenceStore;
   private HdfsFrameworkConfig hdfsFrameworkConfig;
 
-
-  public DeadNodeTracker(IPersistentStateStore persistenceStore, HdfsFrameworkConfig hdfsFrameworkConfig) {
-    this.persistenceStore = persistenceStore;
+  public DeadNodeTracker(HdfsFrameworkConfig hdfsFrameworkConfig) {
     this.hdfsFrameworkConfig = hdfsFrameworkConfig;
+    initializeTimestampMap();
+  }
+
+  private void initializeTimestampMap() {
+    timestampMap = new HashMap<>();
+    for (String node : nodes) {
+      resetNodeTimeStamp(node);
+    }
+  }
+
+  private void resetNodeTimeStamp(String nodeType) {
+
+    Date date = DateUtils.addSeconds(new Date(), hdfsFrameworkConfig.getDeadNodeTimeout());
+    timestampMap.put(nodeType, new Timestamp(date.getTime()));
   }
 
 
-  public void resetDeadNodeTimeStamps() {
-    Date date = DateUtils.addSeconds(new Date(), hdfsFrameworkConfig.getDeadNodeTimeout());
+  public void resetDeadNodeTimeStamps(int deadJournalNodes, int deadNameNodes, int deadDataNodes) {
 
-    if (persistenceStore.getDeadJournalNodes().size() > 0) {
-      deadJournalNodeTimeStamp = new Timestamp(date.getTime());
+    if (deadJournalNodes > 0) {
+      resetJournalNodeTimeStamp();
     }
 
-    if (persistenceStore.getDeadNameNodes().size() > 0) {
-      deadNameNodeTimeStamp = new Timestamp(date.getTime());
+    if (deadNameNodes > 0) {
+      resetNameNodeTimeStamp();
     }
 
-    if (persistenceStore.getDeadDataNodes().size() > 0) {
-      deadDataNodeTimeStamp = new Timestamp(date.getTime());
+    if (deadDataNodes > 0) {
+      resetDataNodeTimeStamp();
     }
   }
 
   public void resetJournalNodeTimeStamp() {
-    Date date = DateUtils.addSeconds(new Date(), hdfsFrameworkConfig.getDeadNodeTimeout());
-    deadJournalNodeTimeStamp = new Timestamp(date.getTime());
+    resetNodeTimeStamp(JOURNALNODES_KEY);
   }
 
   public void resetNameNodeTimeStamp() {
-    Date date = DateUtils.addSeconds(new Date(), hdfsFrameworkConfig.getDeadNodeTimeout());
-    deadNameNodeTimeStamp = new Timestamp(date.getTime());
+    resetNodeTimeStamp(NAMENODES_KEY);
   }
 
   public void resetDataNodeTimeStamp() {
-    Date date = DateUtils.addSeconds(new Date(), hdfsFrameworkConfig.getDeadNodeTimeout());
-    deadDataNodeTimeStamp = new Timestamp(date.getTime());
+    resetNodeTimeStamp(DATANODES_KEY);
   }
 
   public boolean journalNodeTimerExpired() {
-    return deadJournalNodeTimeStamp != null && deadJournalNodeTimeStamp.before(new Date());
+    return nodeTimerExpired(JOURNALNODES_KEY);
   }
 
   public boolean nameNodeTimerExpired() {
-    return deadNameNodeTimeStamp != null && deadNameNodeTimeStamp.before(new Date());
+    return nodeTimerExpired(NAMENODES_KEY);
   }
 
   public boolean dataNodeTimerExpired() {
-    return deadDataNodeTimeStamp != null && deadDataNodeTimeStamp.before(new Date());
+    return nodeTimerExpired(DATANODES_KEY);
+  }
+
+  private boolean nodeTimerExpired(String nodeType) {
+    Timestamp timestamp = timestampMap.get(nodeType);
+    return timestamp != null && timestamp.before(new Date());
   }
 }
