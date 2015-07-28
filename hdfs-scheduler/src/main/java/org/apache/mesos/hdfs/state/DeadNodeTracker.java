@@ -11,7 +11,7 @@ import java.util.Map;
 import static org.apache.mesos.hdfs.util.NodeTypes.*;
 
 /**
- *
+ * Manages the timeout timestamps for each node type.
  */
 public class DeadNodeTracker {
 
@@ -33,14 +33,12 @@ public class DeadNodeTracker {
   }
 
   private void resetNodeTimeStamp(String nodeType) {
-
     Date date = DateUtils.addSeconds(new Date(), hdfsFrameworkConfig.getDeadNodeTimeout());
     timestampMap.put(nodeType, new Timestamp(date.getTime()));
   }
 
 
   public void resetDeadNodeTimeStamps(int deadJournalNodes, int deadNameNodes, int deadDataNodes) {
-
     if (deadJournalNodes > 0) {
       resetJournalNodeTimeStamp();
     }
