@@ -5,7 +5,6 @@ import com.google.inject.Inject;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.hdfs.state.IPersistentStateStore;
-import org.apache.mesos.hdfs.state.PersistentStateStore;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -40,10 +39,6 @@ public class ConfigServer {
   private IPersistentStateStore persistenceStore;
 
   @Inject
-  public ConfigServer(HdfsFrameworkConfig hdfsFrameworkConfig) {
-    this(hdfsFrameworkConfig, new PersistentStateStore(hdfsFrameworkConfig));
-  }
-
   public ConfigServer(HdfsFrameworkConfig hdfsFrameworkConfig, IPersistentStateStore persistenceStore) {
     this.hdfsFrameworkConfig = hdfsFrameworkConfig;
     this.persistenceStore = persistenceStore;
