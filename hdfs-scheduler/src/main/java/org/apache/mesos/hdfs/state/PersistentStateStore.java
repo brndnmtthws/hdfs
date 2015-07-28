@@ -43,9 +43,7 @@ public class PersistentStateStore implements IPersistentStateStore {
   @Inject
   public PersistentStateStore(HdfsFrameworkConfig hdfsFrameworkConfig) {
     MesosNativeLibrary.load(hdfsFrameworkConfig.getNativeLibrary());
-
     this.hdfsStore = new HdfsZkStore(hdfsFrameworkConfig);
-
     deadNodeTracker = new DeadNodeTracker(hdfsFrameworkConfig);
 
     int deadJournalNodes = getDeadJournalNodes().size();
