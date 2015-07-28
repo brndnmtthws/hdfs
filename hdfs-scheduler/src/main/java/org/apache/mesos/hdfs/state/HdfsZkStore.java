@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
  * throws exceptions to allow the manager to handle the logic.  It currently is tied to zookeeper, but should
  * be replaceable with any mesos state abstraction.
  */
-public class HdfsZkStore implements HdfsStore {
+public class HdfsZkStore implements IHdfsStore {
 
   private State state;
 

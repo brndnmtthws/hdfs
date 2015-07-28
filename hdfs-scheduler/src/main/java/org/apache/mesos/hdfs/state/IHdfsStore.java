@@ -6,7 +6,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * Interface for storing and retrieving HDFS tracker resources.
  */
-public interface HdfsStore {
+public interface IHdfsStore {
 
   byte[] getRawValueForId(String id) throws ExecutionException, InterruptedException;
 

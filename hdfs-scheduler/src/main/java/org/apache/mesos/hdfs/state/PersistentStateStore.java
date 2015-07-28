@@ -31,7 +31,7 @@ import static org.apache.mesos.hdfs.util.NodeTypes.*;
 public class PersistentStateStore implements IPersistentStateStore {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
-  private HdfsStore hdfsStore;
+  private IHdfsStore hdfsStore;
   private DeadNodeTracker deadNodeTracker;
 
   private static final String FRAMEWORK_ID_KEY = "frameworkId";
