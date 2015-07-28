@@ -4,7 +4,7 @@ import com.floreysoft.jmte.Engine;
 import com.google.inject.Inject;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.mesos.hdfs.state.PersistentState;
+import org.apache.mesos.hdfs.state.IPersistentStateStore;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -36,16 +36,12 @@ public class ConfigServer {
   private Server server;
   private Engine engine;
   private HdfsFrameworkConfig hdfsFrameworkConfig;
-  private PersistentState persistentState;
+  private IPersistentStateStore persistenceStore;
 
   @Inject
-  public ConfigServer(HdfsFrameworkConfig hdfsFrameworkConfig) {
-    this(hdfsFrameworkConfig, new PersistentState(hdfsFrameworkConfig));
-  }
-
-  public ConfigServer(HdfsFrameworkConfig hdfsFrameworkConfig, PersistentState persistentState) {
+  public ConfigServer(HdfsFrameworkConfig hdfsFrameworkConfig, IPersistentStateStore persistenceStore) {
     this.hdfsFrameworkConfig = hdfsFrameworkConfig;
-    this.persistentState = persistentState;
+    this.persistenceStore = persistenceStore;
     engine = new Engine();
     server = new Server(hdfsFrameworkConfig.getConfigServerPort());
     ResourceHandler resourceHandler = new ResourceHandler();
@@ -89,10 +85,10 @@ public class ConfigServer {
       String content = new String(Files.readAllBytes(Paths.get(confFile.getPath())), Charset.defaultCharset());
 
       Set<String> nameNodes = new TreeSet<>();
-      nameNodes.addAll(persistentState.getNameNodes().keySet());
+      nameNodes.addAll(persistenceStore.getNameNodes().keySet());
 
       Set<String> journalNodes = new TreeSet<>();
-      journalNodes.addAll(persistentState.getJournalNodes().keySet());
+      journalNodes.addAll(persistenceStore.getJournalNodes().keySet());
 
       Map<String, Object> model = new HashMap<>();
       Iterator<String> iter = nameNodes.iterator();

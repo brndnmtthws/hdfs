@@ -74,3 +74,30 @@ Shutdown Instructions (Optional)
 3. Access your zookeeper instance: `/PATH/TO/zookeeper/bin/zkCli.sh`
 4. Remove hdfs-mesos framework state from zookeeper: `rmr /hdfs-mesos`
 5. (Optional) Clear your data directories as specified in your `mesos-site.xml`. This is necessary to relaunch HDFS in the same directory.
+
+Developer Notes
+--------------------------
+The project uses [guice](https://github.com/google/guice) which is a light weight dependency injection framework.  In this project it is used
+during application startup initialization.   This is accomplished by using the `@Inject` annotation.  Guice is aware of all concrete classes
+which are annotated with `@Singleton`, however when it comes to interfaces, guice needs to be "bound" to an implementation.  This is accomplished
+with the `HdfsSchedulerModule` guice module class and is initialized in the main class with:
+
+```
+  // this is initializes guice with all the singletons + the passed in module
+  Injector injector = Guice.createInjector(new HdfsSchedulerModule());
+  
+  // if this returns successfully, then the object was "wired" correctly.
+  injector.getInstance(ConfigServer.class);
+```
+
+If you have a singleton, mark it as such.   If you have an interface + implemention class then bind it in the `HdfsSchedulerModule` such as:
+
+```
+  // bind(<interface>.class).to(<impl>.class);
+  bind(IPersistentStateStore.class).to(PersistentStateStore.class);
+```
+
+In this case, when an `@Inject` is encountered during the initialization of a guice initialized class, parameters of type `<interface>` will have
+an instance of the `<impl>` class passed.
+
+The advantage of this technique is that the interface can easily have a mock class provided for testing.  For more motivation [read guice's motivation page](https://github.com/google/guice/wiki/Motivation)

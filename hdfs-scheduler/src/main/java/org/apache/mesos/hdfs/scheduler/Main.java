@@ -18,7 +18,7 @@ public final class Main {
   }
 
   private void start() {
-    Injector injector = Guice.createInjector();
+    Injector injector = Guice.createInjector(new HdfsSchedulerModule());
     getSchedulerThread(injector).start();
     injector.getInstance(ConfigServer.class);
   }
