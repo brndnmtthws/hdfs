@@ -5,10 +5,6 @@ allprojects {
   version = "0.1.2"
 }
 
-task version << {
-	println "$version"
-}
-
 idea {
   project {
     languageLevel = '1.7'
