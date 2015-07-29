@@ -120,12 +120,8 @@ fi
 
 # scheduler
 mkdir -p $BUILD_DIR/$DIST/bin
-cp $PROJ_DIR/bin/hdfs-mesos $BUILD_DIR/$DIST/bin
 mkdir -p $BUILD_DIR/$DIST/lib
-cp $PROJ_DIR/hdfs-scheduler/build/libs/*-uber.jar $BUILD_DIR/$DIST/lib
-cp $BUILD_CACHE_DIR/$EXECUTOR.tgz $BUILD_DIR/$DIST
 mkdir -p $BUILD_DIR/$DIST/etc/hadoop
-cp $PROJ_DIR/conf/*.xml $BUILD_DIR/$DIST/etc/hadoop
 
 echo "Copying required hadoop dependencies into $BUILD_DIR/$DIST for the scheduler"
 cp $BUILD_CACHE_DIR/$HADOOP_DIR/bin/* $BUILD_DIR/$DIST/bin
@@ -138,6 +134,12 @@ mkdir -p $BUILD_DIR/$DIST/share/hadoop/hdfs
 cp -R $BUILD_CACHE_DIR/$HADOOP_DIR/share/hadoop/hdfs/hadoop-hdfs-$HADOOP_VER.jar $BUILD_DIR/$DIST/share/hadoop/hdfs
 cp -R $BUILD_CACHE_DIR/$HADOOP_DIR/share/hadoop/hdfs/lib $BUILD_DIR/$DIST/share/hadoop/hdfs
 cp -R $BUILD_CACHE_DIR/$HADOOP_DIR/share/hadoop/hdfs/webapps $BUILD_DIR/$DIST/share/hadoop/hdfs
+
+## hdfs scheduler project needs
+cp $PROJ_DIR/bin/hdfs-mesos $BUILD_DIR/$DIST/bin
+cp $PROJ_DIR/hdfs-scheduler/build/libs/*-uber.jar $BUILD_DIR/$DIST/lib
+cp $BUILD_CACHE_DIR/$EXECUTOR.tgz $BUILD_DIR/$DIST
+cp $PROJ_DIR/conf/*.xml $BUILD_DIR/$DIST/etc/hadoop
 
 cd $BUILD_DIR
 tar czf $DIST.tgz $DIST
