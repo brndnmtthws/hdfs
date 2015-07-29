@@ -30,7 +30,7 @@ fi
 
 # Build and package hdfs-mesos project
 if [ "$1" != "nocompile" ]; then
-  $PROJ_DIR/gradlew shadowJar || exit
+  $PROJ_DIR/gradlew clean shadowJar || exit
 fi
 
 # Download hadoop binary
