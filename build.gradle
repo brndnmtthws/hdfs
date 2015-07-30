@@ -2,7 +2,7 @@ allprojects {
   apply plugin: 'idea'
 
   group = "com.apache.mesos.hdfs"
-  version = "0.1.2"
+  version = "0.1.3"
 }
 
 idea {
