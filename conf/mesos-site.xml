@@ -20,7 +20,7 @@
   <property>
     <name>mesos.hdfs.data.dir</name>
     <description>The primary data directory in HDFS</description>
-    <value>/tmp/hdfs/data</value>
+    <value>/var/lib/hdfs/data</value>
   </property>
 
   <property>
