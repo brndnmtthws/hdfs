@@ -1,0 +1,49 @@
+<FindBugsFilter>
+    <!-- All bugs in test classes, except for JUnit-specific bugs -->
+    <!-- <Match>
+     <Class name="~.*\.*Test" />
+     <Not>
+         <Bug code="IJU" />
+     </Not>
+    </Match>
+    <Match>
+     <Class name="~.*Spec$"/>
+     <Not>
+         <Bug code="IJU" />
+     </Not>
+    </Match> -->
+
+    <Match>
+            <Class name="org.apache.mesos.hdfs.executor.AbstractNodeExecutor"/>
+            <Bug pattern="DMI_HARDCODED_ABSOLUTE_FILENAME"/>
+            <!-- allowing hardcoded option for hadoop default location -->
+        </Match>
+
+        <Match>
+            <Class name="org.apache.mesos.hdfs.scheduler.Main$1"/>
+            <Bug pattern="DM_EXIT"/>
+        </Match>
+
+        <Match>
+            <Class name="org.apache.mesos.hdfs.executor.AbstractNodeExecutor"/>
+            <Method name="shutdownExecutor"/>
+            <Bug pattern="DM_EXIT"/>
+        </Match>
+
+        <Match>
+            <Class name="org.apache.mesos.hdfs.executor.AbstractNodeExecutor"/>
+            <Method name="startProcess"/>
+            <Bug pattern="DM_EXIT"/>
+        </Match>
+
+        <Match>
+            <Class name="org.apache.mesos.hdfs.executor.AbstractNodeExecutor"/>
+            <Method name="createSymbolicLink"/>
+            <Bug pattern="DM_EXIT"/>
+        </Match>
+
+
+        <Match>
+            <Bug code="SnVI"/>
+        </Match>
+</FindBugsFilter>

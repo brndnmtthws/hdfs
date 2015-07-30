@@ -1,0 +1,30 @@
+plugins {
+  id 'com.github.johnrengelman.shadow' version '1.2.1'
+}
+
+ext {
+  jettyVer = "9.2.2.v20140723"
+  jmteVer = "3.0"
+}
+
+
+dependencies {
+  compile project(':hdfs-commons')
+  compile "com.floreysoft:jmte:${jmteVer}"
+  compile "org.eclipse.jetty:jetty-server:${jettyVer}"
+}
+
+
+shadowJar {
+  classifier = "uber"
+
+  mergeServiceFiles()
+
+  exclude 'META-INF/*.SF'
+  exclude 'META-INF/*.DSA'
+  exclude 'META-INF/*.RSA'
+
+  dependencies {
+    exclude(dependency("commons-logging:commons-logging"))
+  }
+}

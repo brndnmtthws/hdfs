@@ -1,0 +1,6 @@
+rootProject.name = 'hdfs'
+
+
+include "hdfs-commons"
+include "hdfs-scheduler"
+include "hdfs-executor"
