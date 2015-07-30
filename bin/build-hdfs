@@ -3,7 +3,7 @@
 # this should move out to gradle builds
 # this will create in the project/build dir the tarball to distribute
 
-VERSION="0.1.2"
+VERSION="0.1.3"
 PROJ_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/..  && pwd )"
 BUILD_DIR=$PROJ_DIR/build
 BUILD_CACHE_DIR=$BUILD_DIR/cache
