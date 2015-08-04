@@ -220,7 +220,7 @@ public abstract class AbstractNodeExecutor implements Executor {
     try {
       log.info(String.format("Reloading hdfs-site.xml from %s", configUri));
       ProcessBuilder processBuilder = new ProcessBuilder("sh", "-c",
-        String.format("curl -o hdfs-site.xml %s && cp hdfs-site.xml etc/hadoop/", configUri));
+        String.format("curl -o hdfs-site.xml %s && mv hdfs-site.xml etc/hadoop/", configUri));
       Process process = processBuilder.start();
       //TODO(nicgrayson) check if the config has changed
       redirectProcess(process);
