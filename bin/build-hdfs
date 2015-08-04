@@ -80,6 +80,7 @@ fi
 echo "Copying required hadoop dependencies into $BUILD_DIR/$EXECUTOR"
 cp -R $BUILD_CACHE_DIR/$HADOOP_DIR/bin $BUILD_CACHE_DIR/$EXECUTOR
 cp -R $BUILD_CACHE_DIR/$HADOOP_DIR/etc $BUILD_CACHE_DIR/$EXECUTOR
+rm -rf $BUILD_CACHE_DIR/$EXECUTOR/etc/hadoop-mapreduce1 $BUILD_CACHE_DIR/$EXECUTOR/etc/hadoop-mapreduce1-pseudo  $BUILD_CACHE_DIR/$EXECUTOR/etc/hadoop-mapreduce1-secure 
 cp -R $BUILD_CACHE_DIR/$HADOOP_DIR/libexec $BUILD_CACHE_DIR/$EXECUTOR
 mkdir -p $BUILD_CACHE_DIR/$EXECUTOR/share/hadoop/common
 cp -R $BUILD_CACHE_DIR/$HADOOP_DIR/share/hadoop/common/hadoop-common-$HADOOP_VER.jar $BUILD_CACHE_DIR/$EXECUTOR/share/hadoop/common
@@ -125,7 +126,7 @@ mkdir -p $BUILD_DIR/$DIST/etc/hadoop
 
 echo "Copying required hadoop dependencies into $BUILD_DIR/$DIST for the scheduler"
 cp $BUILD_CACHE_DIR/$HADOOP_DIR/bin/* $BUILD_DIR/$DIST/bin
-cp -R $BUILD_CACHE_DIR/$HADOOP_DIR/etc/* $BUILD_DIR/$DIST/etc
+cp -R $BUILD_CACHE_DIR/$HADOOP_DIR/etc/hadoop $BUILD_DIR/$DIST/etc
 cp -R $BUILD_CACHE_DIR/$HADOOP_DIR/libexec $BUILD_DIR/$DIST
 mkdir -p $BUILD_DIR/$DIST/share/hadoop/common
 cp -R $BUILD_CACHE_DIR/$HADOOP_DIR/share/hadoop/common/hadoop-common-$HADOOP_VER.jar $BUILD_DIR/$DIST/share/hadoop/common
