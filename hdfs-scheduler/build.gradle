@@ -28,3 +28,7 @@ shadowJar {
     exclude(dependency("commons-logging:commons-logging"))
   }
 }
+
+build << {
+	println "##teamcity[setParameter name='env.gradle_PROJECT_VERSION' value='$version']"
+}
