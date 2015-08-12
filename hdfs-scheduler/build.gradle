@@ -30,9 +30,6 @@ shadowJar {
 
   doLast {
 	println "##teamcity[setParameter name='env.gradle_PROJECT_VERSION' value='$version']"
+    println "##teamcity[setParameter name='system.gradle.PROJECT_VERSION' value='$version']"
   }
-}
-
-build << {
-	println "##teamcity[setParameter name='env.gradle_PROJECT_VERSION' value='$version']"
 }
