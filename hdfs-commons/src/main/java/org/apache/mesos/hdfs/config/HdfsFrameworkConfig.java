@@ -61,6 +61,23 @@ public class HdfsFrameworkConfig {
     setConf(configuration);
   }
 
+  public String getPrincipal() {
+    return getConf().get("mesos.hdfs.principal", "");
+  }
+
+  public String getSecret() {
+    return getConf().get("mesos.hdfs.secret", "");
+  }
+
+  public boolean cramCredentialsEnabled() {
+    String principal = getPrincipal();
+    String secret = getSecret();
+    boolean principalExists = !principal.isEmpty();
+    boolean secretExists = !secret.isEmpty();
+
+    return principalExists && secretExists;
+  }
+
   public boolean usingMesosDns() {
     return Boolean.valueOf(getConf().get("mesos.hdfs.mesosdns", "false"));
   }
