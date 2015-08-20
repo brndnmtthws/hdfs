@@ -66,6 +66,24 @@ Note: This will also remove task state, so you will want to manually kill any ru
 7. On each slave with the new settings, start the mesos slave by running
 <br>`sudo service mesos-slave start`.</br>
 
+Authentication with CRAM-MD5 (Optional)
+--------------------------
+1. In mesos-site.xml add the "mesos.hdfs.principal" and "mesos.hdfs.secret" properties. For example:
+```sh
+<property>
+  <name>mesos.hdfs.principal</name>
+  <value>hdfs</value>
+</property>
+
+<property>
+  <name>mesos.hdfs.secret</name>
+  <value>%ComplexPassword%123</value>
+</property>
+```
+
+2. Ensure that the Mesos master has access to the same credentials.  See the [Mesos configuration documentation](http://mesos.apache.org/documentation/latest/configuration/), in particular the --credentials flag.  Authentication defaults to CRAM-MD5 so setting the --authenticators flag is not necessary.
+
+
 Shutdown Instructions (Optional)
 --------------------------
 

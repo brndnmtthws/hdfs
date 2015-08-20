@@ -7,6 +7,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.MesosSchedulerDriver;
 import org.apache.mesos.Protos;
 import org.apache.mesos.Protos.CommandInfo;
+import org.apache.mesos.Protos.Credential;
 import org.apache.mesos.Protos.Environment;
 import org.apache.mesos.Protos.ExecutorID;
 import org.apache.mesos.Protos.ExecutorInfo;
@@ -31,6 +32,7 @@ import org.apache.mesos.hdfs.state.IPersistentStateStore;
 import org.apache.mesos.hdfs.util.DnsResolver;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -266,9 +268,36 @@ public class HdfsScheduler implements org.apache.mesos.Scheduler, Runnable {
       throw new SchedulerException(msg, e);
     }
 
-    MesosSchedulerDriver driver = new MesosSchedulerDriver(this,
-      frameworkInfo.build(), hdfsFrameworkConfig.getMesosMasterUri());
-    driver.run();
+    registerFramework(this, frameworkInfo.build(), hdfsFrameworkConfig.getMesosMasterUri());
+  }
+
+  private void registerFramework(HdfsScheduler sched, FrameworkInfo fInfo, String masterUri) {
+    Credential cred = getCredential();
+
+    if (cred != null) {
+      log.info("Registering with credentials.");
+      new MesosSchedulerDriver(sched, fInfo, masterUri, cred).run();
+    } else {
+      log.info("Registering without authentication");
+      new MesosSchedulerDriver(sched, fInfo, masterUri).run();
+    }
+  }
+
+  private Credential getCredential() {
+    if (hdfsFrameworkConfig.cramCredentialsEnabled()) {
+      try {
+        Credential.Builder credentialBuilder = Credential.newBuilder()
+          .setPrincipal(hdfsFrameworkConfig.getPrincipal())
+          .setSecret(ByteString.copyFrom(hdfsFrameworkConfig.getSecret().getBytes("UTF-8")));
+
+        return credentialBuilder.build();
+
+      } catch (UnsupportedEncodingException ex) {
+        log.error("Failed to encode secret when creating Credential.");
+      }
+    }
+
+    return null;
   }
 
   private boolean launchNode(SchedulerDriver driver, Offer offer,
