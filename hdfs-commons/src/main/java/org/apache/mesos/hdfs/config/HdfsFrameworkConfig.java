@@ -32,10 +32,11 @@ public class HdfsFrameworkConfig {
 
   private static final double DEFAULT_JVM_OVERHEAD = 1.35;
   private static final int DEFAULT_JOURNAL_NODE_COUNT = 3;
-  private static final int DEFAULT_FAILOVER_TIMEOUT = 31449600;
+  private static final int DEFAULT_FAILOVER_TIMEOUT_SEC = 31449600;
   private static final int DEFAULT_ZK_TIME_MS = 20000;
-  private static final int DEFAULT_RECONCILIATION_TIMEOUT = 30;
-  private static final int DEFAULT_DEADNODE_TIMEOUT = 90;
+  private static final int DEFAULT_RECONCILIATION_TIMEOUT_SEC = 4;
+  private static final int DEFAULT_MAX_RECONCILIATION_TIMEOUT_SEC = 30;
+  private static final int DEFAULT_DEADNODE_TIMEOUT_SEC = 90;
 
   private final Log log = LogFactory.getLog(HdfsFrameworkConfig.class);
 
@@ -217,7 +218,7 @@ public class HdfsFrameworkConfig {
   }
 
   public long getFailoverTimeout() {
-    return getConf().getLong("mesos.failover.timeout.sec", DEFAULT_FAILOVER_TIMEOUT);
+    return getConf().getLong("mesos.failover.timeout.sec", DEFAULT_FAILOVER_TIMEOUT_SEC);
   }
 
   // TODO(elingg) Most likely this user name will change to HDFS
@@ -285,11 +286,15 @@ public class HdfsFrameworkConfig {
   }
 
   public int getReconciliationTimeout() {
-    return getConf().getInt("mesos.reconciliation.timeout.seconds", DEFAULT_RECONCILIATION_TIMEOUT);
+    return getConf().getInt("mesos.reconciliation.timeout.sec", DEFAULT_RECONCILIATION_TIMEOUT_SEC);
+  }
+
+  public int getMaxReconciliationTimeout() {
+    return getConf().getInt("mesos.max-reconciliation.timeout.sec", DEFAULT_MAX_RECONCILIATION_TIMEOUT_SEC);
   }
 
   public int getDeadNodeTimeout() {
-    return getConf().getInt("mesos.hdfs.deadnode.timeout.seconds", DEFAULT_DEADNODE_TIMEOUT);
+    return getConf().getInt("mesos.hdfs.deadnode.timeout.seconds", DEFAULT_DEADNODE_TIMEOUT_SEC);
   }
 
   public String getJreUrl() {

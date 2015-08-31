@@ -8,6 +8,7 @@ public final class HDFSConstants {
   // Total number of NameNodes
   // Note: We do not currently support more or less than 2 NameNodes
   public static final Integer TOTAL_NAME_NODES = 2;
+  public static final Integer MILLIS_FROM_SECONDS = 1000;
 
   // Messages
   public static final String NAME_NODE_INIT_MESSAGE = "-i";
