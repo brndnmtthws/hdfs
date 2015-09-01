@@ -6,9 +6,11 @@ import com.google.inject.Singleton;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.Protos;
+import org.apache.mesos.Protos.SlaveID;
+import org.apache.mesos.Protos.TaskID;
+import org.apache.mesos.Protos.TaskStatus;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -26,15 +28,15 @@ public class LiveState {
   // TODO (nicgrayson) Might need to split this out to jns, nns, and dns if dns too big
   //TODO (elingg) we need to also track ZKFC's state
   private Map<String, Protos.TaskStatus> runningTasks = new LinkedHashMap<>();
-  private Map<Protos.TaskStatus, Boolean> nameNode1TaskMap = new HashMap<>();
-  private Map<Protos.TaskStatus, Boolean> nameNode2TaskMap = new HashMap<>();
+  private NameNodeState nameNode1State = new NameNodeState("NameNode1");
+  private NameNodeState nameNode2State = new NameNodeState("NameNode2");
 
   public boolean isNameNode1Initialized() {
-    return !nameNode1TaskMap.isEmpty() && nameNode1TaskMap.values().iterator().next();
+    return nameNode1State.initialized();
   }
 
   public boolean isNameNode2Initialized() {
-    return !nameNode2TaskMap.isEmpty() && nameNode2TaskMap.values().iterator().next();
+    return nameNode2State.initialized();
   }
 
   public void addStagingTask(Protos.TaskID taskId) {
@@ -54,13 +56,10 @@ public class LiveState {
   }
 
   public void removeRunningTask(Protos.TaskID taskId) {
-    if (!nameNode1TaskMap.isEmpty()
-        && nameNode1TaskMap.keySet().iterator().next().getTaskId().equals(taskId)) {
-      nameNode1TaskMap.clear();
-    } else if (!nameNode2TaskMap.isEmpty()
-        && nameNode2TaskMap.keySet().iterator().next().getTaskId().equals(taskId)) {
-      nameNode2TaskMap.clear();
-    }
+    log.info(String.format("Removing running task: %s", taskId));
+
+    nameNode1State.clear(taskId);
+    nameNode2State.clear(taskId);
     runningTasks.remove(taskId.getValue());
   }
 
@@ -78,25 +77,33 @@ public class LiveState {
       if (status.getMessage().equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)
           || (currentAcquisitionPhase.equals(AcquisitionPhase.RECONCILING_TASKS) && !isNameNode1Initialized())
           || (status.getMessage().equals(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE) && !isNameNode1Initialized())) {
-        nameNode1TaskMap.clear();
-        nameNode1TaskMap.put(status, true);
+        setNewNameNodeInitialized(status);
       } else if ((status.getMessage().equals(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE)
           && !isNameNode2Initialized())
           || (currentAcquisitionPhase.equals(AcquisitionPhase.RECONCILING_TASKS)
           && !isNameNode2Initialized())) {
         // If bootstrapping the second NN or reconciling the second NN,
         // set the status to initialized
-        nameNode2TaskMap.clear();
-        nameNode2TaskMap.put(status, true);
-      } else if (nameNode1TaskMap.isEmpty()) {
+        setNewNameNodeInitialized(status);
+      } else if (!nameNode1State.hasStatus()) {
         // If the first NN is not running, set the status to running
-        nameNode1TaskMap.put(status, false);
-      } else if (nameNode2TaskMap.isEmpty()) {
+        nameNode1State.set(status, false);
+      } else if (!nameNode2State.hasStatus()) {
         // If the second NN is not running, set the status to running
-        nameNode2TaskMap.put(status, false);
+        nameNode2State.set(status, false);
       }
     }
     runningTasks.put(status.getTaskId().getValue(), status);
+  }
+
+  private void setNewNameNodeInitialized(TaskStatus status) {
+    TaskID taskId = status.getTaskId();
+
+    if (taskId.equals(nameNode1State.getTaskId()) || nameNode1State.status == null) {
+      nameNode1State.set(status, true);
+    } else if (taskId.equals(nameNode2State.getTaskId()) || nameNode2State.status == null) {
+      nameNode2State.set(status, true);
+    } 
   }
 
   public AcquisitionPhase getCurrentAcquisitionPhase() {
@@ -104,7 +111,12 @@ public class LiveState {
   }
 
   public void transitionTo(AcquisitionPhase phase) {
-    this.currentAcquisitionPhase = phase;
+    if (currentAcquisitionPhase.equals(phase)) {
+      log.info(String.format("Acquisition phase is already '%s'", currentAcquisitionPhase));
+    } else {
+      log.info(String.format("Transitioning from acquisition phase '%s' to '%s'", currentAcquisitionPhase, phase));
+      this.currentAcquisitionPhase = phase;
+    }
   }
 
   public int getJournalNodeSize() {
@@ -116,31 +128,19 @@ public class LiveState {
   }
 
   public Protos.TaskID getFirstNameNodeTaskId() {
-    if (nameNode1TaskMap.isEmpty()) {
-      return null;
-    }
-    return nameNode1TaskMap.keySet().iterator().next().getTaskId();
+    return nameNode1State.getTaskId();
   }
 
   public Protos.TaskID getSecondNameNodeTaskId() {
-    if (nameNode2TaskMap.isEmpty()) {
-      return null;
-    }
-    return nameNode2TaskMap.keySet().iterator().next().getTaskId();
+    return nameNode2State.getTaskId();
   }
 
   public Protos.SlaveID getFirstNameNodeSlaveId() {
-    if (nameNode1TaskMap.isEmpty()) {
-      return null;
-    }
-    return nameNode1TaskMap.keySet().iterator().next().getSlaveId();
+    return nameNode1State.getSlaveId();
   }
 
   public Protos.SlaveID getSecondNameNodeSlaveId() {
-    if (nameNode2TaskMap.isEmpty()) {
-      return null;
-    }
-    return nameNode2TaskMap.keySet().iterator().next().getSlaveId();
+    return nameNode2State.getSlaveId();
   }
 
   private int countOfRunningTasksWith(final String nodeId) {
@@ -150,5 +150,51 @@ public class LiveState {
         return taskId.contains(nodeId);
       }
     }).size();
+  }
+
+  private class NameNodeState {
+    private String name;
+    private TaskStatus status;
+    private Boolean initialized;
+
+    public NameNodeState(String name) {
+      this.name = name;
+    }
+
+    public Boolean hasStatus() {
+      return status != null;
+    }
+
+    public Boolean initialized() {
+      return status != null && initialized;
+    }
+
+    public void set(TaskStatus status, Boolean initialized) {
+      this.status = status;
+      this.initialized = initialized;
+      log.info(String.format("Set Node '%s' state to status: '%s', initialized: '%s'", name, status, initialized));
+    }
+
+    public void clear(TaskID taskId) {
+      if (hasStatus() && status.getTaskId().equals(taskId)) {
+        set(null, false);
+      }
+    }
+
+    public TaskID getTaskId() {
+      if (hasStatus()) {
+        return status.getTaskId();
+      } else {
+        return null;
+      } 
+    }
+
+    public SlaveID getSlaveId() {
+      if (hasStatus()) {
+        return status.getSlaveId();
+      } else {
+        return null;
+      } 
+    }
   }
 }
