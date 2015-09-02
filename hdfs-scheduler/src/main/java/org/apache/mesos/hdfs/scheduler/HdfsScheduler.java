@@ -63,7 +63,7 @@ public class HdfsScheduler extends Observable implements org.apache.mesos.Schedu
     this.liveState = liveState;
     this.persistenceStore = persistenceStore;
     this.dnsResolver = new DnsResolver(this, hdfsFrameworkConfig);
-    this.reconciler = new Reconciler(persistenceStore);
+    this.reconciler = new Reconciler(hdfsFrameworkConfig, persistenceStore);
 
     addObserver(reconciler);
   }

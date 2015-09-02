@@ -2,7 +2,9 @@ package org.apache.mesos.hdfs.scheduler;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
 import org.apache.mesos.hdfs.state.IPersistentStateStore;
+import org.apache.mesos.hdfs.util.HDFSConstants;
 import org.apache.mesos.Protos.TaskState;
 import org.apache.mesos.Protos.TaskStatus;
 import org.apache.mesos.Protos;
@@ -21,17 +23,23 @@ import java.util.Set;
  */
 public class Reconciler implements Observer {
   private final Log log = LogFactory.getLog(HdfsScheduler.class);
+
+  private HdfsFrameworkConfig config;
   private IPersistentStateStore store;
   private Set<String> pendingTasks;
 
-  public Reconciler(IPersistentStateStore pStore) {
-    store = pStore;
-    pendingTasks = new HashSet();
+  public Reconciler(HdfsFrameworkConfig config, IPersistentStateStore pStore) {
+    this.config = config;
+    this.store = pStore;
+    this.pendingTasks = new HashSet<String>();
   }
 
   public void reconcile(SchedulerDriver driver) {
     pendingTasks = store.getAllTaskIds();
+    (new ReconcileThread(this, driver)).start();
+  }
 
+  private void reconcileInternal(SchedulerDriver driver) {
     if (pendingTasks != null) {
       logPendingTasks();
       explicitlyReconcileTasks(driver);
@@ -116,5 +124,42 @@ public class Reconciler implements Observer {
     }
 
     driver.reconcileTasks(tasks);
+  }
+
+  private class ReconcileThread extends Thread {
+    private static final int BACKOFF_MULTIPLIER = 2;
+
+    private Reconciler reconciler; 
+    private SchedulerDriver driver;
+
+    public ReconcileThread(Reconciler reconciler, SchedulerDriver driver) {
+      this.reconciler = reconciler;
+      this.driver = driver;
+    }
+
+    public void run() {
+      int currDelay = reconciler.config.getReconciliationTimeout();
+
+      while (!reconciler.complete()) {
+        reconciler.reconcileInternal(driver);
+        int sleepDuration = currDelay * HDFSConstants.MILLIS_FROM_SECONDS;
+
+        log.info(String.format("Sleeping for %sms before retrying reconciliation.", sleepDuration));
+        try {
+          Thread.sleep(sleepDuration);
+        } catch (InterruptedException ex) {
+          log.warn(String.format("Reconciliation thread sleep was interrupted with exception: %s", ex));
+        }
+
+        currDelay = getDelay(currDelay);
+      }
+    }
+
+    private int getDelay(int currDelay) {
+      int tempDelay = currDelay * BACKOFF_MULTIPLIER;
+      int maxDelay = reconciler.config.getMaxReconciliationTimeout();
+
+      return Math.min(tempDelay, maxDelay);
+    }
   }
 }
