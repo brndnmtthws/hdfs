@@ -2,6 +2,7 @@ package org.apache.mesos.hdfs.scheduler;
 
 import com.google.inject.Inject;
 import com.google.protobuf.ByteString;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.MesosSchedulerDriver;
@@ -39,16 +40,21 @@ public class HdfsScheduler extends Observable implements org.apache.mesos.Schedu
   // TODO (elingg) remove as much logic as possible from Scheduler to clean up code
   private final Log log = LogFactory.getLog(HdfsScheduler.class);
   private final HdfsFrameworkConfig config;
+  private final HdfsMesosConstraints hdfsMesosConstraints;
   private final LiveState liveState;
   private final IPersistentStateStore persistenceStore;
+
   private final DnsResolver dnsResolver;
   private final Reconciler reconciler;
+
 
   @Inject
   public HdfsScheduler(HdfsFrameworkConfig config,
     LiveState liveState, IPersistentStateStore persistenceStore) {
 
     this.config = config;
+    this.hdfsMesosConstraints 
+           = new HdfsMesosConstraints(this.config.getMesosSlaveConstraints());
     this.liveState = liveState;
     this.persistenceStore = persistenceStore;
     this.dnsResolver = new DnsResolver(this, config);
@@ -219,8 +225,10 @@ public class HdfsScheduler extends Observable implements org.apache.mesos.Schedu
     // TODO (elingg) within each phase, accept offers based on the number of nodes you need
     boolean acceptedOffer = false;
     for (Offer offer : offers) {
-      if (acceptedOffer) {
-        declineOffer(driver, offer);
+      if (!this.hdfsMesosConstraints.constraintsAllow(offer)) {
+        driver.declineOffer(offer.getId());
+      } else if (acceptedOffer) {
+        driver.declineOffer(offer.getId());
       } else {
         switch (liveState.getCurrentAcquisitionPhase()) {
           case RECONCILING_TASKS:
