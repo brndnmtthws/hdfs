@@ -318,8 +318,7 @@ public class HdfsScheduler extends Observable implements org.apache.mesos.Schedu
       taskTypes.toString()));
     String taskIdName = String.format("%s.%s.%d", nodeName, executorName,
       System.currentTimeMillis());
-    List<Resource> resources = getExecutorResources();
-    ExecutorInfo executorInfo = createExecutor(taskIdName, nodeName, executorName, resources);
+    ExecutorInfo executorInfo = createExecutor(taskIdName, nodeName, executorName);
     List<TaskInfo> tasks = new ArrayList<>();
     for (String taskType : taskTypes) {
       List<Resource> taskResources = getTaskResources(taskType);
@@ -374,8 +373,7 @@ public class HdfsScheduler extends Observable implements org.apache.mesos.Schedu
     return taskType;
   }
 
-  private ExecutorInfo createExecutor(String taskIdName, String nodeName, String executorName,
-    List<Resource> resources) {
+  private ExecutorInfo createExecutor(String taskIdName, String nodeName, String executorName) {
     int confServerPort = hdfsFrameworkConfig.getConfigServerPort();
 
     String cmd = "export JAVA_HOME=$MESOS_DIRECTORY/" + hdfsFrameworkConfig.getJreVersion()
@@ -390,7 +388,7 @@ public class HdfsScheduler extends Observable implements org.apache.mesos.Schedu
       .newBuilder()
       .setName(nodeName + " executor")
       .setExecutorId(ExecutorID.newBuilder().setValue("executor." + taskIdName).build())
-      .addAllResources(resources)
+      .addAllResources(getExecutorResources())
       .setCommand(
         CommandInfo
           .newBuilder()
