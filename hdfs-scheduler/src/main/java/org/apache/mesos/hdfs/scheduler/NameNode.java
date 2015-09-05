@@ -8,17 +8,15 @@ import org.apache.mesos.hdfs.state.LiveState;
 import org.apache.mesos.hdfs.util.DnsResolver;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 import org.apache.mesos.Protos.Offer;
-import org.apache.mesos.SchedulerDriver;
 
 import java.util.Arrays;
 import java.util.List;
 
 /**
- * HDFS Mesos Framework Scheduler class implementation.
+ * Namenode.
  */
 public class NameNode extends HdfsNode {
   private final Log log = LogFactory.getLog(NameNode.class);
-  private List<String> taskTypes = Arrays.asList(HDFSConstants.NAME_NODE_ID, HDFSConstants.ZKFC_NODE_ID);
   private String executorName = HDFSConstants.NAME_NODE_EXECUTOR_ID;
   private DnsResolver dnsResolver;
 
@@ -64,7 +62,11 @@ public class NameNode extends HdfsNode {
     return accept;
   }
 
-  public void launch(SchedulerDriver driver, Offer offer) {
-    launch(driver, offer, name, taskTypes, executorName);
+  protected String getExecutorName() {
+    return HDFSConstants.NAME_NODE_EXECUTOR_ID;
+  }
+
+  protected List<String> getTaskTypes() {
+    return Arrays.asList(HDFSConstants.NAME_NODE_ID, HDFSConstants.ZKFC_NODE_ID);
   }
 }

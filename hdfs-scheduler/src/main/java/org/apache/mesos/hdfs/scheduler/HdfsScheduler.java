@@ -44,7 +44,6 @@ public class HdfsScheduler extends Observable implements org.apache.mesos.Schedu
   private final DnsResolver dnsResolver;
   private final Reconciler reconciler;
   private final ResourceFactory resourceFactory;
-  private final NodeLauncher nodeLauncher;
 
   @Inject
   public HdfsScheduler(HdfsFrameworkConfig config,
@@ -56,7 +55,6 @@ public class HdfsScheduler extends Observable implements org.apache.mesos.Schedu
     this.dnsResolver = new DnsResolver(this, config);
     this.reconciler = new Reconciler(config, persistenceStore);
     this.resourceFactory = new ResourceFactory(config.getHdfsRole());
-    this.nodeLauncher = new NodeLauncher();
 
     addObserver(reconciler);
   }
@@ -232,18 +230,18 @@ public class HdfsScheduler extends Observable implements org.apache.mesos.Schedu
             break;
           case JOURNAL_NODES:
             JournalNode jn = new JournalNode(liveState, persistenceStore, config);
-            acceptedOffer = nodeLauncher.launch(driver, jn, offer);
+            acceptedOffer = jn.tryLaunch(driver, offer);
             break;
           case START_NAME_NODES:
             NameNode nn = new NameNode(liveState, persistenceStore, dnsResolver, config);
-            acceptedOffer = nodeLauncher.launch(driver, nn, offer);
+            acceptedOffer = nn.tryLaunch(driver, offer);
             break;
           case FORMAT_NAME_NODES:
             declineOffer(driver, offer);
             break;
           case DATA_NODES:
             DataNode dn = new DataNode(liveState, persistenceStore, config);
-            acceptedOffer = nodeLauncher.launch(driver, dn, offer);
+            acceptedOffer = dn.tryLaunch(driver, offer);
             break;
         }
       }

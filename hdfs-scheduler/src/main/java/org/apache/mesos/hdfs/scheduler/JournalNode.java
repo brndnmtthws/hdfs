@@ -7,7 +7,6 @@ import org.apache.mesos.hdfs.state.IPersistentStateStore;
 import org.apache.mesos.hdfs.state.LiveState;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 import org.apache.mesos.Protos.Offer;
-import org.apache.mesos.SchedulerDriver;
 
 import java.util.Arrays;
 import java.util.List;
@@ -17,13 +16,10 @@ import java.util.List;
  */
 public class JournalNode extends HdfsNode {
   private final Log log = LogFactory.getLog(JournalNode.class);
-  private List<String> taskTypes = Arrays.asList(HDFSConstants.JOURNAL_NODE_ID);
-  private String executorName = HDFSConstants.NODE_EXECUTOR_ID;
 
   public JournalNode(LiveState liveState, IPersistentStateStore persistentStore, HdfsFrameworkConfig config) {
     super(liveState, persistentStore, config, HDFSConstants.JOURNAL_NODE_ID);
   }
-
 
   public boolean evaluate(Offer offer) {
     boolean accept = false;
@@ -54,7 +50,11 @@ public class JournalNode extends HdfsNode {
     return accept;
   }
 
-  public void launch(SchedulerDriver driver, Offer offer) {
-    launch(driver, offer, name, taskTypes, executorName);
+  protected String getExecutorName() {
+    return HDFSConstants.NODE_EXECUTOR_ID;
   }
-}
+
+  protected List<String> getTaskTypes() {
+    return Arrays.asList(HDFSConstants.JOURNAL_NODE_ID);
+  }
+ }

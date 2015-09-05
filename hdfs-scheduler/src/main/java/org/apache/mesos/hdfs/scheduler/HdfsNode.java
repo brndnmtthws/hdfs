@@ -1,6 +1,5 @@
 package org.apache.mesos.hdfs.scheduler;
 
-import com.google.protobuf.ByteString;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
@@ -12,6 +11,7 @@ import org.apache.mesos.Protos.Environment;
 import org.apache.mesos.Protos.ExecutorID;
 import org.apache.mesos.Protos.ExecutorInfo;
 import org.apache.mesos.Protos.Offer;
+import org.apache.mesos.Protos.OfferID;
 import org.apache.mesos.Protos.Resource;
 import org.apache.mesos.Protos.TaskID;
 import org.apache.mesos.Protos.TaskInfo;
@@ -34,7 +34,6 @@ public abstract class HdfsNode implements IOfferEvaluator, ILauncher {
   protected final IPersistentStateStore persistenceStore;
   protected final String name;
 
-
   public HdfsNode(LiveState liveState, IPersistentStateStore persistentStore, HdfsFrameworkConfig config, String name) {
     this.liveState = liveState;
     this.persistenceStore = persistentStore;
@@ -47,58 +46,51 @@ public abstract class HdfsNode implements IOfferEvaluator, ILauncher {
     return name;
   }
 
-  protected void launch(
-      SchedulerDriver driver,
-      Offer offer,
-      String nodeName,
-      List<String> taskTypes,
-      String executorName) {
+  protected abstract String getExecutorName();
+  protected abstract List<String> getTaskTypes();
 
-    List<TaskInfo> tasks = getTasks(driver, offer, nodeName, taskTypes, executorName);
-    launchNode(driver, offer, tasks);
+  private void launch(SchedulerDriver driver, Offer offer) {
+    List<Task> tasks = createTasks(offer);
+    List<TaskInfo> taskInfos = getTaskInfos(tasks);
+
+    recordTasks(tasks);
+    driver.launchTasks(Arrays.asList(offer.getId()), taskInfos);
   }
 
-  private void launchNode(SchedulerDriver driver, Offer offer, List<TaskInfo> tasks) {
-    driver.launchTasks(Arrays.asList(offer.getId()), tasks);
-  }
+  public boolean tryLaunch(SchedulerDriver driver, Offer offer) {
+    String nodeName = getName();
+    OfferID offerId = offer.getId();
 
-  private List<TaskInfo> getTasks(SchedulerDriver driver, Offer offer,
-      String nodeName, List<String> taskTypes, String executorName) {
-    // nodeName is the type of executor to launch
-    // executorName is to distinguish different types of nodes
-    // taskType is the type of task in mesos to launch on the node
-    // taskName is a name chosen to identify the task in mesos and mesos-dns (if used)
-    log.info(String.format("Launching node of type %s with tasks %s", nodeName, taskTypes.toString()));
+    log.info(String.format("Node: %s, evaluating offer: %s", nodeName, offerId));
+    boolean acceptOffer = evaluate(offer);
 
-    String taskIdName = String.format("%s.%s.%d", nodeName, executorName, System.currentTimeMillis());
-
-    ExecutorInfo executorInfo = createExecutor(taskIdName, nodeName, executorName);
-
-    List<TaskInfo> tasks = new ArrayList<>();
-    for (String taskType : taskTypes) {
-      List<Resource> taskResources = getTaskResources(taskType);
-      String taskName = getNextTaskName(taskType);
-
-      TaskID taskId = TaskID.newBuilder()
-        .setValue(String.format("task.%s.%s", taskType, taskIdName))
-        .build();
-
-      TaskInfo task = TaskInfo.newBuilder()
-        .setExecutor(executorInfo)
-        .setName(taskName)
-        .setTaskId(taskId)
-        .setSlaveId(offer.getSlaveId())
-        .addAllResources(taskResources)
-        .setData(ByteString.copyFromUtf8(
-              String.format("bin/hdfs-mesos-%s", taskType)))
-        .build();
-      tasks.add(task);
-
-      liveState.addStagingTask(taskId);
-      persistenceStore.addHdfsNode(taskId, offer.getHostname(), taskType, taskName);
+    if (acceptOffer) {
+      log.info(String.format("Node: %s, accepting offer: %s", nodeName, offerId));
+      launch(driver, offer);
+    } else {
+      log.info(String.format("Node: %s, declining offer: %s", nodeName, offerId));
+      driver.declineOffer(offerId);
     }
 
-    return tasks;
+    return acceptOffer;
+  }
+
+  private List<TaskInfo> getTaskInfos(List<Task> tasks) {
+    List<TaskInfo> taskInfos = new ArrayList<TaskInfo>();
+
+    for (Task task : tasks) {
+      taskInfos.add(task.getInfo());
+    }
+
+    return taskInfos;
+  }
+
+  private void recordTasks(List<Task> tasks) {
+    for (Task task : tasks) {
+      TaskID taskId = task.getId();
+      liveState.addStagingTask(taskId);
+      persistenceStore.addHdfsNode(taskId, task.getHostname(), task.getType(), task.getName());
+    }
   }
 
   private ExecutorInfo createExecutor(String taskIdName, String nodeName, String executorName) {
@@ -167,9 +159,9 @@ public abstract class HdfsNode implements IOfferEvaluator, ILauncher {
       .build();
   }
 
-  private List<Resource> getTaskResources(String taskName) {
-    double cpu = config.getTaskCpus(taskName);
-    double mem = config.getTaskHeapSize(taskName) * config.getJvmOverhead();
+  private List<Resource> getTaskResources(String taskType) {
+    double cpu = config.getTaskCpus(taskType);
+    double mem = config.getTaskHeapSize(taskType) * config.getJvmOverhead();
 
     List<Resource> resources = new ArrayList<Resource>();
     resources.add(resourceFactory.createCpuResource(cpu));
@@ -235,5 +227,21 @@ public abstract class HdfsNode implements IOfferEvaluator, ILauncher {
     }
 
     return false;
+  }
+
+  private List<Task> createTasks(Offer offer) {
+    String executorName = getExecutorName();
+    String taskIdName = String.format("%s.%s.%d", name, executorName, System.currentTimeMillis());
+    List<Task> tasks = new ArrayList<Task>();
+
+    for (String type : getTaskTypes()) {
+      List<Resource> resources = getTaskResources(type);
+      ExecutorInfo execInfo = createExecutor(taskIdName, name, executorName);
+      String taskName = getNextTaskName(type);
+
+      tasks.add(new Task(resources, execInfo, offer, taskName, type, taskIdName));
+    }
+
+    return tasks;
   }
 }

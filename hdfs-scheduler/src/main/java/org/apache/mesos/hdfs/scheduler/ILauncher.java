@@ -7,5 +7,5 @@ import org.apache.mesos.SchedulerDriver;
  * ILauncher interface.
  */
 public interface ILauncher {
-  public void launch(SchedulerDriver driver, Offer offer);
+  public boolean tryLaunch(SchedulerDriver driver, Offer offer);
 }
