@@ -2,8 +2,10 @@ package org.apache.mesos.hdfs;
 
 import com.google.common.collect.Lists;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.mesos.Protos;
+import org.apache.mesos.Protos.Value.Range.Builder;
 import org.apache.mesos.Protos.Value.Type;
 import org.apache.mesos.SchedulerDriver;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
@@ -100,8 +102,8 @@ public class TestSchedularConstraints {
     when(liveState.getCurrentAcquisitionPhase()).thenReturn(
         AcquisitionPhase.DATA_NODES);
     Protos.Offer offer = addAttribute(
-        createTestOfferBuilderWithResources(4, 5, 64 * 1024), "CPU",
-        "3.5", Protos.Value.Type.SCALAR).build();
+        createTestOfferBuilderWithResources(4, 5, 64 * 1024), "CPU", "3.5",
+        Protos.Value.Type.SCALAR).build();
     config.set("mesos.hdfs.constraints", "CPU:3");
     this.scheduler = new HdfsScheduler(hdfsFrameworkConfig, liveState,
         persistenceStore);
@@ -114,11 +116,13 @@ public class TestSchedularConstraints {
   public void acceptOffersWithConstraintMatchMultiple() {
     when(liveState.getCurrentAcquisitionPhase()).thenReturn(
         AcquisitionPhase.DATA_NODES);
-    Protos.Offer.Builder builder = createTestOfferBuilderWithResources(4, 5, 64 * 1024);
+    Protos.Offer.Builder builder = createTestOfferBuilderWithResources(4, 5,
+        64 * 1024);
     builder = addAttribute(builder, "CPU", "3.5", Protos.Value.Type.SCALAR);
-    builder = addAttribute(builder, "ZONE", "west,east,north", Protos.Value.Type.SET);
+    builder = addAttribute(builder, "ZONE", "west,east,north",
+        Protos.Value.Type.SET);
     builder = addAttribute(builder, "TYPE", "hi-end", Protos.Value.Type.TEXT);
-    
+
     config.set("mesos.hdfs.constraints", "CPU:2;ZONE:west");
     this.scheduler = new HdfsScheduler(hdfsFrameworkConfig, liveState,
         persistenceStore);
@@ -126,16 +130,18 @@ public class TestSchedularConstraints {
 
     verify(driver, times(1)).launchTasks(anyList(), taskInfosCapture.capture());
   }
-  
+
   @Test
   public void declineOffersWithNoConstraintMatchMultiple() {
     when(liveState.getCurrentAcquisitionPhase()).thenReturn(
         AcquisitionPhase.DATA_NODES);
-    Protos.Offer.Builder builder = createTestOfferBuilderWithResources(4, 5, 64 * 1024);
+    Protos.Offer.Builder builder = createTestOfferBuilderWithResources(4, 5,
+        64 * 1024);
     builder = addAttribute(builder, "CPU", "3.5", Protos.Value.Type.SCALAR);
-    builder = addAttribute(builder, "ZONE", "west,east,north", Protos.Value.Type.SET);
+    builder = addAttribute(builder, "ZONE", "west,east,north",
+        Protos.Value.Type.SET);
     builder = addAttribute(builder, "TYPE", "hi-end", Protos.Value.Type.TEXT);
-    
+
     Protos.Offer offer = builder.build();
     config.set("mesos.hdfs.constraints", "TYPE:low-end;ZONE:north");
     this.scheduler = new HdfsScheduler(hdfsFrameworkConfig, liveState,
@@ -144,7 +150,25 @@ public class TestSchedularConstraints {
 
     verify(driver, times(1)).declineOffer(offer.getId());
   }
-  
+
+  @Test
+  public void acceptOffersWithRangeConstraintSpecified() {
+    when(liveState.getCurrentAcquisitionPhase()).thenReturn(
+        AcquisitionPhase.DATA_NODES);
+    Protos.Offer.Builder builder = createTestOfferBuilderWithResources(4, 5,
+        64 * 1024);
+    builder = addAttribute(builder, "DISKSIZE", "100-1000",
+        Protos.Value.Type.RANGES);
+
+    Protos.Offer offer = builder.build();
+    config.set("mesos.hdfs.constraints", "DISKSIZE:500");
+    this.scheduler = new HdfsScheduler(hdfsFrameworkConfig, liveState,
+        persistenceStore);
+    scheduler.resourceOffers(driver, Lists.newArrayList(offer));
+
+    verify(driver, times(1)).launchTasks(anyList(), taskInfosCapture.capture());
+  }
+
   @Test
   public void acceptOffersWithNoConstraintSpecified() {
     when(liveState.getCurrentAcquisitionPhase()).thenReturn(
@@ -163,7 +187,7 @@ public class TestSchedularConstraints {
   @Before
   public void setup() {
     MockitoAnnotations.initMocks(this);
-    hdfsFrameworkConfig = new HdfsFrameworkConfig(config);    
+    hdfsFrameworkConfig = new HdfsFrameworkConfig(config);
   }
 
   private Protos.OfferID createTestOfferId(int instanceNumber) {
@@ -204,7 +228,8 @@ public class TestSchedularConstraints {
 
   private Protos.Offer.Builder addAttribute(Protos.Offer.Builder offerBuilder,
       String attributeName, String value, Type t) {
-    return offerBuilder.addAttributes(Protos.Attribute
+
+    Protos.Attribute.Builder attributeBuilder = Protos.Attribute
         .newBuilder()
         .setType(t)
         .setName(attributeName)
@@ -222,6 +247,29 @@ public class TestSchedularConstraints {
                 .newBuilder()
                 .addAllItem(
                     new ArrayList<String>(Arrays.asList(value.split(","))))
-                .build()).build());
+                .build());
+
+    if (t == Protos.Value.Type.RANGES) {
+      Builder rangeBuilder = Protos.Value.Range.newBuilder().setBegin(0)
+          .setEnd(0);
+      if (!StringUtils.isBlank(value)) {
+        String[] rangeValues = value.split("-");
+        if (rangeValues.length >= 1 && !StringUtils.isBlank(rangeValues[0])) {
+          long startValue = Long.parseLong(rangeValues[0]);
+          rangeBuilder = rangeBuilder.setBegin(startValue);
+        } else {
+          rangeBuilder.clearEnd();
+        }
+        if (rangeValues.length >= 2 && !StringUtils.isBlank(rangeValues[1])) {
+          long endValue = Long.parseLong(rangeValues[1]);
+          rangeBuilder = rangeBuilder.setEnd(endValue);
+        }
+      }
+      attributeBuilder.setRanges(Protos.Value.Ranges.newBuilder().addRange(
+          rangeBuilder.build()));
+    }
+
+    return offerBuilder.addAttributes(attributeBuilder.build());
+
   }
 }

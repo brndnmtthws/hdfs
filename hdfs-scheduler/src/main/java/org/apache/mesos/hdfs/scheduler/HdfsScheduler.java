@@ -2,7 +2,6 @@ package org.apache.mesos.hdfs.scheduler;
 
 import com.google.inject.Inject;
 import com.google.protobuf.ByteString;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.MesosSchedulerDriver;
@@ -26,7 +25,6 @@ import org.apache.mesos.hdfs.state.PersistenceException;
 import org.apache.mesos.hdfs.state.IPersistentStateStore;
 import org.apache.mesos.hdfs.util.DnsResolver;
 import org.apache.mesos.hdfs.util.HDFSConstants;
-
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
@@ -43,10 +41,8 @@ public class HdfsScheduler extends Observable implements org.apache.mesos.Schedu
   private final HdfsMesosConstraints hdfsMesosConstraints;
   private final LiveState liveState;
   private final IPersistentStateStore persistenceStore;
-
   private final DnsResolver dnsResolver;
   private final Reconciler reconciler;
-
 
   @Inject
   public HdfsScheduler(HdfsFrameworkConfig config,
@@ -54,12 +50,11 @@ public class HdfsScheduler extends Observable implements org.apache.mesos.Schedu
 
     this.config = config;
     this.hdfsMesosConstraints 
-           = new HdfsMesosConstraints(this.config.getMesosSlaveConstraints());
+           = new HdfsMesosConstraints(this.config);
     this.liveState = liveState;
     this.persistenceStore = persistenceStore;
     this.dnsResolver = new DnsResolver(this, config);
     this.reconciler = new Reconciler(config, persistenceStore);
-
     addObserver(reconciler);
   }
 
@@ -225,7 +220,7 @@ public class HdfsScheduler extends Observable implements org.apache.mesos.Schedu
     // TODO (elingg) within each phase, accept offers based on the number of nodes you need
     boolean acceptedOffer = false;
     for (Offer offer : offers) {
-      if (!this.hdfsMesosConstraints.constraintsAllow(offer)) {
+      if (!hdfsMesosConstraints.constraintsAllow(offer)) {
         driver.declineOffer(offer.getId());
       } else if (acceptedOffer) {
         driver.declineOffer(offer.getId());

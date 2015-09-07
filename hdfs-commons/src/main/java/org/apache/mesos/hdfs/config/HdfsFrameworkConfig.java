@@ -1,7 +1,6 @@
 package org.apache.mesos.hdfs.config;
 
 import com.google.inject.Singleton;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -320,10 +319,12 @@ public class HdfsFrameworkConfig {
       String[] constraintsPairs = constraints.split(";");
       for (String pair : constraintsPairs) {
         String[] keyValue = pair.split(":");
-        String key = keyValue[0];
-        String value = keyValue.length == 2 ? keyValue[1]
-            : keyValue.length == 1 ? "" : pair.substring(pair.indexOf(":"));
-        constraintsMap.put(key, value);
+        if (keyValue.length > 0) {
+          String key = keyValue[0];
+          String value = keyValue.length == 1 ? "" : 
+             keyValue.length == 2 ? keyValue[1] : pair.substring(pair.indexOf(":"));
+          constraintsMap.put(key, value);
+        }
       }
     }
 
