@@ -3,6 +3,9 @@ package org.apache.mesos.hdfs.scheduler;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.Protos.Attribute;
 import org.apache.mesos.Protos.Offer;
 import org.apache.mesos.Protos.Value.Range;
@@ -12,7 +15,8 @@ import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
  * HDFS Mesos offer constraints checker class implementation.
  */
 public class HdfsMesosConstraints {
-
+  
+  private final Log log = LogFactory.getLog(HdfsMesosConstraints.class);
   private final HdfsFrameworkConfig config;
 
   public HdfsMesosConstraints(HdfsFrameworkConfig config) {
@@ -45,10 +49,10 @@ public class HdfsMesosConstraints {
                   }
                 }
               } catch (NumberFormatException e) {
-                // Offer attribute value is not castble to number. Found is already false.
-                // This is not error. It was just a trial.
-                // Setting it false explicitly again to avoid empty catch build error
-                found = false;
+                // Offer attribute value is not castble to number.
+                String msg = "Constraint value " + constraintValue + 
+                    " is not of type range for offer attribute " + constraintName; 
+                log.warn(msg, e);
               }
             } 
             break;
@@ -60,10 +64,10 @@ public class HdfsMesosConstraints {
                   found = true;
                 }
               } catch (NumberFormatException e) {                
-                // Offer attribute value is not castble to scalar. Found is already false.
-                // This is not error. It was just a trial.
-                // Setting it false explicitly again to avoid empty catch build error
-                found = false;
+                // Offer attribute value is not castble to scalar. 
+                String msg = "Constraint value \"" + constraintValue + 
+                "\" is not of type scalar for offer attribute " + constraintName;
+                log.warn(msg, e);
               }
             }
             break;
