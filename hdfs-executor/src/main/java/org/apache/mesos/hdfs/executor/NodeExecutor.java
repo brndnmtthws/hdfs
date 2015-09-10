@@ -3,6 +3,9 @@ package org.apache.mesos.hdfs.executor;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+
+import java.util.Timer;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.ExecutorDriver;
@@ -20,6 +23,9 @@ import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
 public class NodeExecutor extends AbstractNodeExecutor {
   private final Log log = LogFactory.getLog(NodeExecutor.class);
   private Task task;
+  //Timed Health Check for node health monitoring
+  private TimedHealthCheck timedHealthCheck;
+  private Timer timer;
 
   /**
    * The constructor for the node which saves the configuration.
@@ -51,6 +57,11 @@ public class NodeExecutor extends AbstractNodeExecutor {
         .setTaskId(taskInfo.getTaskId())
         .setState(TaskState.TASK_RUNNING)
         .setData(taskInfo.getData()).build());
+    timer = new Timer(true);
+    timedHealthCheck = new TimedHealthCheck(driver, task);
+    timer.scheduleAtFixedRate(timedHealthCheck,
+      hdfsFrameworkConfig.getHealthCheckWaitingPeriod(),
+      hdfsFrameworkConfig.getHealthCheckFrequency());
   }
 
   @Override

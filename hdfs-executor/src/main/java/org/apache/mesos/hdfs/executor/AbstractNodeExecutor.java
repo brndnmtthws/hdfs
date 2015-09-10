@@ -28,10 +28,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.TimerTask;
 
 /**
  * The base for several types of HDFS executors.  It also contains the main which is consistent for all executors.
@@ -288,6 +292,78 @@ public abstract class AbstractNodeExecutor implements Executor {
       .setTaskId(task.getTaskInfo().getTaskId())
       .setState(TaskState.TASK_FAILED)
       .build());
+  }
+  
+  protected void runHealthChecks(ExecutorDriver driver, Task task) {
+    String taskIdStr = task.getTaskInfo().getTaskId().getValue();
+	log.info("Performing health check for task: " + taskIdStr);
+	
+	int healthCheckPort = getHealthCheckPort(taskIdStr);
+	boolean taskHealthy = false;
+
+    if (healthCheckPort != -1) {
+      Socket socket = null;
+	  try {
+	    // TODO (elingg) with better process supervision, check which process is bound to the port.
+	   // Also, possibly do a http check for the name node UI as an additional health check.
+	   String localhostAddress = InetAddress.getLocalHost().getHostAddress();
+	   socket = new Socket();
+	   socket.bind(new InetSocketAddress(localhostAddress, healthCheckPort));
+	  } catch (IOException e) {
+	   taskHealthy = true;
+	   log.info("Could not bind to port " + healthCheckPort + ", port is in use as expected.");
+	  } catch (SecurityException | IllegalArgumentException e) {
+	   log.error("Exception determining if a port is in use: ", e);
+	  } finally {
+	    if (socket != null) {
+	      try {
+	        socket.close();
+	      } catch (IOException e) {
+	        log.error("Error closing socket in health check: ", e);
+	      }
+	    }
+	   }
+	 }
+	 if (!taskHealthy) {
+	  log.fatal("Node health check failed for task: " + taskIdStr);
+	  killTask(driver, task.getTaskInfo().getTaskId());
+	  //TODO (elingg) with better process supervision 
+	  // (i.e. monitoring of ZKFC's), we do not need to exit the executors
+	  shutdownExecutor(2, "Failed health check");
+    }
+  }
+  
+  private int getHealthCheckPort(String taskIdStr) {
+    int healthCheckPort = -1;
+
+	if (taskIdStr.contains(HDFSConstants.DATA_NODE_ID)) {
+      healthCheckPort = HDFSConstants.DATA_NODE_PORT;
+	} else if (taskIdStr.contains(HDFSConstants.JOURNAL_NODE_ID)) {
+	  healthCheckPort = HDFSConstants.JOURNAL_NODE_PORT;
+	} else if (taskIdStr.contains(HDFSConstants.ZKFC_NODE_ID)) {
+	  healthCheckPort = HDFSConstants.ZKFC_NODE_PORT;
+	} else if (taskIdStr.contains(HDFSConstants.NAME_NODE_ID)) {
+	  healthCheckPort = HDFSConstants.NAME_NODE_PORT;
+	} else {
+	  log.error("Task unknown: " + taskIdStr);
+	}
+	
+	return healthCheckPort;
+  }
+	    
+  public class TimedHealthCheck extends TimerTask {
+    Task task;
+    ExecutorDriver driver;
+    
+    public TimedHealthCheck(ExecutorDriver driver, Task task) {
+	  this.driver = driver;
+      this.task = task;
+	}
+
+	@Override
+    public void run() {	      
+	  runHealthChecks(driver, task);
+    }
   }
 
   @Override

@@ -18,6 +18,7 @@ import org.apache.mesos.hdfs.util.HDFSConstants;
 
 import java.io.File;
 import java.nio.charset.Charset;
+import java.util.Timer;
 
 /**
  * The executor for the Primary Name Node Machine.
@@ -29,6 +30,10 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
   // TODO (elingg) better handling in livestate and persistent state of zkfc task. Right now they are
   // chained.
   private Task zkfcNodeTask;
+  //Timed Health Check for node health monitoring
+  private TimedHealthCheck healthCheckNN;
+  private TimedHealthCheck healthCheckZN;
+  private Timer timer;
 
   /**
    * The constructor for the primary name node which saves the configuration.
@@ -36,6 +41,7 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
   @Inject
   NameNodeExecutor(HdfsFrameworkConfig hdfsFrameworkConfig) {
     super(hdfsFrameworkConfig);
+    timer = new Timer(true);
   }
 
   /**
@@ -66,12 +72,20 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
           .setTaskId(nameNodeTask.getTaskInfo().getTaskId())
           .setState(TaskState.TASK_RUNNING)
           .build());
+      healthCheckNN = new TimedHealthCheck(driver, nameNodeTask);
+      timer.scheduleAtFixedRate(healthCheckNN,
+        hdfsFrameworkConfig.getHealthCheckWaitingPeriod(),
+        hdfsFrameworkConfig.getHealthCheckFrequency());
     } else if (taskInfo.getTaskId().getValue().contains(HDFSConstants.ZKFC_NODE_ID)) {
       zkfcNodeTask = task;
       driver.sendStatusUpdate(TaskStatus.newBuilder()
           .setTaskId(zkfcNodeTask.getTaskInfo().getTaskId())
           .setState(TaskState.TASK_RUNNING)
           .build());
+      healthCheckZN = new TimedHealthCheck(driver, zkfcNodeTask);
+      timer.scheduleAtFixedRate(healthCheckZN,
+        hdfsFrameworkConfig.getHealthCheckWaitingPeriod(),
+        hdfsFrameworkConfig.getHealthCheckFrequency());
     }
   }
 

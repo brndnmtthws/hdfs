@@ -37,6 +37,8 @@ public class HdfsFrameworkConfig {
   private static final int DEFAULT_RECONCILIATION_TIMEOUT_SEC = 4;
   private static final int DEFAULT_MAX_RECONCILIATION_TIMEOUT_SEC = 30;
   private static final int DEFAULT_DEADNODE_TIMEOUT_SEC = 90;
+  private static final int DEFAULT_HEALTH_CHECK_FREQUENCY_MS = 60000;
+  private static final int DEFAULT_HEALTH_CHECK_WAITING_PERIOD_MS = 60000;
 
   private final Log log = LogFactory.getLog(HdfsFrameworkConfig.class);
 
@@ -294,7 +296,7 @@ public class HdfsFrameworkConfig {
   }
 
   public int getDeadNodeTimeout() {
-    return getConf().getInt("mesos.hdfs.deadnode.timeout.seconds", DEFAULT_DEADNODE_TIMEOUT_SEC);
+    return getConf().getInt("mesos.hdfs.deadnode.timeout.sec", DEFAULT_DEADNODE_TIMEOUT_SEC);
   }
 
   public String getJreUrl() {
@@ -307,5 +309,13 @@ public class HdfsFrameworkConfig {
 
   public String getJreVersion() {
     return getConf().get("mesos.hdfs.jre-version", "jre1.7.0_76");
+  }
+
+  public int getHealthCheckFrequency() {
+    return getConf().getInt("mesos.hdfs.healthcheck.frequency.ms", DEFAULT_HEALTH_CHECK_FREQUENCY_MS);
+  }
+
+  public int getHealthCheckWaitingPeriod() {
+    return getConf().getInt("mesos.hdfs.healthcheck.waitingperiod.ms", DEFAULT_HEALTH_CHECK_WAITING_PERIOD_MS);
   }
 }
