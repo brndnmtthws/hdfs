@@ -43,7 +43,6 @@ public class HdfsScheduler extends Observable implements org.apache.mesos.Schedu
   private final IPersistentStateStore persistenceStore;
   private final DnsResolver dnsResolver;
   private final Reconciler reconciler;
-  private final ResourceFactory resourceFactory;
 
   @Inject
   public HdfsScheduler(HdfsFrameworkConfig config,
@@ -54,7 +53,6 @@ public class HdfsScheduler extends Observable implements org.apache.mesos.Schedu
     this.persistenceStore = persistenceStore;
     this.dnsResolver = new DnsResolver(this, config);
     this.reconciler = new Reconciler(config, persistenceStore);
-    this.resourceFactory = new ResourceFactory(config.getHdfsRole());
 
     addObserver(reconciler);
   }
