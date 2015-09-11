@@ -31,9 +31,7 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
   // chained.
   private Task zkfcNodeTask;
   //Timed Health Check for node health monitoring
-  private TimedHealthCheck healthCheckNN;
-  private TimedHealthCheck healthCheckZN;
-  private Timer timer;
+  private Timer healthCheckTimer;
 
   /**
    * The constructor for the primary name node which saves the configuration.
@@ -41,7 +39,7 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
   @Inject
   NameNodeExecutor(HdfsFrameworkConfig hdfsFrameworkConfig) {
     super(hdfsFrameworkConfig);
-    timer = new Timer(true);
+    healthCheckTimer = new Timer(true);
   }
 
   /**
@@ -72,8 +70,8 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
           .setTaskId(nameNodeTask.getTaskInfo().getTaskId())
           .setState(TaskState.TASK_RUNNING)
           .build());
-      healthCheckNN = new TimedHealthCheck(driver, nameNodeTask);
-      timer.scheduleAtFixedRate(healthCheckNN,
+      TimedHealthCheck healthCheckNN = new TimedHealthCheck(driver, nameNodeTask);
+      healthCheckTimer.scheduleAtFixedRate(healthCheckNN,
         hdfsFrameworkConfig.getHealthCheckWaitingPeriod(),
         hdfsFrameworkConfig.getHealthCheckFrequency());
     } else if (taskInfo.getTaskId().getValue().contains(HDFSConstants.ZKFC_NODE_ID)) {
@@ -82,8 +80,8 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
           .setTaskId(zkfcNodeTask.getTaskInfo().getTaskId())
           .setState(TaskState.TASK_RUNNING)
           .build());
-      healthCheckZN = new TimedHealthCheck(driver, zkfcNodeTask);
-      timer.scheduleAtFixedRate(healthCheckZN,
+      TimedHealthCheck healthCheckZN = new TimedHealthCheck(driver, zkfcNodeTask);
+      healthCheckTimer.scheduleAtFixedRate(healthCheckZN,
         hdfsFrameworkConfig.getHealthCheckWaitingPeriod(),
         hdfsFrameworkConfig.getHealthCheckFrequency());
     }

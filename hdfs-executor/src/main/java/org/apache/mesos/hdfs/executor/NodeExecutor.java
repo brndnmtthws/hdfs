@@ -24,8 +24,7 @@ public class NodeExecutor extends AbstractNodeExecutor {
   private final Log log = LogFactory.getLog(NodeExecutor.class);
   private Task task;
   //Timed Health Check for node health monitoring
-  private TimedHealthCheck timedHealthCheck;
-  private Timer timer;
+  private Timer healthCheckTimer;
 
   /**
    * The constructor for the node which saves the configuration.
@@ -57,9 +56,9 @@ public class NodeExecutor extends AbstractNodeExecutor {
         .setTaskId(taskInfo.getTaskId())
         .setState(TaskState.TASK_RUNNING)
         .setData(taskInfo.getData()).build());
-    timer = new Timer(true);
-    timedHealthCheck = new TimedHealthCheck(driver, task);
-    timer.scheduleAtFixedRate(timedHealthCheck,
+    healthCheckTimer = new Timer(true);
+    TimedHealthCheck timedHealthCheck = new TimedHealthCheck(driver, task);
+    healthCheckTimer.scheduleAtFixedRate(timedHealthCheck,
       hdfsFrameworkConfig.getHealthCheckWaitingPeriod(),
       hdfsFrameworkConfig.getHealthCheckFrequency());
   }

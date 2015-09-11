@@ -326,6 +326,7 @@ public abstract class AbstractNodeExecutor implements Executor {
         }
       }
     }
+    
     if (!taskHealthy) {
       log.fatal("Node health check failed for task: " + taskIdStr);
       killTask(driver, task.getTaskInfo().getTaskId());
