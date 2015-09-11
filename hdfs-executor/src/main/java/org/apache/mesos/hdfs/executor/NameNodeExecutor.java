@@ -18,7 +18,6 @@ import org.apache.mesos.hdfs.util.HDFSConstants;
 
 import java.io.File;
 import java.nio.charset.Charset;
-import java.util.Timer;
 
 /**
  * The executor for the Primary Name Node Machine.
