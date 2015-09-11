@@ -320,6 +320,7 @@ public class HdfsFrameworkConfig {
 
   public int getHealthCheckWaitingPeriod() {
     return getConf().getInt("mesos.hdfs.healthcheck.waitingperiod.ms", DEFAULT_HEALTH_CHECK_WAITING_PERIOD_MS);
+  }
   
   public Map<String, String> getMesosSlaveConstraints() {
     String constraints = getConf().get("mesos.hdfs.constraints");
