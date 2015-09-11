@@ -1,8 +1,18 @@
 package org.apache.mesos.hdfs.executor;
 
-import com.google.inject.Guice;
-import com.google.inject.Inject;
-import com.google.inject.Injector;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Timer;
+import java.util.TimerTask;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -22,20 +32,9 @@ import org.apache.mesos.hdfs.file.FileUtils;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 import org.apache.mesos.hdfs.util.StreamRedirect;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.TimerTask;
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
 
 /**
  * The base for several types of HDFS executors.  It also contains the main which is consistent for all executors.
@@ -45,6 +44,9 @@ public abstract class AbstractNodeExecutor implements Executor {
   private final Log log = LogFactory.getLog(AbstractNodeExecutor.class);
   protected ExecutorInfo executorInfo;
   protected HdfsFrameworkConfig hdfsFrameworkConfig;
+  //Timed Health Check for node health monitoring
+  protected Timer healthCheckTimer;
+  private NodeHealthChecker nodeHealthChecker;
 
   /**
    * Constructor which takes in configuration.
@@ -52,6 +54,8 @@ public abstract class AbstractNodeExecutor implements Executor {
   @Inject
   AbstractNodeExecutor(HdfsFrameworkConfig hdfsFrameworkConfig) {
     this.hdfsFrameworkConfig = hdfsFrameworkConfig;
+    this.nodeHealthChecker = new NodeHealthChecker();
+    healthCheckTimer = new Timer(true);
   }
 
   /**
@@ -294,39 +298,11 @@ public abstract class AbstractNodeExecutor implements Executor {
       .build());
   }
   
-  protected void runHealthChecks(ExecutorDriver driver, Task task) {
+  private void launchHealthCheck(ExecutorDriver driver, Task task) {
     String taskIdStr = task.getTaskInfo().getTaskId().getValue();
     log.info("Performing health check for task: " + taskIdStr);
-
-    int healthCheckPort = getHealthCheckPort(taskIdStr);
-    boolean taskHealthy = false;
-
-    if (healthCheckPort != -1) {
-      Socket socket = null;
-      try {
-        // TODO (elingg) with better process supervision, check which process is
-        // bound to the port.
-        // Also, possibly do a http check for the name node UI as an additional
-        // health check.
-        String localhostAddress = InetAddress.getLocalHost().getHostAddress();
-        socket = new Socket();
-        socket.bind(new InetSocketAddress(localhostAddress, healthCheckPort));
-      } catch (IOException e) {
-        taskHealthy = true;
-        log.info("Could not bind to port " + healthCheckPort + ", port is in use as expected.");
-      } catch (SecurityException | IllegalArgumentException e) {
-        log.error("Exception determining if a port is in use: ", e);
-      } finally {
-        if (socket != null) {
-          try {
-            socket.close();
-          } catch (IOException e) {
-            log.error("Error closing socket in health check: ", e);
-          }
-        }
-      }
-    }
     
+    boolean taskHealthy = nodeHealthChecker.runHealthCheckForTask(driver, task);
     if (!taskHealthy) {
       log.fatal("Node health check failed for task: " + taskIdStr);
       killTask(driver, task.getTaskInfo().getTaskId());
@@ -336,24 +312,6 @@ public abstract class AbstractNodeExecutor implements Executor {
     }
   }
   
-  private int getHealthCheckPort(String taskIdStr) {
-    int healthCheckPort = -1;
-
-    if (taskIdStr.contains(HDFSConstants.DATA_NODE_ID)) {
-      healthCheckPort = HDFSConstants.DATA_NODE_PORT;
-    } else if (taskIdStr.contains(HDFSConstants.JOURNAL_NODE_ID)) {
-      healthCheckPort = HDFSConstants.JOURNAL_NODE_PORT;
-    } else if (taskIdStr.contains(HDFSConstants.ZKFC_NODE_ID)) {
-      healthCheckPort = HDFSConstants.ZKFC_NODE_PORT;
-    } else if (taskIdStr.contains(HDFSConstants.NAME_NODE_ID)) {
-      healthCheckPort = HDFSConstants.NAME_NODE_PORT;
-    } else {
-      log.error("Task unknown: " + taskIdStr);
-    }
-
-    return healthCheckPort;
-  }
-
   /**
    * Implementation of a TimedHealthCheck through use of TimerTask.
    */
@@ -368,8 +326,8 @@ public abstract class AbstractNodeExecutor implements Executor {
 
     @Override
     public void run() {
-      runHealthChecks(driver, task);
-    }
+      launchHealthCheck(driver, task);
+    }   
   }
 
   @Override

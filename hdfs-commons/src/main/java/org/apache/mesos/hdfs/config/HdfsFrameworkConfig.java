@@ -41,7 +41,7 @@ public class HdfsFrameworkConfig {
   private static final int DEFAULT_MAX_RECONCILIATION_TIMEOUT_SEC = 30;
   private static final int DEFAULT_DEADNODE_TIMEOUT_SEC = 90;
   private static final int DEFAULT_HEALTH_CHECK_FREQUENCY_MS = 60000;
-  private static final int DEFAULT_HEALTH_CHECK_WAITING_PERIOD_MS = 60000;
+  private static final int DEFAULT_HEALTH_CHECK_WAITING_PERIOD_MS = 900000;
 
   private final Log log = LogFactory.getLog(HdfsFrameworkConfig.class);
 

@@ -30,8 +30,6 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
   // TODO (elingg) better handling in livestate and persistent state of zkfc task. Right now they are
   // chained.
   private Task zkfcNodeTask;
-  //Timed Health Check for node health monitoring
-  private Timer healthCheckTimer;
 
   /**
    * The constructor for the primary name node which saves the configuration.
@@ -39,7 +37,6 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
   @Inject
   NameNodeExecutor(HdfsFrameworkConfig hdfsFrameworkConfig) {
     super(hdfsFrameworkConfig);
-    healthCheckTimer = new Timer(true);
   }
 
   /**
