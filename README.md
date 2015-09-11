@@ -66,6 +66,23 @@ Note: This will also remove task state, so you will want to manually kill any ru
 7. On each slave with the new settings, start the mesos slave by running
 <br>`sudo service mesos-slave start`.</br>
 
+Applying mesos slave constraints (Optional)
+--------------------------
+1. In mesos-site.xml, add the configuration mesos.hdfs.constraints
+2. Set the value of configuration as ";" separated set of key:value pairs. Key and value has to be separated by the ":". Key represents the attribute name. Value can be exact match, less than or equal to, subset or value within the range for attribute of type text, scalar, set and range, respectively. For example:
+```sh
+<property>
+  <name>mesos.hdfs.constraints</name>
+  <value>zone:west,east;cpu:4;quality:optimized-disk;id:4</value>
+</property>
+
+"zone" is type of set with members {"west","east"}.
+"cpu" is type of scalar. 
+"quality" is type of text. 
+"id" may be type of range. 
+```
+
+
 Authentication with CRAM-MD5 (Optional)
 --------------------------
 1. In mesos-site.xml add the "mesos.hdfs.principal" and "mesos.hdfs.secret" properties. For example:
