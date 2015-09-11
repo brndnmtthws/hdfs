@@ -1,6 +1,7 @@
 package org.apache.mesos.hdfs.config;
 
 import com.google.inject.Singleton;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -8,6 +9,8 @@ import org.apache.hadoop.fs.Path;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -307,5 +310,24 @@ public class HdfsFrameworkConfig {
 
   public String getJreVersion() {
     return getConf().get("mesos.hdfs.jre-version", "jre1.7.0_76");
+  }
+  
+  public Map<String, String> getMesosSlaveConstraints() {
+    String constraints = getConf().get("mesos.hdfs.constraints");
+    Map<String, String> constraintsMap = new HashMap<String, String>();
+    if (!StringUtils.isBlank(constraints)) {
+      String[] constraintsPairs = constraints.split(";");
+      for (String pair : constraintsPairs) {
+        String[] keyValue = pair.split(":");
+        if (keyValue.length > 0) {
+          String key = keyValue[0];
+          String value = keyValue.length == 1 ? "" : 
+             keyValue.length == 2 ? keyValue[1] : pair.substring(pair.indexOf(":"));
+          constraintsMap.put(key, value);
+        }
+      }
+    }
+
+    return constraintsMap;
   }
 }
