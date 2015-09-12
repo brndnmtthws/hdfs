@@ -125,26 +125,20 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
     File nameDir = new File(hdfsFrameworkConfig.getDataDir() + "/name");
     if (messageStr.equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)
         || messageStr.equals(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE)) {
-      if (nameDir.exists() && messageStr.equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)) {
-        log.info(String
-            .format("NameNode data directory %s already exists, not formatting",
-              nameDir));
-      } else {
-        FileUtils.deleteDirectory(nameDir);
-        if (!nameDir.mkdirs()) {
-          final String errorMsg = "unable to make directory: " + nameDir;
-          log.error(errorMsg);
-          throw new ExecutorException(errorMsg);
-        }
-        runCommand(driver, nameNodeTask, "bin/hdfs-mesos-namenode " + messageStr);
+      FileUtils.deleteDirectory(nameDir);
+      if (!nameDir.mkdirs()) {
+        final String errorMsg = "unable to make directory: " + nameDir;
+        log.error(errorMsg);
+        throw new ExecutorException(errorMsg);
       }
+      runCommand(driver, nameNodeTask, "bin/hdfs-mesos-namenode " + messageStr);
       startProcess(driver, nameNodeTask);
       startProcess(driver, zkfcNodeTask);
       driver.sendStatusUpdate(TaskStatus.newBuilder()
-          .setTaskId(nameNodeTask.getTaskInfo().getTaskId())
-          .setState(TaskState.TASK_RUNNING)
-          .setMessage(messageStr)
-          .build());
+        .setTaskId(nameNodeTask.getTaskInfo().getTaskId())
+        .setState(TaskState.TASK_RUNNING)
+        .setMessage(messageStr)
+        .build());
     }
   }
 }
