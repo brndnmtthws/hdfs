@@ -77,7 +77,7 @@ public abstract class AbstractNodeExecutor implements Executor {
     // Set up data dir
     setUpDataDir();
     if (!hdfsFrameworkConfig.usingNativeHadoopBinaries()) {
-      createSymbolicLink();
+      createSymbolicLink(driver);
     }
     log.info("Executor registered with the slave");
   }
@@ -99,7 +99,7 @@ public abstract class AbstractNodeExecutor implements Executor {
   /**
    * Create Symbolic Link for the HDFS binary.
    */
-  private void createSymbolicLink() {
+  private void createSymbolicLink(ExecutorDriver driver) {
     log.info("Creating a symbolic link for HDFS binary");
     try {
       // Find Hdfs binary in sandbox
@@ -142,10 +142,10 @@ public abstract class AbstractNodeExecutor implements Executor {
       log.info("The linked HDFS binary path is: " + sandboxHdfsBinaryPath);
       log.info("The symbolic link path is: " + hdfsLinkDirPath);
       // Adding binary to the PATH environment variable
-      addBinaryToPath(hdfsBinaryPath);
+      addBinaryToPath(driver, hdfsBinaryPath);
     } catch (IOException | InterruptedException e) {
       String msg = "Error creating the symbolic link to hdfs binary";
-      shutdownExecutor(1, msg, e);
+      shutdownExecutor(driver, 1, msg, e);
     }
   }
 
@@ -154,7 +154,8 @@ public abstract class AbstractNodeExecutor implements Executor {
    * requires that /usr/bin/ is on the Mesos slave PATH, which is defined as part of the standard
    * Mesos slave packaging.
    */
-  private void addBinaryToPath(String hdfsBinaryPath) throws IOException, InterruptedException {
+  private void addBinaryToPath(ExecutorDriver driver, String hdfsBinaryPath) 
+    throws IOException, InterruptedException {
     if (hdfsFrameworkConfig.usingNativeHadoopBinaries()) {
       return;
     }
@@ -172,15 +173,16 @@ public abstract class AbstractNodeExecutor implements Executor {
     if (exitCode != 0) {
       String msg = "Error creating the symbolic link to hdfs binary."
         + "Failure running 'chmod a+x " + pathEnvVarLocation + "'";
-      shutdownExecutor(1, msg);
+      shutdownExecutor(driver, 1, msg);
     }
   }
 
-  private void shutdownExecutor(int statusCode, String message) {
-    shutdownExecutor(statusCode, message, null);
+  private void shutdownExecutor(ExecutorDriver driver, int statusCode, String message) {
+    shutdownExecutor(driver, statusCode, message, null);
   }
 
-  private void shutdownExecutor(int statusCode, String message, Exception e) {
+  private void shutdownExecutor(ExecutorDriver driver, int statusCode, String message, Exception e) {
+    shutdown(driver);
     if (StringUtils.isNotBlank(message)) {
       log.fatal(message, e);
     }
@@ -308,7 +310,7 @@ public abstract class AbstractNodeExecutor implements Executor {
       killTask(driver, task.getTaskInfo().getTaskId());
       // TODO (elingg) with better process supervision
       // (i.e. monitoring of ZKFC's), we do not need to exit the executors
-      shutdownExecutor(2, "Failed health check");
+      shutdownExecutor(driver, 2, "Failed health check");
     }
   }
   
