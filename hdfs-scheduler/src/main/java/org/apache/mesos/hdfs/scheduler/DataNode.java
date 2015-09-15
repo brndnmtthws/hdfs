@@ -34,10 +34,10 @@ public class DataNode extends HdfsNode {
       if (deadDataNodes.isEmpty()) {
         if (persistenceStore.dataNodeRunningOnSlave(offer.getHostname())) {
           log.info(String.format("Already running datanode hdfs task on %s", offer.getHostname()));
-        } else if ( config.getRunDatanodeExclusively() && 
+        } else if (config.getRunDatanodeExclusively() && 
               (persistenceStore.nameNodeRunningOnSlave(offer.getHostname())
              || persistenceStore.journalNodeRunningOnSlave(offer.getHostname()))) {
-          log.info(String.format("Already running namenode/journal node hdfs task on %s", offer.getHostname()));
+          log.info(String.format("Already running namenode or journalnode hdfs task on %s", offer.getHostname()));
         } else {
           accept = true;
         }
