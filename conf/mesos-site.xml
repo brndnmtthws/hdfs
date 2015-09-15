@@ -146,5 +146,12 @@
     <name>mesos.hdfs.role</name>
     <value>*</value>
   </property>
+   
+  <property>    
+    <name>mesos.hdfs.datanode.exclusive</name>
+    WARNING-It is not advisable to run the datanode on same slave because of performance issues
+    <description>Whether to run the datanode on slave different from namenode and journal nodes</description>
+    <value>true</value>
+  </property>
   -->
 </configuration>

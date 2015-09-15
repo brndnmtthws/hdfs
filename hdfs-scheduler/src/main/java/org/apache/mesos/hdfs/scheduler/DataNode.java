@@ -32,10 +32,12 @@ public class DataNode extends HdfsNode {
       // What number of DN's should we try to recover or should we remove this constraint
       // entirely?
       if (deadDataNodes.isEmpty()) {
-        if (persistenceStore.dataNodeRunningOnSlave(offer.getHostname())
-            || persistenceStore.nameNodeRunningOnSlave(offer.getHostname())
-            || persistenceStore.journalNodeRunningOnSlave(offer.getHostname())) {
-          log.info(String.format("Already running hdfs task on %s", offer.getHostname()));
+        if (persistenceStore.dataNodeRunningOnSlave(offer.getHostname())) {
+          log.info(String.format("Already running datanode hdfs task on %s", offer.getHostname()));
+        } else if (config.getRunDatanodeExclusively() && 
+              (persistenceStore.nameNodeRunningOnSlave(offer.getHostname())
+             || persistenceStore.journalNodeRunningOnSlave(offer.getHostname()))) {
+          log.info(String.format("Already running namenode or journalnode hdfs task on %s", offer.getHostname()));
         } else {
           accept = true;
         }

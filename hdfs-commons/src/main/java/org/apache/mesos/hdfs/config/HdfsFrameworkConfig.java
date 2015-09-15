@@ -340,4 +340,8 @@ public class HdfsFrameworkConfig {
 
     return constraintsMap;
   }
+
+  public boolean getRunDatanodeExclusively() {
+    return getConf().getBoolean("mesos.hdfs.datanode.exclusive", true);
+  }
 }
