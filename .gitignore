@@ -14,3 +14,6 @@ build/
 
 # vim swap files
 *.swp
+
+# OS X
+.DS_Store
