@@ -1,8 +1,18 @@
 package org.apache.mesos.hdfs.executor;
 
-import com.google.inject.Guice;
-import com.google.inject.Inject;
-import com.google.inject.Injector;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Timer;
+import java.util.TimerTask;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -22,16 +32,9 @@ import org.apache.mesos.hdfs.file.FileUtils;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 import org.apache.mesos.hdfs.util.StreamRedirect;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
 
 /**
  * The base for several types of HDFS executors.  It also contains the main which is consistent for all executors.
@@ -41,6 +44,9 @@ public abstract class AbstractNodeExecutor implements Executor {
   private final Log log = LogFactory.getLog(AbstractNodeExecutor.class);
   protected ExecutorInfo executorInfo;
   protected HdfsFrameworkConfig hdfsFrameworkConfig;
+  //Timed Health Check for node health monitoring
+  protected Timer healthCheckTimer;
+  private NodeHealthChecker nodeHealthChecker;
 
   /**
    * Constructor which takes in configuration.
@@ -48,6 +54,8 @@ public abstract class AbstractNodeExecutor implements Executor {
   @Inject
   AbstractNodeExecutor(HdfsFrameworkConfig hdfsFrameworkConfig) {
     this.hdfsFrameworkConfig = hdfsFrameworkConfig;
+    this.nodeHealthChecker = new NodeHealthChecker();
+    healthCheckTimer = new Timer(true);
   }
 
   /**
@@ -69,7 +77,7 @@ public abstract class AbstractNodeExecutor implements Executor {
     // Set up data dir
     setUpDataDir();
     if (!hdfsFrameworkConfig.usingNativeHadoopBinaries()) {
-      createSymbolicLink();
+      createSymbolicLink(driver);
     }
     log.info("Executor registered with the slave");
   }
@@ -91,7 +99,7 @@ public abstract class AbstractNodeExecutor implements Executor {
   /**
    * Create Symbolic Link for the HDFS binary.
    */
-  private void createSymbolicLink() {
+  private void createSymbolicLink(ExecutorDriver driver) {
     log.info("Creating a symbolic link for HDFS binary");
     try {
       // Find Hdfs binary in sandbox
@@ -134,10 +142,10 @@ public abstract class AbstractNodeExecutor implements Executor {
       log.info("The linked HDFS binary path is: " + sandboxHdfsBinaryPath);
       log.info("The symbolic link path is: " + hdfsLinkDirPath);
       // Adding binary to the PATH environment variable
-      addBinaryToPath(hdfsBinaryPath);
+      addBinaryToPath(driver, hdfsBinaryPath);
     } catch (IOException | InterruptedException e) {
       String msg = "Error creating the symbolic link to hdfs binary";
-      shutdownExecutor(1, msg, e);
+      shutdownExecutor(driver, 1, msg, e);
     }
   }
 
@@ -146,7 +154,8 @@ public abstract class AbstractNodeExecutor implements Executor {
    * requires that /usr/bin/ is on the Mesos slave PATH, which is defined as part of the standard
    * Mesos slave packaging.
    */
-  private void addBinaryToPath(String hdfsBinaryPath) throws IOException, InterruptedException {
+  private void addBinaryToPath(ExecutorDriver driver, String hdfsBinaryPath) 
+    throws IOException, InterruptedException {
     if (hdfsFrameworkConfig.usingNativeHadoopBinaries()) {
       return;
     }
@@ -164,15 +173,16 @@ public abstract class AbstractNodeExecutor implements Executor {
     if (exitCode != 0) {
       String msg = "Error creating the symbolic link to hdfs binary."
         + "Failure running 'chmod a+x " + pathEnvVarLocation + "'";
-      shutdownExecutor(1, msg);
+      shutdownExecutor(driver, 1, msg);
     }
   }
 
-  private void shutdownExecutor(int statusCode, String message) {
-    shutdownExecutor(statusCode, message, null);
+  private void shutdownExecutor(ExecutorDriver driver, int statusCode, String message) {
+    shutdownExecutor(driver, statusCode, message, null);
   }
 
-  private void shutdownExecutor(int statusCode, String message, Exception e) {
+  private void shutdownExecutor(ExecutorDriver driver, int statusCode, String message, Exception e) {
+    shutdown(driver);
     if (StringUtils.isNotBlank(message)) {
       log.fatal(message, e);
     }
@@ -288,6 +298,38 @@ public abstract class AbstractNodeExecutor implements Executor {
       .setTaskId(task.getTaskInfo().getTaskId())
       .setState(TaskState.TASK_FAILED)
       .build());
+  }
+  
+  private void launchHealthCheck(ExecutorDriver driver, Task task) {
+    String taskIdStr = task.getTaskInfo().getTaskId().getValue();
+    log.info("Performing health check for task: " + taskIdStr);
+    
+    boolean taskHealthy = nodeHealthChecker.runHealthCheckForTask(driver, task);
+    if (!taskHealthy) {
+      log.fatal("Node health check failed for task: " + taskIdStr);
+      killTask(driver, task.getTaskInfo().getTaskId());
+      // TODO (elingg) with better process supervision
+      // (i.e. monitoring of ZKFC's), we do not need to exit the executors
+      shutdownExecutor(driver, 2, "Failed health check");
+    }
+  }
+  
+  /**
+   * Implementation of a TimedHealthCheck through use of TimerTask.
+   */
+  protected class TimedHealthCheck extends TimerTask {
+    Task task;
+    ExecutorDriver driver;
+
+    public TimedHealthCheck(ExecutorDriver driver, Task task) {
+      this.driver = driver;
+      this.task = task;
+    }
+
+    @Override
+    public void run() {
+      launchHealthCheck(driver, task);
+    }   
   }
 
   @Override

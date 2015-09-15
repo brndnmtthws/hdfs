@@ -3,6 +3,7 @@ package org.apache.mesos.hdfs.executor;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.ExecutorDriver;
@@ -51,6 +52,10 @@ public class NodeExecutor extends AbstractNodeExecutor {
         .setTaskId(taskInfo.getTaskId())
         .setState(TaskState.TASK_RUNNING)
         .setData(taskInfo.getData()).build());
+    TimedHealthCheck timedHealthCheck = new TimedHealthCheck(driver, task);
+    healthCheckTimer.scheduleAtFixedRate(timedHealthCheck,
+      hdfsFrameworkConfig.getHealthCheckWaitingPeriod(),
+      hdfsFrameworkConfig.getHealthCheckFrequency());
   }
 
   @Override
