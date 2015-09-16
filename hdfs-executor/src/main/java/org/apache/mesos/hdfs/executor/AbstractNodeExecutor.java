@@ -28,6 +28,7 @@ import org.apache.mesos.Protos.TaskInfo;
 import org.apache.mesos.Protos.TaskState;
 import org.apache.mesos.Protos.TaskStatus;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
+import org.apache.mesos.hdfs.config.NodeConfig;
 import org.apache.mesos.hdfs.file.FileUtils;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 import org.apache.mesos.hdfs.util.StreamRedirect;
@@ -198,6 +199,9 @@ public abstract class AbstractNodeExecutor implements Executor {
     if (task.getProcess() == null) {
       try {
         ProcessBuilder processBuilder = new ProcessBuilder("sh", "-c", task.getCmd());
+        NodeConfig nodeConfig = hdfsFrameworkConfig.getNodeConfig(task.getType());
+        processBuilder.environment().put("HADOOP_HEAPSIZE",
+          String.format("%d", nodeConfig.getMaxHeap()));
         task.setProcess(processBuilder.start());
         redirectProcess(task.getProcess());
       } catch (IOException e) {
