@@ -143,9 +143,6 @@ public abstract class HdfsNode implements IOfferEvaluator, ILauncher {
                 .setName("HADOOP_OPTS")
                 .setValue(config.getJvmOpts()).build(),
               Environment.Variable.newBuilder()
-                .setName("HADOOP_HEAPSIZE")
-                .setValue(String.format("%d", config.getHadoopHeapSize())).build(),
-              Environment.Variable.newBuilder()
                 .setName("HADOOP_NAMENODE_OPTS")
                 .setValue("-Xmx" + config.getNodeConfig(HDFSConstants.NAME_NODE_ID).getMaxHeap()
                   + "m -Xms" + config.getNodeConfig(HDFSConstants.NAME_NODE_ID).getMaxHeap() + "m").build(),

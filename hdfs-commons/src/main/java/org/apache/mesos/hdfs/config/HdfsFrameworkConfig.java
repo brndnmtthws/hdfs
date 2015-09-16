@@ -130,7 +130,7 @@ public class HdfsFrameworkConfig {
     return getConf().get("mesos.hdfs.config.path", "etc/hadoop/hdfs-site.xml");
   }
 
-  public int getHadoopHeapSize() {
+  private int getHadoopHeapSize() {
     return getConf().getInt("mesos.hdfs.hadoop.heap.size", DEFAULT_HADOOP_HEAP_SIZE);
   }
 
