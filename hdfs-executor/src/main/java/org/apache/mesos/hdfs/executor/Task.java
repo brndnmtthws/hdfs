@@ -16,20 +16,7 @@ public class Task {
   public Task(Protos.TaskInfo taskInfo) {
     this.taskInfo = taskInfo;
     this.cmd = taskInfo.getData().toStringUtf8();
-    discoveryType(taskInfo.getTaskId().getValue());
-  }
-
-  private void discoveryType(String taskId) {
-    type = "";
-    if (taskId.contains("task." + HDFSConstants.JOURNAL_NODE_ID)) {
-      type = HDFSConstants.JOURNAL_NODE_ID;
-    } else if (taskId.contains("task." + HDFSConstants.NAME_NODE_ID)) {
-      type = HDFSConstants.NAME_NODE_ID;
-    } else if (taskId.contains("task." + HDFSConstants.ZKFC_NODE_ID)) {
-      type = HDFSConstants.ZKFC_NODE_ID;
-    } else if (taskId.contains("task." + HDFSConstants.DATA_NODE_ID)) {
-      type = HDFSConstants.DATA_NODE_ID;
-    }
+    setType(taskInfo.getTaskId().getValue());
   }
 
   public String getCmd() {
@@ -60,8 +47,17 @@ public class Task {
     return type;
   }
 
-  public void setType(String type) {
-    this.type = type;
+  private void setType(String taskId) {
+    type = "";
+    if (taskId.contains("task." + HDFSConstants.JOURNAL_NODE_ID)) {
+      type = HDFSConstants.JOURNAL_NODE_ID;
+    } else if (taskId.contains("task." + HDFSConstants.NAME_NODE_ID)) {
+      type = HDFSConstants.NAME_NODE_ID;
+    } else if (taskId.contains("task." + HDFSConstants.ZKFC_NODE_ID)) {
+      type = HDFSConstants.ZKFC_NODE_ID;
+    } else if (taskId.contains("task." + HDFSConstants.DATA_NODE_ID)) {
+      type = HDFSConstants.DATA_NODE_ID;
+    }
   }
 
   @Override
