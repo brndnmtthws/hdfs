@@ -43,8 +43,9 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
    */
   public static void main(String[] args) {
     Injector injector = Guice.createInjector();
-    MesosExecutorDriver driver = new MesosExecutorDriver(
-        injector.getInstance(NameNodeExecutor.class));
+    final NameNodeExecutor executor = injector.getInstance(NameNodeExecutor.class);
+    MesosExecutorDriver driver = new MesosExecutorDriver(executor);
+    Runtime.getRuntime().addShutdownHook(new Thread(new TaskShutdownHook(executor, driver)));
     System.exit(driver.run() == Status.DRIVER_STOPPED ? 0 : 1);
   }
 
@@ -63,9 +64,9 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
     if (taskInfo.getTaskId().getValue().contains(HDFSConstants.NAME_NODE_TASKID)) {
       nameNodeTask = task;
       driver.sendStatusUpdate(TaskStatus.newBuilder()
-          .setTaskId(nameNodeTask.getTaskInfo().getTaskId())
-          .setState(TaskState.TASK_RUNNING)
-          .build());
+        .setTaskId(nameNodeTask.getTaskInfo().getTaskId())
+        .setState(TaskState.TASK_RUNNING)
+        .build());
       TimedHealthCheck healthCheckNN = new TimedHealthCheck(driver, nameNodeTask);
       healthCheckTimer.scheduleAtFixedRate(healthCheckNN,
         hdfsFrameworkConfig.getHealthCheckWaitingPeriod(),
@@ -73,9 +74,9 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
     } else if (taskInfo.getTaskId().getValue().contains(HDFSConstants.ZKFC_NODE_ID)) {
       zkfcNodeTask = task;
       driver.sendStatusUpdate(TaskStatus.newBuilder()
-          .setTaskId(zkfcNodeTask.getTaskInfo().getTaskId())
-          .setState(TaskState.TASK_RUNNING)
-          .build());
+        .setTaskId(zkfcNodeTask.getTaskInfo().getTaskId())
+        .setState(TaskState.TASK_RUNNING)
+        .build());
       TimedHealthCheck healthCheckZN = new TimedHealthCheck(driver, zkfcNodeTask);
       healthCheckTimer.scheduleAtFixedRate(healthCheckZN,
         hdfsFrameworkConfig.getHealthCheckWaitingPeriod(),
@@ -98,9 +99,9 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
       task.setProcess(null);
     }
     driver.sendStatusUpdate(TaskStatus.newBuilder()
-        .setTaskId(taskId)
-        .setState(TaskState.TASK_KILLED)
-        .build());
+      .setTaskId(taskId)
+      .setState(TaskState.TASK_KILLED)
+      .build());
   }
 
   @Override
@@ -124,7 +125,7 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
 
     File nameDir = new File(hdfsFrameworkConfig.getDataDir() + "/name");
     if (messageStr.equals(HDFSConstants.NAME_NODE_INIT_MESSAGE)
-        || messageStr.equals(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE)) {
+      || messageStr.equals(HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE)) {
       FileUtils.deleteDirectory(nameDir);
       if (!nameDir.mkdirs()) {
         final String errorMsg = "unable to make directory: " + nameDir;
@@ -132,13 +133,32 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
         throw new ExecutorException(errorMsg);
       }
       runCommand(driver, nameNodeTask, "bin/hdfs-mesos-namenode " + messageStr);
-      startProcess(driver, nameNodeTask);
-      startProcess(driver, zkfcNodeTask);
+      // todo:  (kgs) we need to separate out the launching of these tasks
+      if (!processRunning(nameNodeTask)) {
+        startProcess(driver, nameNodeTask);
+      }
+      if (!processRunning(zkfcNodeTask)) {
+        startProcess(driver, zkfcNodeTask);
+      }
       driver.sendStatusUpdate(TaskStatus.newBuilder()
         .setTaskId(nameNodeTask.getTaskInfo().getTaskId())
         .setState(TaskState.TASK_RUNNING)
         .setMessage(messageStr)
         .build());
     }
+  }
+
+  private boolean processRunning(Task task) {
+    boolean running = false;
+
+    if (task.getProcess() != null) {
+      try {
+        task.getProcess().exitValue();
+      } catch (IllegalThreadStateException e) {
+        // throws exception if still running
+        running = true;
+      }
+    }
+    return running;
   }
 }

@@ -184,7 +184,6 @@ public abstract class AbstractNodeExecutor implements Executor {
   }
 
   private void shutdownExecutor(ExecutorDriver driver, int statusCode, String message, Exception e) {
-    shutdown(driver);
     if (StringUtils.isNotBlank(message)) {
       log.fatal(message, e);
     }
