@@ -184,7 +184,6 @@ public abstract class AbstractNodeExecutor implements Executor {
   }
 
   private void shutdownExecutor(ExecutorDriver driver, int statusCode, String message, Exception e) {
-    shutdown(driver);
     if (StringUtils.isNotBlank(message)) {
       log.fatal(message, e);
     }
@@ -201,7 +200,6 @@ public abstract class AbstractNodeExecutor implements Executor {
       try {
         ProcessBuilder processBuilder = new ProcessBuilder("sh", "-c", task.getCmd());
         processBuilder.environment().putAll(createHdfsNodeEnvironment(task));
-
         task.setProcess(processBuilder.start());
         redirectProcess(task.getProcess());
       } catch (IOException e) {
