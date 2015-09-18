@@ -3,7 +3,6 @@ package org.apache.mesos.hdfs.executor;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.ExecutorDriver;
@@ -36,7 +35,9 @@ public class NodeExecutor extends AbstractNodeExecutor {
   public static void main(String[] args) {
     Injector injector = Guice.createInjector();
 
-    MesosExecutorDriver driver = new MesosExecutorDriver(injector.getInstance(NodeExecutor.class));
+    final NodeExecutor executor = injector.getInstance(NodeExecutor.class);
+    MesosExecutorDriver driver = new MesosExecutorDriver(executor);
+    Runtime.getRuntime().addShutdownHook(new Thread(new TaskShutdownHook(executor, driver)));
     System.exit(driver.run() == Status.DRIVER_STOPPED ? 0 : 1);
   }
 
@@ -49,9 +50,9 @@ public class NodeExecutor extends AbstractNodeExecutor {
     task = new Task(taskInfo);
     startProcess(driver, task);
     driver.sendStatusUpdate(TaskStatus.newBuilder()
-        .setTaskId(taskInfo.getTaskId())
-        .setState(TaskState.TASK_RUNNING)
-        .setData(taskInfo.getData()).build());
+      .setTaskId(taskInfo.getTaskId())
+      .setState(TaskState.TASK_RUNNING)
+      .setData(taskInfo.getData()).build());
     TimedHealthCheck timedHealthCheck = new TimedHealthCheck(driver, task);
     healthCheckTimer.scheduleAtFixedRate(timedHealthCheck,
       hdfsFrameworkConfig.getHealthCheckWaitingPeriod(),
@@ -66,9 +67,9 @@ public class NodeExecutor extends AbstractNodeExecutor {
       task.setProcess(null);
     }
     driver.sendStatusUpdate(TaskStatus.newBuilder()
-        .setTaskId(taskId)
-        .setState(TaskState.TASK_KILLED)
-        .build());
+      .setTaskId(taskId)
+      .setState(TaskState.TASK_KILLED)
+      .build());
   }
 
   @Override
