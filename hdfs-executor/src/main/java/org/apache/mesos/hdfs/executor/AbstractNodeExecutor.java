@@ -1,18 +1,8 @@
 package org.apache.mesos.hdfs.executor;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Timer;
-import java.util.TimerTask;
-
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -33,9 +23,20 @@ import org.apache.mesos.hdfs.file.FileUtils;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 import org.apache.mesos.hdfs.util.StreamRedirect;
 
-import com.google.inject.Guice;
-import com.google.inject.Inject;
-import com.google.inject.Injector;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * The base for several types of HDFS executors.  It also contains the main which is consistent for all executors.
@@ -155,7 +156,7 @@ public abstract class AbstractNodeExecutor implements Executor {
    * requires that /usr/bin/ is on the Mesos slave PATH, which is defined as part of the standard
    * Mesos slave packaging.
    */
-  private void addBinaryToPath(ExecutorDriver driver, String hdfsBinaryPath) 
+  private void addBinaryToPath(ExecutorDriver driver, String hdfsBinaryPath)
     throws IOException, InterruptedException {
     if (hdfsFrameworkConfig.usingNativeHadoopBinaries()) {
       return;
@@ -199,9 +200,8 @@ public abstract class AbstractNodeExecutor implements Executor {
     if (task.getProcess() == null) {
       try {
         ProcessBuilder processBuilder = new ProcessBuilder("sh", "-c", task.getCmd());
-        NodeConfig nodeConfig = hdfsFrameworkConfig.getNodeConfig(task.getType());
-        processBuilder.environment().put("HADOOP_HEAPSIZE",
-          String.format("%d", nodeConfig.getMaxHeap()));
+        processBuilder.environment().putAll(createHdfsNodeEnvironment(task));
+
         task.setProcess(processBuilder.start());
         redirectProcess(task.getProcess());
       } catch (IOException e) {
@@ -212,6 +212,22 @@ public abstract class AbstractNodeExecutor implements Executor {
     } else {
       log.error("Tried to start process, but process already running");
     }
+  }
+
+  private Map<String, String> createHdfsNodeEnvironment(Task task) {
+    Map<String, String> envMap = new HashMap<>();
+    NodeConfig nodeConfig = hdfsFrameworkConfig.getNodeConfig(task.getType());
+
+    envMap.put("HADOOP_HEAPSIZE", String.format("%d", nodeConfig.getMaxHeap()));
+    envMap.put("HADOOP_OPTS", hdfsFrameworkConfig.getJvmOpts());
+    envMap.put("HADOOP_NAMENODE_OPTS",
+      "-Xmx" + hdfsFrameworkConfig.getNodeConfig(HDFSConstants.NAME_NODE_ID).getMaxHeap() + "m -Xms" +
+        hdfsFrameworkConfig.getNodeConfig(HDFSConstants.NAME_NODE_ID).getMaxHeap() + "m");
+    envMap.put("HADOOP_DATANODE_OPTS",
+      "-Xmx" + hdfsFrameworkConfig.getNodeConfig(HDFSConstants.DATA_NODE_ID).getMaxHeap() + "m -Xms" +
+        hdfsFrameworkConfig.getNodeConfig(HDFSConstants.DATA_NODE_ID).getMaxHeap() + "m");
+
+    return envMap;
   }
 
   /**
@@ -303,11 +319,11 @@ public abstract class AbstractNodeExecutor implements Executor {
       .setState(TaskState.TASK_FAILED)
       .build());
   }
-  
+
   private void launchHealthCheck(ExecutorDriver driver, Task task) {
     String taskIdStr = task.getTaskInfo().getTaskId().getValue();
     log.info("Performing health check for task: " + taskIdStr);
-    
+
     boolean taskHealthy = nodeHealthChecker.runHealthCheckForTask(driver, task);
     if (!taskHealthy) {
       log.fatal("Node health check failed for task: " + taskIdStr);
@@ -317,7 +333,7 @@ public abstract class AbstractNodeExecutor implements Executor {
       shutdownExecutor(driver, 2, "Failed health check");
     }
   }
-  
+
   /**
    * Implementation of a TimedHealthCheck through use of TimerTask.
    */
@@ -333,7 +349,7 @@ public abstract class AbstractNodeExecutor implements Executor {
     @Override
     public void run() {
       launchHealthCheck(driver, task);
-    }   
+    }
   }
 
   @Override

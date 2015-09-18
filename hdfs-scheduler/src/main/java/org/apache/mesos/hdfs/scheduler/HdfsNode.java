@@ -135,27 +135,21 @@ public abstract class HdfsNode implements IOfferEvaluator, ILauncher {
                 .setValue(config.getJreUrl())
                 .build()))
           .setEnvironment(Environment.newBuilder()
-            .addAllVariables(Arrays.asList(
-              Environment.Variable.newBuilder()
-                .setName("LD_LIBRARY_PATH")
-                .setValue(config.getLdLibraryPath()).build(),
-              Environment.Variable.newBuilder()
-                .setName("HADOOP_OPTS")
-                .setValue(config.getJvmOpts()).build(),
-              Environment.Variable.newBuilder()
-                .setName("HADOOP_NAMENODE_OPTS")
-                .setValue("-Xmx" + config.getNodeConfig(HDFSConstants.NAME_NODE_ID).getMaxHeap()
-                  + "m -Xms" + config.getNodeConfig(HDFSConstants.NAME_NODE_ID).getMaxHeap() + "m").build(),
-              Environment.Variable.newBuilder()
-                .setName("HADOOP_DATANODE_OPTS")
-                .setValue("-Xmx" + config.getNodeConfig(HDFSConstants.DATA_NODE_ID).getMaxHeap()
-                  + "m -Xms" + config.getNodeConfig(HDFSConstants.DATA_NODE_ID).getMaxHeap() + "m").build(),
-              Environment.Variable.newBuilder()
-                .setName("EXECUTOR_OPTS")
-                .setValue("-Xmx" + config.getExecutorHeap()
-                  + "m -Xms" + config.getExecutorHeap() + "m").build())))
-          .setValue(cmd).build())
+            .addAllVariables(getExecutorEnvironment())).setValue(cmd).build())
       .build();
+  }
+
+  private List<Environment.Variable> getExecutorEnvironment() {
+    return Arrays.asList(
+      createEnvironment("LD_LIBRARY_PATH", config.getLdLibraryPath()),
+      createEnvironment("EXECUTOR_OPTS", "-Xmx" + config.getExecutorHeap() + "m -Xms" +
+        config.getExecutorHeap() + "m"));
+  }
+
+  private Environment.Variable createEnvironment(String key, String value) {
+    return Environment.Variable.newBuilder()
+      .setName(key)
+      .setValue(value).build();
   }
 
   private List<Resource> getTaskResources(String taskType) {
