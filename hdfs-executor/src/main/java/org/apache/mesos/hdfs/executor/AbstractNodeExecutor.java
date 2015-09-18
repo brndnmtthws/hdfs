@@ -201,7 +201,6 @@ public abstract class AbstractNodeExecutor implements Executor {
       try {
         ProcessBuilder processBuilder = new ProcessBuilder("sh", "-c", task.getCmd());
         processBuilder.environment().putAll(createHdfsNodeEnvironment(task));
-
         task.setProcess(processBuilder.start());
         redirectProcess(task.getProcess());
       } catch (IOException e) {
