@@ -6,6 +6,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.mesos.hdfs.util.HDFSConstants;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -43,7 +44,12 @@ public class HdfsFrameworkConfig {
   private static final int DEFAULT_HEALTH_CHECK_FREQUENCY_MS = 60000;
   private static final int DEFAULT_HEALTH_CHECK_WAITING_PERIOD_MS = 900000;
 
+  private static final String[] NODE_TYPES = {HDFSConstants.DATA_NODE_ID,
+    HDFSConstants.NAME_NODE_ID, HDFSConstants.ZKFC_NODE_ID, HDFSConstants.JOURNAL_NODE_ID};
+
   private final Log log = LogFactory.getLog(HdfsFrameworkConfig.class);
+
+  private HashMap<String, NodeConfig> nodeConfigMap = new HashMap<>();
 
   public HdfsFrameworkConfig(Configuration conf) {
     setConf(conf);
@@ -51,10 +57,30 @@ public class HdfsFrameworkConfig {
 
   private void setConf(Configuration conf) {
     this.hadoopConfig = conf;
+    initializeConfigMaps();
+  }
+
+  private void initializeConfigMaps() {
+    nodeConfigMap = new HashMap<>();
+    for (String nodeType : NODE_TYPES) {
+      nodeConfigMap.put(nodeType, initializeNodeConfig(nodeType));
+    }
+  }
+
+  private NodeConfig initializeNodeConfig(String nodeType) {
+    NodeConfig config = new NodeConfig();
+    config.setCpus(getTaskCpus(nodeType));
+    config.setMaxHeap(getTaskHeapSize(nodeType));
+    config.setType(nodeType);
+    return config;
   }
 
   private Configuration getConf() {
     return hadoopConfig;
+  }
+
+  public NodeConfig getNodeConfig(String nodeType) {
+    return nodeConfigMap.get(nodeType);
   }
 
   public HdfsFrameworkConfig() {
@@ -104,19 +130,19 @@ public class HdfsFrameworkConfig {
     return getConf().get("mesos.hdfs.config.path", "etc/hadoop/hdfs-site.xml");
   }
 
-  public int getHadoopHeapSize() {
+  private int getHadoopHeapSize() {
     return getConf().getInt("mesos.hdfs.hadoop.heap.size", DEFAULT_HADOOP_HEAP_SIZE);
   }
 
-  public int getDataNodeHeapSize() {
+  private int getDataNodeHeapSize() {
     return getConf().getInt("mesos.hdfs.datanode.heap.size", DEFAULT_DATANODE_HEAP_SIZE);
   }
 
-  public int getJournalNodeHeapSize() {
+  private int getJournalNodeHeapSize() {
     return getHadoopHeapSize();
   }
 
-  public int getNameNodeHeapSize() {
+  private int getNameNodeHeapSize() {
     return getConf().getInt("mesos.hdfs.namenode.heap.size", DEFAULT_NAMENODE_HEAP_SIZE);
   }
 
@@ -124,11 +150,11 @@ public class HdfsFrameworkConfig {
     return getConf().getInt("mesos.hdfs.executor.heap.size", DEFAULT_EXECUTOR_HEAP_SIZE);
   }
 
-  public int getZkfcHeapSize() {
+  private int getZkfcHeapSize() {
     return getHadoopHeapSize();
   }
 
-  public int getTaskHeapSize(String taskName) {
+  private int getTaskHeapSize(String taskName) {
     int size;
     switch (taskName) {
       case "zkfc":
@@ -175,23 +201,23 @@ public class HdfsFrameworkConfig {
     return getConf().getDouble("mesos.hdfs.executor.cpus", DEFAULT_EXECUTOR_CPUS);
   }
 
-  public double getZkfcCpus() {
+  private double getZkfcCpus() {
     return getExecutorCpus();
   }
 
-  public double getNameNodeCpus() {
+  private double getNameNodeCpus() {
     return getConf().getDouble("mesos.hdfs.namenode.cpus", DEFAULT_NAMENODE_CPUS);
   }
 
-  public double getJournalNodeCpus() {
+  private double getJournalNodeCpus() {
     return getConf().getDouble("mesos.hdfs.journalnode.cpus", DEFAULT_JOURNAL_CPUS);
   }
 
-  public double getDataNodeCpus() {
+  private double getDataNodeCpus() {
     return getConf().getDouble("mesos.hdfs.datanode.cpus", DEFAULT_DATANODE_CPUS);
   }
 
-  public double getTaskCpus(String taskName) {
+  private double getTaskCpus(String taskName) {
     double cpus = DEFAULT_CPUS;
     switch (taskName) {
       case "zkfc":

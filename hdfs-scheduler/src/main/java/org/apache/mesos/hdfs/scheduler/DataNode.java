@@ -3,6 +3,7 @@ package org.apache.mesos.hdfs.scheduler;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
+import org.apache.mesos.hdfs.config.NodeConfig;
 import org.apache.mesos.hdfs.state.IPersistentStateStore;
 import org.apache.mesos.hdfs.state.LiveState;
 import org.apache.mesos.hdfs.util.HDFSConstants;
@@ -24,7 +25,8 @@ public class DataNode extends HdfsNode {
   public boolean evaluate(Offer offer) {
     boolean accept = false;
 
-    if (offerNotEnoughResources(offer, config.getDataNodeCpus(), config.getDataNodeHeapSize())) {
+    NodeConfig dataNodeConfig = config.getNodeConfig(HDFSConstants.DATA_NODE_ID);
+    if (offerNotEnoughResources(offer, dataNodeConfig.getCpus(), dataNodeConfig.getMaxHeap())) {
       log.info("Offer does not have enough resources");
     } else {
       List<String> deadDataNodes = persistenceStore.getDeadDataNodes();

@@ -2,10 +2,6 @@ package org.apache.mesos.hdfs.scheduler;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
-import org.apache.mesos.hdfs.state.IPersistentStateStore;
-import org.apache.mesos.hdfs.state.LiveState;
-import org.apache.mesos.hdfs.util.HDFSConstants;
 import org.apache.mesos.Protos.CommandInfo;
 import org.apache.mesos.Protos.Environment;
 import org.apache.mesos.Protos.ExecutorID;
@@ -16,6 +12,11 @@ import org.apache.mesos.Protos.Resource;
 import org.apache.mesos.Protos.TaskID;
 import org.apache.mesos.Protos.TaskInfo;
 import org.apache.mesos.SchedulerDriver;
+import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
+import org.apache.mesos.hdfs.config.NodeConfig;
+import org.apache.mesos.hdfs.state.IPersistentStateStore;
+import org.apache.mesos.hdfs.state.LiveState;
+import org.apache.mesos.hdfs.util.HDFSConstants;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,7 +24,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * HdfsNode base class. 
+ * HdfsNode base class.
  */
 public abstract class HdfsNode implements IOfferEvaluator, ILauncher {
   private final Log log = LogFactory.getLog(HdfsNode.class);
@@ -47,6 +48,7 @@ public abstract class HdfsNode implements IOfferEvaluator, ILauncher {
   }
 
   protected abstract String getExecutorName();
+
   protected abstract List<String> getTaskTypes();
 
   private void launch(SchedulerDriver driver, Offer offer) {
@@ -133,35 +135,27 @@ public abstract class HdfsNode implements IOfferEvaluator, ILauncher {
                 .setValue(config.getJreUrl())
                 .build()))
           .setEnvironment(Environment.newBuilder()
-            .addAllVariables(Arrays.asList(
-              Environment.Variable.newBuilder()
-                .setName("LD_LIBRARY_PATH")
-                .setValue(config.getLdLibraryPath()).build(),
-              Environment.Variable.newBuilder()
-                .setName("HADOOP_OPTS")
-                .setValue(config.getJvmOpts()).build(),
-              Environment.Variable.newBuilder()
-                .setName("HADOOP_HEAPSIZE")
-                .setValue(String.format("%d", config.getHadoopHeapSize())).build(),
-              Environment.Variable.newBuilder()
-                .setName("HADOOP_NAMENODE_OPTS")
-                .setValue("-Xmx" + config.getNameNodeHeapSize()
-                  + "m -Xms" + config.getNameNodeHeapSize() + "m").build(),
-              Environment.Variable.newBuilder()
-                .setName("HADOOP_DATANODE_OPTS")
-                .setValue("-Xmx" + config.getDataNodeHeapSize()
-                  + "m -Xms" + config.getDataNodeHeapSize() + "m").build(),
-              Environment.Variable.newBuilder()
-                .setName("EXECUTOR_OPTS")
-                .setValue("-Xmx" + config.getExecutorHeap()
-                  + "m -Xms" + config.getExecutorHeap() + "m").build())))
-          .setValue(cmd).build())
+            .addAllVariables(getExecutorEnvironment())).setValue(cmd).build())
       .build();
   }
 
+  private List<Environment.Variable> getExecutorEnvironment() {
+    return Arrays.asList(
+      createEnvironment("LD_LIBRARY_PATH", config.getLdLibraryPath()),
+      createEnvironment("EXECUTOR_OPTS", "-Xmx" + config.getExecutorHeap() + "m -Xms" +
+        config.getExecutorHeap() + "m"));
+  }
+
+  private Environment.Variable createEnvironment(String key, String value) {
+    return Environment.Variable.newBuilder()
+      .setName(key)
+      .setValue(value).build();
+  }
+
   private List<Resource> getTaskResources(String taskType) {
-    double cpu = config.getTaskCpus(taskType);
-    double mem = config.getTaskHeapSize(taskType) * config.getJvmOverhead();
+    NodeConfig nodeConfig = config.getNodeConfig(taskType);
+    double cpu = nodeConfig.getCpus();
+    double mem = nodeConfig.getMaxHeap() * config.getJvmOverhead();
 
     List<Resource> resources = new ArrayList<Resource>();
     resources.add(resourceFactory.createCpuResource(cpu));

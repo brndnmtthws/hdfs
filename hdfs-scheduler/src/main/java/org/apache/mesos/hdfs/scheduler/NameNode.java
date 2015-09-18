@@ -3,6 +3,7 @@ package org.apache.mesos.hdfs.scheduler;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
+import org.apache.mesos.hdfs.config.NodeConfig;
 import org.apache.mesos.hdfs.state.IPersistentStateStore;
 import org.apache.mesos.hdfs.state.LiveState;
 import org.apache.mesos.hdfs.util.DnsResolver;
@@ -33,9 +34,11 @@ public class NameNode extends HdfsNode {
     boolean accept = false;
 
     if (dnsResolver.journalNodesResolvable()) {
+      NodeConfig nameNodeConfig = config.getNodeConfig(HDFSConstants.NAME_NODE_ID);
+      NodeConfig zkfcNodeConfig = config.getNodeConfig(HDFSConstants.ZKFC_NODE_ID);
       if (offerNotEnoughResources(offer,
-            (config.getNameNodeCpus() + config.getZkfcCpus()),
-            (config.getNameNodeHeapSize() + config.getZkfcHeapSize()))) {
+        (nameNodeConfig.getCpus() + zkfcNodeConfig.getCpus()),
+        (nameNodeConfig.getMaxHeap() + zkfcNodeConfig.getMaxHeap()))) {
         log.info("Offer does not have enough resources");
       } else {
         List<String> deadNameNodes = persistenceStore.getDeadNameNodes();

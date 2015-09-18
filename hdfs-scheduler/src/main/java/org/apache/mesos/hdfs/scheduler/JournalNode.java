@@ -2,11 +2,12 @@ package org.apache.mesos.hdfs.scheduler;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.mesos.Protos.Offer;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
+import org.apache.mesos.hdfs.config.NodeConfig;
 import org.apache.mesos.hdfs.state.IPersistentStateStore;
 import org.apache.mesos.hdfs.state.LiveState;
 import org.apache.mesos.hdfs.util.HDFSConstants;
-import org.apache.mesos.Protos.Offer;
 
 import java.util.Arrays;
 import java.util.List;
@@ -24,7 +25,8 @@ public class JournalNode extends HdfsNode {
   public boolean evaluate(Offer offer) {
     boolean accept = false;
 
-    if (offerNotEnoughResources(offer, config.getJournalNodeCpus(), config.getJournalNodeHeapSize())) {
+    NodeConfig journalNodeConfig = config.getNodeConfig(HDFSConstants.JOURNAL_NODE_ID);
+    if (offerNotEnoughResources(offer, journalNodeConfig.getCpus(), journalNodeConfig.getMaxHeap())) {
       log.info("Offer does not have enough resources");
     } else {
       List<String> deadJournalNodes = persistenceStore.getDeadJournalNodes();
@@ -38,7 +40,7 @@ public class JournalNode extends HdfsNode {
           log.info(String.format("Already running journalnode on %s", offer.getHostname()));
         } else if (persistenceStore.dataNodeRunningOnSlave(offer.getHostname())) {
           log.info(String.format("Cannot colocate journalnode and datanode on %s",
-                offer.getHostname()));
+            offer.getHostname()));
         } else {
           accept = true;
         }
@@ -57,4 +59,4 @@ public class JournalNode extends HdfsNode {
   protected List<String> getTaskTypes() {
     return Arrays.asList(HDFSConstants.JOURNAL_NODE_ID);
   }
- }
+}
