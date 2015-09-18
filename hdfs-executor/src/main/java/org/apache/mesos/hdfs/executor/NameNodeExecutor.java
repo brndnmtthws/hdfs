@@ -134,12 +134,13 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
         throw new ExecutorException(errorMsg);
       }
       runCommand(driver, nameNodeTask, "bin/hdfs-mesos-namenode " + messageStr);
-      startProcess(driver, nameNodeTask);
-
+      // todo:  (kgs) we need to separate out the launching of these tasks
+      if (!processRunning(nameNodeTask)) {
+        startProcess(driver, nameNodeTask);
+      }
       if (!processRunning(zkfcNodeTask)) {
         startProcess(driver, zkfcNodeTask);
       }
-
       driver.sendStatusUpdate(TaskStatus.newBuilder()
         .setTaskId(nameNodeTask.getTaskInfo().getTaskId())
         .setState(TaskState.TASK_RUNNING)
