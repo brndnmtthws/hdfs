@@ -49,7 +49,6 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
     System.exit(driver.run() == Status.DRIVER_STOPPED ? 0 : 1);
   }
 
-
   /**
    * Add tasks to the task list and then start the tasks in the following order.
    * 1) Start Journal Node

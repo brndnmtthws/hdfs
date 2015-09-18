@@ -9,7 +9,7 @@ import org.apache.mesos.ExecutorDriver;
  */
 public class TaskShutdownHook implements Runnable {
 
-  private final Log log = LogFactory.getLog(NameNodeExecutor.class);
+  private final Log log = LogFactory.getLog(TaskShutdownHook.class);
 
   private Executor executor;
   private ExecutorDriver driver;
