@@ -30,6 +30,7 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Observable;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
  * HDFS Mesos Framework Scheduler class implementation.
@@ -84,7 +85,9 @@ public class HdfsScheduler extends Observable implements org.apache.mesos.Schedu
     * the scheduler may never re-register with the saved FrameworkID until
     * the leading Mesos master process is killed.
     */
-  private void suicide(Boolean removeFrameworkId)  {
+  @SuppressFBWarnings(value = "DM_EXIT", 
+    justification = "Scheduler must be stopped")
+  private void suicide(Boolean removeFrameworkId) {
     if (removeFrameworkId) {
         persistenceStore.setFrameworkId(null);
         System.exit(9);
