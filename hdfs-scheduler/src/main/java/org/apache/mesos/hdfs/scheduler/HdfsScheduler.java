@@ -66,7 +66,7 @@ public class HdfsScheduler extends Observable implements org.apache.mesos.Schedu
   @Override
   public void error(SchedulerDriver driver, String message) {
     log.error("Scheduler driver error: " + message);
-	// Currently, it's pretty hard to disambiguate this error from other causes of framework errors.
+    // Currently, it's pretty hard to disambiguate this error from other causes of framework errors.
     // Watch MESOS-2522 which will add a reason field for framework errors to help with this.
     // For now the frameworkId is removed for all messages.
     boolean removeFrameworkId = message.contains("re-register");
@@ -85,8 +85,7 @@ public class HdfsScheduler extends Observable implements org.apache.mesos.Schedu
     * the leading Mesos master process is killed.
     */
   private void suicide(Boolean removeFrameworkId)  {
-    if (removeFrameworkId) 
-    {
+    if (removeFrameworkId) {
         persistenceStore.setFrameworkId(null);
         System.exit(9);
     }

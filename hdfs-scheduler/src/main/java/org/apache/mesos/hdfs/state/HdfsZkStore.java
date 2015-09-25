@@ -40,10 +40,11 @@ public class HdfsZkStore implements IHdfsStore {
 
   public void setRawValueForId(String id, byte[] newRawValue) throws ExecutionException, InterruptedException {
     Variable value = state.fetch(id).get();
-    if(newRawValue == null)
+    if (newRawValue == null) {
         value = value.mutate(new byte[]{});
-    else
+    } else {
         value = value.mutate(newRawValue);
+    }
     state.store(value).get();
   }
 
