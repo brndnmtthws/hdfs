@@ -51,7 +51,7 @@ public class NameNode extends HdfsNode {
           } else if (persistenceStore.dataNodeRunningOnSlave(offer.getHostname())) {
             log.info(String.format("Cannot colocate namenode and datanode on %s", offer.getHostname()));
           } else if (!persistenceStore.journalNodeRunningOnSlave(offer.getHostname())) {
-            log.info(String.format("We need to coloate the namenode with a journalnode and there is"
+            log.info(String.format("We need to colocate the namenode with a journalnode and there is"
                   + "no journalnode running on this host. %s", offer.getHostname()));
           } else {
             accept = true;
