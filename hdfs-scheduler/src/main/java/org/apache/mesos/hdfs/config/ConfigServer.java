@@ -4,7 +4,8 @@ import com.floreysoft.jmte.Engine;
 import com.google.inject.Inject;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.mesos.hdfs.state.IPersistentStateStore;
+import org.apache.mesos.hdfs.scheduler.Task;
+import org.apache.mesos.hdfs.state.HdfsState;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -21,11 +22,11 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
 
 /**
  * This is the HTTP service which allows executors to fetch the configuration for hdfs-site.xml.
@@ -36,12 +37,12 @@ public class ConfigServer {
   private Server server;
   private Engine engine;
   private HdfsFrameworkConfig hdfsFrameworkConfig;
-  private IPersistentStateStore persistenceStore;
+  private HdfsState state;
 
   @Inject
-  public ConfigServer(HdfsFrameworkConfig hdfsFrameworkConfig, IPersistentStateStore persistenceStore) {
+  public ConfigServer(HdfsFrameworkConfig hdfsFrameworkConfig, HdfsState state) {
     this.hdfsFrameworkConfig = hdfsFrameworkConfig;
-    this.persistenceStore = persistenceStore;
+    this.state = state;
     engine = new Engine();
     server = new Server(hdfsFrameworkConfig.getConfigServerPort());
     ResourceHandler resourceHandler = new ResourceHandler();
@@ -71,9 +72,23 @@ public class ConfigServer {
     }
   }
 
+  private List<String> getHostNames(List<Task> tasks) {
+    List<String> names = new ArrayList<String>();
+
+    for (Task task : tasks) {
+      names.add(task.getHostname());
+    }
+
+    return names;
+  }
+
   private class ServeHdfsConfigHandler extends AbstractHandler {
-    public synchronized void handle(String target, Request baseRequest, HttpServletRequest request,
-      HttpServletResponse response) throws IOException {
+    public synchronized void handle(
+      String target,
+      Request baseRequest,
+      HttpServletRequest request,
+      HttpServletResponse response)
+      throws IOException {
 
       File confFile = new File(hdfsFrameworkConfig.getConfigPath());
 
@@ -84,11 +99,14 @@ public class ConfigServer {
 
       String content = new String(Files.readAllBytes(Paths.get(confFile.getPath())), Charset.defaultCharset());
 
-      Set<String> nameNodes = new TreeSet<>();
-      nameNodes.addAll(persistenceStore.getNameNodes().keySet());
-
-      Set<String> journalNodes = new TreeSet<>();
-      journalNodes.addAll(persistenceStore.getJournalNodes().keySet());
+      List<String> nameNodes = null;
+      List<String> journalNodes = null;
+      try {
+        nameNodes = getHostNames(state.getNameNodeTasks());
+        journalNodes = getHostNames(state.getJournalNodeTasks());
+      } catch (Exception ex) {
+        throw new IOException(ex);
+      }
 
       Map<String, Object> model = new HashMap<>();
       Iterator<String> iter = nameNodes.iterator();
@@ -119,7 +137,7 @@ public class ConfigServer {
       response.getWriter().println(content);
     }
 
-    private String getJournalNodes(Set<String> journalNodes) {
+    private String getJournalNodes(List<String> journalNodes) {
       StringBuilder journalNodeStringBuilder = new StringBuilder("");
       for (String jn : journalNodes) {
         journalNodeStringBuilder.append(jn).append(":8485;");

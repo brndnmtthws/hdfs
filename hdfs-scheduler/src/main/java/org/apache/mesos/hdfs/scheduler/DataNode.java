@@ -2,12 +2,11 @@ package org.apache.mesos.hdfs.scheduler;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.mesos.Protos.Offer;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
 import org.apache.mesos.hdfs.config.NodeConfig;
-import org.apache.mesos.hdfs.state.IPersistentStateStore;
-import org.apache.mesos.hdfs.state.LiveState;
+import org.apache.mesos.hdfs.state.HdfsState;
 import org.apache.mesos.hdfs.util.HDFSConstants;
-import org.apache.mesos.Protos.Offer;
 
 import java.util.Arrays;
 import java.util.List;
@@ -18,34 +17,24 @@ import java.util.List;
 public class DataNode extends HdfsNode {
   private final Log log = LogFactory.getLog(DataNode.class);
 
-  public DataNode(LiveState liveState, IPersistentStateStore persistentStore, HdfsFrameworkConfig config) {
-    super(liveState, persistentStore, config, HDFSConstants.DATA_NODE_ID);
+  public DataNode(
+    HdfsState state,
+    HdfsFrameworkConfig config) {
+    super(state, config, HDFSConstants.DATA_NODE_ID);
   }
 
   public boolean evaluate(Offer offer) {
     boolean accept = false;
-
     NodeConfig dataNodeConfig = config.getNodeConfig(HDFSConstants.DATA_NODE_ID);
-    if (offerNotEnoughResources(offer, dataNodeConfig.getCpus(), dataNodeConfig.getMaxHeap())) {
+
+    if (!enoughResources(offer, dataNodeConfig.getCpus(), dataNodeConfig.getMaxHeap())) {
       log.info("Offer does not have enough resources");
+    } else if (state.hostOccupied(offer.getHostname(), HDFSConstants.DATA_NODE_ID)) {
+      log.info(String.format("Already running DataNode on %s", offer.getHostname()));
+    } else if (violatesExclusivityConstraint(offer)) {
+      log.info(String.format("Already running NameNode or JournalNode on %s", offer.getHostname()));
     } else {
-      List<String> deadDataNodes = persistenceStore.getDeadDataNodes();
-      // TODO (elingg) Relax this constraint to only wait for DN's when the number of DN's is small
-      // What number of DN's should we try to recover or should we remove this constraint
-      // entirely?
-      if (deadDataNodes.isEmpty()) {
-        if (persistenceStore.dataNodeRunningOnSlave(offer.getHostname())) {
-          log.info(String.format("Already running datanode hdfs task on %s", offer.getHostname()));
-        } else if (config.getRunDatanodeExclusively() && 
-              (persistenceStore.nameNodeRunningOnSlave(offer.getHostname())
-             || persistenceStore.journalNodeRunningOnSlave(offer.getHostname()))) {
-          log.info(String.format("Already running namenode or journalnode hdfs task on %s", offer.getHostname()));
-        } else {
-          accept = true;
-        }
-      } else if (deadDataNodes.contains(offer.getHostname())) {
-        accept = true;
-      }
+      accept = true;
     }
 
     return accept;
@@ -57,5 +46,11 @@ public class DataNode extends HdfsNode {
 
   protected List<String> getTaskTypes() {
     return Arrays.asList(HDFSConstants.DATA_NODE_ID);
+  }
+
+  private boolean violatesExclusivityConstraint(Offer offer) {
+    return config.getRunDatanodeExclusively() &&
+      (state.hostOccupied(offer.getHostname(), HDFSConstants.NAME_NODE_ID)
+        || state.hostOccupied(offer.getHostname(), HDFSConstants.JOURNAL_NODE_ID));
   }
 }

@@ -7,6 +7,7 @@ allprojects {
 
 idea {
   project {
+    jdkName = '1.7'
     languageLevel = '1.7'
     ipr {
       withXml { provider ->
@@ -34,7 +35,8 @@ subprojects {
   mainClassName = "org.apache.mesos.hdfs.scheduler.Main"
 
   ext {
-    mesosVer = "0.22.1"
+    curatorVer = "2.9.0"
+    mesosVer = "0.24.1"
     hadoopVer = "2.5.0"
     slf4jVer = "1.7.10"
     logbackVer = "1.1.2"
@@ -50,6 +52,8 @@ subprojects {
 
   dependencies {
 
+    compile "org.apache.curator:curator-framework:${curatorVer}"
+    compile "org.apache.curator:curator-recipes:${curatorVer}"
     compile "org.apache.mesos:mesos:${mesosVer}"
 
     compile "org.slf4j:log4j-over-slf4j:${slf4jVer}"
@@ -66,7 +70,5 @@ subprojects {
 
     compile "com.google.inject:guice:${guiceVer}"
 
-    testCompile "junit:junit:${junitVer}"
-    testCompile "org.mockito:mockito-all:${mockitoVer}"
   }
 }
