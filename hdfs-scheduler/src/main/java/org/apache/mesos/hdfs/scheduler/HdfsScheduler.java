@@ -30,7 +30,6 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Observable;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
  * HDFS Mesos Framework Scheduler class implementation.
@@ -71,9 +70,9 @@ public class HdfsScheduler extends Observable implements org.apache.mesos.Schedu
     // Watch MESOS-2522 which will add a reason field for framework errors to help with this.
     // For now the frameworkId is removed for all messages.
     boolean removeFrameworkId = message.contains("re-register");
-    suicide(removeFrameworkId);
+    exitOnError(removeFrameworkId, message);
   }
-
+  
   /**
     * Exits the JVM process, optionally deleting Marathon's FrameworkID
     * from the backing persistence store.
@@ -85,12 +84,10 @@ public class HdfsScheduler extends Observable implements org.apache.mesos.Schedu
     * the scheduler may never re-register with the saved FrameworkID until
     * the leading Mesos master process is killed.
     */
-  @SuppressFBWarnings(value = "DM_EXIT", 
-    justification = "Scheduler must be stopped")
-  private void suicide(Boolean removeFrameworkId) {
+  private void exitOnError(Boolean removeFrameworkId, String message) {
     if (removeFrameworkId) {
-        persistenceStore.setFrameworkId(null);
-        System.exit(9);
+        persistenceStore.removeFrameworkId(); 
+        throw new SchedulerException("Scheduler driver error: " + message);        
     }
   }
   
