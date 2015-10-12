@@ -74,10 +74,10 @@ public class HdfsScheduler extends Observable implements org.apache.mesos.Schedu
   }
   
   /**
-    * Exits the JVM process, optionally deleting Marathon's FrameworkID
+    * Exits the JVM process, optionally deleting Hdfs FrameworkID
     * from the backing persistence store.
     *
-    * If `removeFrameworkId` is set, the next Marathon process elected
+    * If `removeFrameworkId` is set, the next Hdfs mesos process elected
     * leader will fail to find a stored FrameworkID and invoke `register`
     * instead of `reregister`.  This is important because on certain kinds
     * of framework errors (such as exceeding the framework failover timeout),
