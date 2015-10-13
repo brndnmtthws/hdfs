@@ -13,6 +13,8 @@ public interface IHdfsStore {
   void setRawValueForId(String id,
     byte[] frameworkId) throws ExecutionException, InterruptedException;
 
+  void removeRawValueForId(String id) throws ExecutionException, InterruptedException;
+  
   <T extends Object> T get(String key) throws InterruptedException, ExecutionException,
     IOException, ClassNotFoundException;
 

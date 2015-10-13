@@ -65,6 +65,16 @@ public class PersistentStateStore implements IPersistentStateStore {
   }
 
   @Override
+  public void removeFrameworkId() {
+    try {
+      hdfsStore.removeRawValueForId(FRAMEWORK_ID_KEY);
+    } catch (ExecutionException | InterruptedException e) {
+      logger.error("Unable to remove frameworkId", e);
+      throw new PersistenceException(e);
+    }
+  }
+  
+  @Override
   public Protos.FrameworkID getFrameworkId() {
     Protos.FrameworkID frameworkID = null;
     byte[] existingFrameworkId;

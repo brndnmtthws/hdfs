@@ -44,6 +44,11 @@ public class HdfsZkStore implements IHdfsStore {
     state.store(value).get();
   }
 
+  public void removeRawValueForId(String frameworkId) throws ExecutionException, InterruptedException {
+    Variable value = state.fetch(frameworkId).get();
+    state.expunge(value).get();
+  }
+  
   /**
    * Get serializable object from store.
    *

@@ -14,6 +14,8 @@ public interface IPersistentStateStore {
   void setFrameworkId(Protos.FrameworkID id);
 
   Protos.FrameworkID getFrameworkId();
+  
+  void removeFrameworkId();
 
   void removeTaskId(String taskId);
 
