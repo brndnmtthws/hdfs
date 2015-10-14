@@ -21,6 +21,7 @@ import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
 import org.apache.mesos.hdfs.config.NodeConfig;
 import org.apache.mesos.hdfs.file.FileUtils;
 import org.apache.mesos.hdfs.util.HDFSConstants;
+import org.apache.mesos.hdfs.util.ProcessWatcher;
 import org.apache.mesos.hdfs.util.StreamRedirect;
 
 import java.io.BufferedWriter;
@@ -45,8 +46,10 @@ public abstract class AbstractNodeExecutor implements Executor {
 
   private final Log log = LogFactory.getLog(AbstractNodeExecutor.class);
   protected ExecutorInfo executorInfo;
-  protected HdfsFrameworkConfig hdfsFrameworkConfig;
-  //Timed Health Check for node health monitoring
+  protected HdfsFrameworkConfig config;
+  private ProcessWatcher procWatcher;
+
+  // Timed Health Check for node health monitoring
   protected Timer healthCheckTimer;
   private NodeHealthChecker nodeHealthChecker;
 
@@ -54,9 +57,9 @@ public abstract class AbstractNodeExecutor implements Executor {
    * Constructor which takes in configuration.
    */
   @Inject
-  AbstractNodeExecutor(HdfsFrameworkConfig hdfsFrameworkConfig) {
-    this.hdfsFrameworkConfig = hdfsFrameworkConfig;
-    this.nodeHealthChecker = new NodeHealthChecker();
+  AbstractNodeExecutor(HdfsFrameworkConfig config) {
+    this.config = config;
+    this.procWatcher = new ProcessWatcher(new HdfsProcessExitHandler());
     healthCheckTimer = new Timer(true);
   }
 
@@ -78,7 +81,7 @@ public abstract class AbstractNodeExecutor implements Executor {
     FrameworkInfo frameworkInfo, SlaveInfo slaveInfo) {
     // Set up data dir
     setUpDataDir();
-    if (!hdfsFrameworkConfig.usingNativeHadoopBinaries()) {
+    if (!config.usingNativeHadoopBinaries()) {
       createSymbolicLink(driver);
     }
     log.info("Executor registered with the slave");
@@ -89,11 +92,11 @@ public abstract class AbstractNodeExecutor implements Executor {
    */
   private void setUpDataDir() {
     // Create primary data dir if it does not exist
-    File dataDir = new File(hdfsFrameworkConfig.getDataDir());
+    File dataDir = new File(config.getDataDir());
     FileUtils.createDir(dataDir);
 
     // Create secondary data dir if it does not exist
-    File secondaryDataDir = new File(hdfsFrameworkConfig.getSecondaryDataDir());
+    File secondaryDataDir = new File(config.getSecondaryDataDir());
     FileUtils.createDir(secondaryDataDir);
   }
 
@@ -109,11 +112,11 @@ public abstract class AbstractNodeExecutor implements Executor {
       Path sandboxHdfsBinaryPath = Paths.get(sandboxHdfsBinary.getAbsolutePath());
 
       // Create mesosphere opt dir (parent dir of the symbolic link) if it does not exist
-      File frameworkMountDir = new File(hdfsFrameworkConfig.getFrameworkMountPath());
+      File frameworkMountDir = new File(config.getFrameworkMountPath());
       FileUtils.createDir(frameworkMountDir);
 
       // Delete and recreate directory for symbolic link every time
-      String hdfsBinaryPath = hdfsFrameworkConfig.getFrameworkMountPath()
+      String hdfsBinaryPath = config.getFrameworkMountPath()
         + "/" + HDFSConstants.HDFS_BINARY_DIR;
       File hdfsBinaryDir = new File(hdfsBinaryPath);
 
@@ -158,7 +161,7 @@ public abstract class AbstractNodeExecutor implements Executor {
    */
   private void addBinaryToPath(ExecutorDriver driver, String hdfsBinaryPath)
     throws IOException, InterruptedException {
-    if (hdfsFrameworkConfig.usingNativeHadoopBinaries()) {
+    if (config.usingNativeHadoopBinaries()) {
       return;
     }
     String pathEnvVarLocation = "/usr/bin/hadoop";
@@ -193,14 +196,17 @@ public abstract class AbstractNodeExecutor implements Executor {
   /**
    * Starts a task's process so it goes into running state.
    */
-  protected void startProcess(ExecutorDriver driver, Task task) {
+  protected Process startProcess(ExecutorDriver driver, Task task) {
     log.info(String.format("Starting process: %s", task.getCmd()));
+    Process proc = task.getProcess();
     reloadConfig();
-    if (task.getProcess() == null) {
+    if (proc == null) {
       try {
         ProcessBuilder processBuilder = new ProcessBuilder("sh", "-c", task.getCmd());
         processBuilder.environment().putAll(createHdfsNodeEnvironment(task));
-        task.setProcess(processBuilder.start());
+        proc = processBuilder.start();
+        procWatcher.watch(proc);
+        task.setProcess(proc);
         redirectProcess(task.getProcess());
       } catch (IOException e) {
         log.error("Unable to start process:", e);
@@ -210,20 +216,22 @@ public abstract class AbstractNodeExecutor implements Executor {
     } else {
       log.error("Tried to start process, but process already running");
     }
+
+    return proc;
   }
 
   private Map<String, String> createHdfsNodeEnvironment(Task task) {
     Map<String, String> envMap = new HashMap<>();
-    NodeConfig nodeConfig = hdfsFrameworkConfig.getNodeConfig(task.getType());
+    NodeConfig nodeConfig = config.getNodeConfig(task.getType());
 
     envMap.put("HADOOP_HEAPSIZE", String.format("%d", nodeConfig.getMaxHeap()));
-    envMap.put("HADOOP_OPTS", hdfsFrameworkConfig.getJvmOpts());
+    envMap.put("HADOOP_OPTS", config.getJvmOpts());
     envMap.put("HADOOP_NAMENODE_OPTS",
-      "-Xmx" + hdfsFrameworkConfig.getNodeConfig(HDFSConstants.NAME_NODE_ID).getMaxHeap() + "m -Xms" +
-        hdfsFrameworkConfig.getNodeConfig(HDFSConstants.NAME_NODE_ID).getMaxHeap() + "m");
+      "-Xmx" + config.getNodeConfig(HDFSConstants.NAME_NODE_ID).getMaxHeap() + "m -Xms" +
+        config.getNodeConfig(HDFSConstants.NAME_NODE_ID).getMaxHeap() + "m");
     envMap.put("HADOOP_DATANODE_OPTS",
-      "-Xmx" + hdfsFrameworkConfig.getNodeConfig(HDFSConstants.DATA_NODE_ID).getMaxHeap() + "m -Xms" +
-        hdfsFrameworkConfig.getNodeConfig(HDFSConstants.DATA_NODE_ID).getMaxHeap() + "m");
+      "-Xmx" + config.getNodeConfig(HDFSConstants.DATA_NODE_ID).getMaxHeap() + "m -Xms" +
+        config.getNodeConfig(HDFSConstants.DATA_NODE_ID).getMaxHeap() + "m");
 
     return envMap;
   }
@@ -232,7 +240,7 @@ public abstract class AbstractNodeExecutor implements Executor {
    * Reloads the cluster configuration so the executor has the correct configuration info.
    */
   protected void reloadConfig() {
-    if (hdfsFrameworkConfig.usingNativeHadoopBinaries()) {
+    if (config.usingNativeHadoopBinaries()) {
       return;
     }
     // Find config URI
@@ -303,53 +311,6 @@ public abstract class AbstractNodeExecutor implements Executor {
     }
   }
 
-  /**
-   * Abstract method to launch a task.
-   */
-  public abstract void launchTask(final ExecutorDriver driver, final TaskInfo taskInfo);
-
-  /**
-   * Let the scheduler know that the task has failed.
-   */
-  private void sendTaskFailed(ExecutorDriver driver, Task task) {
-    driver.sendStatusUpdate(TaskStatus.newBuilder()
-      .setTaskId(task.getTaskInfo().getTaskId())
-      .setState(TaskState.TASK_FAILED)
-      .build());
-  }
-
-  private void launchHealthCheck(ExecutorDriver driver, Task task) {
-    String taskIdStr = task.getTaskInfo().getTaskId().getValue();
-    log.info("Performing health check for task: " + taskIdStr);
-
-    boolean taskHealthy = nodeHealthChecker.runHealthCheckForTask(driver, task);
-    if (!taskHealthy) {
-      log.fatal("Node health check failed for task: " + taskIdStr);
-      killTask(driver, task.getTaskInfo().getTaskId());
-      // TODO (elingg) with better process supervision
-      // (i.e. monitoring of ZKFC's), we do not need to exit the executors
-      shutdownExecutor(driver, 2, "Failed health check");
-    }
-  }
-
-  /**
-   * Implementation of a TimedHealthCheck through use of TimerTask.
-   */
-  protected class TimedHealthCheck extends TimerTask {
-    Task task;
-    ExecutorDriver driver;
-
-    public TimedHealthCheck(ExecutorDriver driver, Task task) {
-      this.driver = driver;
-      this.task = task;
-    }
-
-    @Override
-    public void run() {
-      launchHealthCheck(driver, task);
-    }
-  }
-
   @Override
   public void reregistered(ExecutorDriver driver, SlaveInfo slaveInfo) {
     log.info("Executor reregistered with the slave");
@@ -372,4 +333,50 @@ public abstract class AbstractNodeExecutor implements Executor {
     log.error(this.getClass().getName() + ".error: " + message);
   }
 
+  private void launchHealthCheck(ExecutorDriver driver, Task task) {
+    String taskIdStr = task.getTaskInfo().getTaskId().getValue();
+    log.info("Performing health check for task: " + taskIdStr);
+
+    boolean taskHealthy = nodeHealthChecker.runHealthCheckForTask(driver, task);
+    if (!taskHealthy) {
+      log.fatal("Node health check failed for task: " + taskIdStr);
+      killTask(driver, task.getTaskInfo().getTaskId());
+      // TODO (elingg) with better process supervision
+      // (i.e. monitoring of ZKFC's), we do not need to exit the executors
+      shutdownExecutor(driver, 2, "Failed health check");
+    }
+  }
+
+  /**
+   * Abstract method to launch a task.
+   */
+  public abstract void launchTask(final ExecutorDriver driver, final TaskInfo taskInfo);
+
+  /**
+   * Let the scheduler know that the task has failed.
+   */
+  private void sendTaskFailed(ExecutorDriver driver, Task task) {
+    driver.sendStatusUpdate(TaskStatus.newBuilder()
+      .setTaskId(task.getTaskInfo().getTaskId())
+      .setState(TaskState.TASK_FAILED)
+      .build());
+  }
+
+  /**
+   * Implementation of a TimedHealthCheck through use of TimerTask.
+   */
+  protected class TimedHealthCheck extends TimerTask {
+    Task task;
+    ExecutorDriver driver;
+
+    public TimedHealthCheck(ExecutorDriver driver, Task task) {
+      this.driver = driver;
+      this.task = task;
+    }
+
+    @Override
+    public void run() {
+      launchHealthCheck(driver, task);
+    }
+  }
 }

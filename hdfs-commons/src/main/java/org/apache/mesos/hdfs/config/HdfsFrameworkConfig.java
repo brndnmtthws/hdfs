@@ -51,6 +51,16 @@ public class HdfsFrameworkConfig {
 
   private HashMap<String, NodeConfig> nodeConfigMap = new HashMap<>();
 
+  public HdfsFrameworkConfig() {
+    // The path is configurable via the mesos.conf.path system property
+    // so it can be changed when starting up the scheduler via bash
+    Properties props = System.getProperties();
+    Path configPath = new Path(props.getProperty("mesos.conf.path", "etc/hadoop/mesos-site.xml"));
+    Configuration configuration = new Configuration();
+    configuration.addResource(configPath);
+    setConf(configuration);
+  }
+
   public HdfsFrameworkConfig(Configuration conf) {
     setConf(conf);
   }
@@ -81,16 +91,6 @@ public class HdfsFrameworkConfig {
 
   public NodeConfig getNodeConfig(String nodeType) {
     return nodeConfigMap.get(nodeType);
-  }
-
-  public HdfsFrameworkConfig() {
-    // The path is configurable via the mesos.conf.path system property
-    // so it can be changed when starting up the scheduler via bash
-    Properties props = System.getProperties();
-    Path configPath = new Path(props.getProperty("mesos.conf.path", "etc/hadoop/mesos-site.xml"));
-    Configuration configuration = new Configuration();
-    configuration.addResource(configPath);
-    setConf(configuration);
   }
 
   public String getPrincipal() {
@@ -347,7 +347,7 @@ public class HdfsFrameworkConfig {
   public int getHealthCheckWaitingPeriod() {
     return getConf().getInt("mesos.hdfs.healthcheck.waitingperiod.ms", DEFAULT_HEALTH_CHECK_WAITING_PERIOD_MS);
   }
-  
+
   public Map<String, String> getMesosSlaveConstraints() {
     String constraints = getConf().get("mesos.hdfs.constraints");
     Map<String, String> constraintsMap = new HashMap<String, String>();
@@ -357,8 +357,8 @@ public class HdfsFrameworkConfig {
         String[] keyValue = pair.split(":");
         if (keyValue.length > 0) {
           String key = keyValue[0];
-          String value = keyValue.length == 1 ? "" : 
-             keyValue.length == 2 ? keyValue[1] : pair.substring(pair.indexOf(":"));
+          String value = keyValue.length == 1 ? "" :
+            keyValue.length == 2 ? keyValue[1] : pair.substring(pair.indexOf(":"));
           constraintsMap.put(key, value);
         }
       }

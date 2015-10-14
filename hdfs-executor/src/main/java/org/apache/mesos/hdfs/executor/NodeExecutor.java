@@ -25,8 +25,8 @@ public class NodeExecutor extends AbstractNodeExecutor {
    * The constructor for the node which saves the configuration.
    */
   @Inject
-  NodeExecutor(HdfsFrameworkConfig hdfsFrameworkConfig) {
-    super(hdfsFrameworkConfig);
+  NodeExecutor(HdfsFrameworkConfig config) {
+    super(config);
   }
 
   /**
@@ -53,10 +53,6 @@ public class NodeExecutor extends AbstractNodeExecutor {
       .setTaskId(taskInfo.getTaskId())
       .setState(TaskState.TASK_RUNNING)
       .setData(taskInfo.getData()).build());
-    TimedHealthCheck timedHealthCheck = new TimedHealthCheck(driver, task);
-    healthCheckTimer.scheduleAtFixedRate(timedHealthCheck,
-      hdfsFrameworkConfig.getHealthCheckWaitingPeriod(),
-      hdfsFrameworkConfig.getHealthCheckFrequency());
   }
 
   @Override

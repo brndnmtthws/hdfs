@@ -2,10 +2,10 @@ package org.apache.mesos.hdfs.scheduler;
 
 import com.google.inject.Inject;
 import com.google.protobuf.ByteString;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.MesosSchedulerDriver;
-import org.apache.mesos.Protos;
 import org.apache.mesos.Protos.Credential;
 import org.apache.mesos.Protos.ExecutorID;
 import org.apache.mesos.Protos.FrameworkID;
@@ -15,47 +15,47 @@ import org.apache.mesos.Protos.Offer;
 import org.apache.mesos.Protos.OfferID;
 import org.apache.mesos.Protos.SlaveID;
 import org.apache.mesos.Protos.TaskID;
-import org.apache.mesos.Protos.TaskState;
 import org.apache.mesos.Protos.TaskStatus;
 import org.apache.mesos.SchedulerDriver;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
 import org.apache.mesos.hdfs.state.AcquisitionPhase;
-import org.apache.mesos.hdfs.state.LiveState;
-import org.apache.mesos.hdfs.state.PersistenceException;
-import org.apache.mesos.hdfs.state.IPersistentStateStore;
+import org.apache.mesos.hdfs.state.HdfsState;
+import org.apache.mesos.hdfs.state.StateMachine;
 import org.apache.mesos.hdfs.util.DnsResolver;
+import org.apache.mesos.hdfs.util.FailureUtils;
 import org.apache.mesos.hdfs.util.HDFSConstants;
+
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Observable;
+import java.util.concurrent.ExecutionException;
 
 /**
  * HDFS Mesos Framework Scheduler class implementation.
  */
 public class HdfsScheduler extends Observable implements org.apache.mesos.Scheduler, Runnable {
-  // TODO (elingg) remove as much logic as possible from Scheduler to clean up code
   private final Log log = LogFactory.getLog(HdfsScheduler.class);
   private final HdfsFrameworkConfig config;
-  private final HdfsMesosConstraints hdfsMesosConstraints;
-  private final LiveState liveState;
-  private final IPersistentStateStore persistenceStore;
+  private HdfsMesosConstraints hdfsMesosConstraints;
+  private final HdfsState state;
+  private final StateMachine stateMachine;
   private final DnsResolver dnsResolver;
-  private final Reconciler reconciler;
+  private NodeLauncher launcher;
 
   @Inject
-  public HdfsScheduler(HdfsFrameworkConfig config,
-    LiveState liveState, IPersistentStateStore persistenceStore) {
-
+  public HdfsScheduler(HdfsFrameworkConfig config, HdfsState state, StateMachine stateMachine) {
     this.config = config;
-    this.hdfsMesosConstraints 
-           = new HdfsMesosConstraints(this.config);
-    this.liveState = liveState;
-    this.persistenceStore = persistenceStore;
+    this.hdfsMesosConstraints = new HdfsMesosConstraints(this.config);
     this.dnsResolver = new DnsResolver(this, config);
-    this.reconciler = new Reconciler(config, persistenceStore);
-    addObserver(reconciler);
+    this.state = state;
+    this.stateMachine = stateMachine;
+    launcher = new NodeLauncher();
+
+    addObserver(stateMachine.getReconciler());
+    addObserver(state);
   }
 
   @Override
@@ -66,13 +66,40 @@ public class HdfsScheduler extends Observable implements org.apache.mesos.Schedu
   @Override
   public void error(SchedulerDriver driver, String message) {
     log.error("Scheduler driver error: " + message);
+    // Currently, it's pretty hard to disambiguate this error from other causes of framework errors.
+    // Watch MESOS-2522 which will add a reason field for framework errors to help with this.
+    // For now the frameworkId is removed for all messages.
+    boolean removeFrameworkId = message.contains("re-register");
+    exitOnError(removeFrameworkId, message);
   }
+  
+  /**
+    * Exits the JVM process, optionally deleting Hdfs FrameworkID
+    * from the backing persistence store.
+    *
+    * If `removeFrameworkId` is set, the next Hdfs mesos process elected
+    * leader will fail to find a stored FrameworkID and invoke `register`
+    * instead of `reregister`.  This is important because on certain kinds
+    * of framework errors (such as exceeding the framework failover timeout),
+    * the scheduler may never re-register with the saved FrameworkID until
+    * the leading Mesos master process is killed.
+    */
+  private void exitOnError(Boolean removeFrameworkId, String message) {
+    if (removeFrameworkId) {
+      try {
+        state.removeFrameworkId();
+      } catch (Exception ex) {
+        log.error("Failed to remove FrameworkId with exception: " + ex);
+      }
 
+      throw new SchedulerException("Scheduler driver error: " + message);        
+    }
+  }
+  
   @Override
-  public void executorLost(SchedulerDriver driver, ExecutorID executorID, SlaveID slaveID,
-    int status) {
-    log.info("Executor lost: executorId=" + executorID.getValue() + " slaveId="
-      + slaveID.getValue() + " status=" + status);
+  public void executorLost(SchedulerDriver driver, ExecutorID executorID, SlaveID slaveID, int status) {
+    log.info("Executor lost: executorId=" + executorID.getValue()
+      + " slaveId=" + slaveID.getValue() + " status=" + status);
   }
 
   @Override
@@ -90,106 +117,43 @@ public class HdfsScheduler extends Observable implements org.apache.mesos.Schedu
   @Override
   public void registered(SchedulerDriver driver, FrameworkID frameworkId, MasterInfo masterInfo) {
     try {
-      persistenceStore.setFrameworkId(frameworkId);
-    } catch (PersistenceException e) {
+      state.setFrameworkId(frameworkId);
+    } catch (IOException | InterruptedException | ExecutionException e) {
       // these are zk exceptions... we are unable to maintain state.
       final String msg = "Error setting framework id in persistent state";
       log.error(msg, e);
       throw new SchedulerException(msg, e);
     }
     log.info("Registered framework frameworkId=" + frameworkId.getValue());
-    reconcile(driver);
+    stateMachine.reconcile(driver);
   }
 
   @Override
   public void reregistered(SchedulerDriver driver, MasterInfo masterInfo) {
     log.info("Reregistered framework: starting task reconciliation");
-    reconcile(driver);
+    stateMachine.reconcile(driver);
   }
 
-  
   @Override
   public void statusUpdate(SchedulerDriver driver, TaskStatus status) {
     log.info(String.format(
-      "Received status update for taskId=%s state=%s message='%s' stagingTasks.size=%d",
+      "Received status update for taskId=%s state=%s message='%s'",
       status.getTaskId().getValue(),
       status.getState().toString(),
-      status.getMessage(),
-      liveState.getStagingTasksSize()));
+      status.getMessage()));
 
-    log.info("Notifying observers");
+    log.info("Notifying observers of TaskStatus: " + status);
     setChanged();
     notifyObservers(status);
 
-    if (!isStagingState(status)) {
-      liveState.removeStagingTask(status.getTaskId());
-    }
-
-    if (isTerminalState(status)) {
-      liveState.removeRunningTask(status.getTaskId());
-      persistenceStore.removeTaskId(status.getTaskId().getValue());
-      // Correct the phase when a task dies after the reconcile period is over
-      if (!liveState.getCurrentAcquisitionPhase().equals(AcquisitionPhase.RECONCILING_TASKS)) {
-        correctCurrentPhase();
-      }
-    } else if (isRunningState(status)) {
-      liveState.updateTaskForStatus(status);
-
-      log.info(String.format("Current Acquisition Phase: %s", liveState
-        .getCurrentAcquisitionPhase().toString()));
-
-      switch (liveState.getCurrentAcquisitionPhase()) {
-        case RECONCILING_TASKS:
-          break;
-        case JOURNAL_NODES:
-          if (liveState.getJournalNodeSize() == config.getJournalNodeCount()) {
-            // TODO (elingg) move the reload to correctCurrentPhase and make it idempotent
-            reloadConfigsOnAllRunningTasks(driver);
-            correctCurrentPhase();
-          }
-          break;
-        case START_NAME_NODES:
-          if (liveState.getNameNodeSize() == HDFSConstants.TOTAL_NAME_NODES) {
-            // TODO (elingg) move the reload to correctCurrentPhase and make it idempotent
-            reloadConfigsOnAllRunningTasks(driver);
-            correctCurrentPhase();
-          }
-          break;
-        case FORMAT_NAME_NODES:
-          if (!liveState.isNameNode1Initialized()
-            && !liveState.isNameNode2Initialized()) {
-            dnsResolver.sendMessageAfterNNResolvable(
-              driver,
-              liveState.getFirstNameNodeTaskId(),
-              liveState.getFirstNameNodeSlaveId(),
-              HDFSConstants.NAME_NODE_INIT_MESSAGE);
-          } else if (!liveState.isNameNode1Initialized()) {
-            dnsResolver.sendMessageAfterNNResolvable(
-              driver,
-              liveState.getFirstNameNodeTaskId(),
-              liveState.getFirstNameNodeSlaveId(),
-              HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE);
-          } else if (!liveState.isNameNode2Initialized()) {
-            dnsResolver.sendMessageAfterNNResolvable(
-              driver,
-              liveState.getSecondNameNodeTaskId(),
-              liveState.getSecondNameNodeSlaveId(),
-              HDFSConstants.NAME_NODE_BOOTSTRAP_MESSAGE);
-          } else {
-            correctCurrentPhase();
-          }
-          break;
-        // TODO (elingg) add a configurable number of data nodes
-        case DATA_NODES:
-          break;
-      }
-    } else {
-      log.warn(String.format("Don't know how to handle state=%s for taskId=%s",
-        status.getState(), status.getTaskId().getValue()));
-    }
+    reloadConfigsOnAllRunningTasks(driver);
+    stateMachine.correctPhase();
   }
 
   private void logOffers(List<Offer> offers) {
+    if (offers == null) {
+      return;
+    }
     log.info(String.format("Received %d offers", offers.size()));
 
     for (Offer offer : offers) {
@@ -203,7 +167,7 @@ public class HdfsScheduler extends Observable implements org.apache.mesos.Schedu
     log.info(
       String.format(
         "Scheduler in phase: %s, declining offer: %s",
-        liveState.getCurrentAcquisitionPhase(),
+        stateMachine.getCurrentPhase(),
         offerId));
 
     driver.declineOffer(offerId);
@@ -213,37 +177,42 @@ public class HdfsScheduler extends Observable implements org.apache.mesos.Schedu
   public void resourceOffers(SchedulerDriver driver, List<Offer> offers) {
     logOffers(offers);
 
-    if (liveState.getCurrentAcquisitionPhase() == AcquisitionPhase.RECONCILING_TASKS && reconciler.complete()) {
-      correctCurrentPhase();
+    if (stateMachine.getCurrentPhase() == AcquisitionPhase.RECONCILING_TASKS) {
+      stateMachine.correctPhase();
     }
 
-    // TODO (elingg) within each phase, accept offers based on the number of nodes you need
     boolean acceptedOffer = false;
     for (Offer offer : offers) {
-      if (!hdfsMesosConstraints.constraintsAllow(offer)) {
+      if (acceptedOffer) {
         driver.declineOffer(offer.getId());
-      } else if (acceptedOffer) {
+      } else if (!hdfsMesosConstraints.constraintsAllow(offer)) {
         driver.declineOffer(offer.getId());
       } else {
-        switch (liveState.getCurrentAcquisitionPhase()) {
-          case RECONCILING_TASKS:
-            declineOffer(driver, offer);
-            break;
-          case JOURNAL_NODES:
-            JournalNode jn = new JournalNode(liveState, persistenceStore, config);
-            acceptedOffer = jn.tryLaunch(driver, offer);
-            break;
-          case START_NAME_NODES:
-            NameNode nn = new NameNode(liveState, persistenceStore, dnsResolver, config);
-            acceptedOffer = nn.tryLaunch(driver, offer);
-            break;
-          case FORMAT_NAME_NODES:
-            declineOffer(driver, offer);
-            break;
-          case DATA_NODES:
-            DataNode dn = new DataNode(liveState, persistenceStore, config);
-            acceptedOffer = dn.tryLaunch(driver, offer);
-            break;
+        try {
+          HdfsNode node = null;
+
+          switch (stateMachine.getCurrentPhase()) {
+            case RECONCILING_TASKS:
+              declineOffer(driver, offer);
+              break;
+            case JOURNAL_NODES:
+              node = new JournalNode(state, config);
+              break;
+            case NAME_NODES:
+              node = new NameNode(state, dnsResolver, config);
+              break;
+            case DATA_NODES:
+              node = new DataNode(state, config);
+              break;
+          }
+
+          if (node != null) {
+            acceptedOffer = launcher.tryLaunch(driver, offer, node);
+          }
+        } catch (Exception ex) {
+          log.error("Declining offer with exception: " + ex.getMessage()
+            + " and stack: " + ExceptionUtils.getStackTrace(ex));
+          declineOffer(driver, offer);
         }
       }
     }
@@ -264,11 +233,11 @@ public class HdfsScheduler extends Observable implements org.apache.mesos.Schedu
       .setCheckpoint(true);
 
     try {
-      FrameworkID frameworkID = persistenceStore.getFrameworkId();
+      FrameworkID frameworkID = state.getFrameworkId();
       if (frameworkID != null) {
         frameworkInfo.setId(frameworkID);
       }
-    } catch (PersistenceException e) {
+    } catch (ClassNotFoundException | ExecutionException | InterruptedException | IOException e) {
       final String msg = "Error recovering framework id";
       log.error(msg, e);
       throw new SchedulerException(msg, e);
@@ -319,47 +288,24 @@ public class HdfsScheduler extends Observable implements org.apache.mesos.Schedu
       message.getBytes(Charset.defaultCharset()));
   }
 
-  private boolean isTerminalState(TaskStatus taskStatus) {
-    return taskStatus.getState().equals(TaskState.TASK_FAILED)
-      || taskStatus.getState().equals(TaskState.TASK_FINISHED)
-      || taskStatus.getState().equals(TaskState.TASK_KILLED)
-      || taskStatus.getState().equals(TaskState.TASK_LOST)
-      || taskStatus.getState().equals(TaskState.TASK_ERROR);
-  }
-
-  private boolean isRunningState(TaskStatus taskStatus) {
-    return taskStatus.getState().equals(TaskState.TASK_RUNNING);
-  }
-
-  private boolean isStagingState(TaskStatus taskStatus) {
-    return taskStatus.getState().equals(TaskState.TASK_STAGING);
-  }
-
   private void reloadConfigsOnAllRunningTasks(SchedulerDriver driver) {
     if (config.usingNativeHadoopBinaries()) {
       return;
     }
-    for (Protos.TaskStatus taskStatus : liveState.getRunningTasks().values()) {
-      sendMessageTo(driver, taskStatus.getTaskId(), taskStatus.getSlaveId(),
-        HDFSConstants.RELOAD_CONFIG);
-    }
-  }
 
-  private void correctCurrentPhase() {
-    if (liveState.getJournalNodeSize() < config.getJournalNodeCount()) {
-      liveState.transitionTo(AcquisitionPhase.JOURNAL_NODES);
-    } else if (liveState.getNameNodeSize() < HDFSConstants.TOTAL_NAME_NODES) {
-      liveState.transitionTo(AcquisitionPhase.START_NAME_NODES);
-    } else if (!liveState.isNameNode1Initialized()
-      || !liveState.isNameNode2Initialized()) {
-      liveState.transitionTo(AcquisitionPhase.FORMAT_NAME_NODES);
-    } else {
-      liveState.transitionTo(AcquisitionPhase.DATA_NODES);
+    List<Task> tasks = null;
+    try {
+      tasks = state.getTasks();
+    } catch (Exception ex) {
+      FailureUtils.exit("Reloading configurations failed", HDFSConstants.RELOAD_EXIT_CODE);
     }
-  }
 
-  private void reconcile(SchedulerDriver driver) {
-    liveState.transitionTo(AcquisitionPhase.RECONCILING_TASKS);
-    reconciler.reconcile(driver);
+    for (Task task : tasks) {
+      TaskStatus status = task.getStatus();
+      if (status != null) {
+        sendMessageTo(driver, status.getTaskId(), status.getSlaveId(),
+          HDFSConstants.RELOAD_CONFIG);
+      }
+    }
   }
 }
