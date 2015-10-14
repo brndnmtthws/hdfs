@@ -18,12 +18,7 @@ public enum AcquisitionPhase {
   /**
    * Launches the both namenodes.
    */
-  START_NAME_NODES,
-
-  /**
-   * Formats both namenodes (first with initialize, second with bootstrap.
-   */
-  FORMAT_NAME_NODES,
+  NAME_NODES,
 
   /**
    * If everything is healthy the scheduler stays here and tries to launch
