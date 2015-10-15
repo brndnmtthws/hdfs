@@ -16,11 +16,11 @@ import org.apache.mesos.Protos.Status;
 import org.apache.mesos.Protos.TaskID;
 import org.apache.mesos.Protos.TaskInfo;
 import org.apache.mesos.Protos.TaskStatus;
+import org.apache.mesos.file.FileUtils;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
-import org.apache.mesos.hdfs.file.FileUtils;
-import org.apache.mesos.hdfs.util.FailureUtils;
 import org.apache.mesos.hdfs.util.HDFSConstants;
-import org.apache.mesos.hdfs.util.StatusFactory;
+import org.apache.mesos.hdfs.util.TaskStatusFactory;
+import org.apache.mesos.process.FailureUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -126,7 +126,7 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
     // Lie to Mesos.  Tell it the NameNode Task is running, but we track it's actual
     // "uninitialized" status in the labels.  The Scheduler depends on these labels
     // for determing when it should move to the next phase of its state machine.
-    TaskStatus status = StatusFactory.createNameNodeStatus(
+    TaskStatus status = TaskStatusFactory.createNameNodeStatus(
       nameNodeTask.getTaskInfo().getTaskId(),
       false);
 
@@ -177,8 +177,7 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
       startProcess(driver, zkfcNodeTask);
     }
 
-    TaskStatus status = StatusFactory.createRunningStatus(
-      zkfcNodeTask.getTaskInfo().getTaskId());
+    TaskStatus status = TaskStatusFactory.createRunningStatus(zkfcNodeTask.getTaskInfo().getTaskId());
     driver.sendStatusUpdate(status);
   }
 
@@ -207,7 +206,7 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
       startProcess(driver, nameNodeTask);
     }
 
-    TaskStatus status = StatusFactory.createNameNodeStatus(
+    TaskStatus status = TaskStatusFactory.createNameNodeStatus(
       nameNodeTask.getTaskInfo().getTaskId(),
       true);
 
@@ -279,7 +278,7 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
       task.setProcess(null);
     }
 
-    TaskStatus status = StatusFactory.createKilledStatus(taskId);
+    TaskStatus status = TaskStatusFactory.createKilledStatus(taskId);
     log.info("Sending status update: " + status);
     driver.sendStatusUpdate(status);
   }

@@ -22,8 +22,9 @@ import org.apache.mesos.hdfs.state.AcquisitionPhase;
 import org.apache.mesos.hdfs.state.HdfsState;
 import org.apache.mesos.hdfs.state.StateMachine;
 import org.apache.mesos.hdfs.util.DnsResolver;
-import org.apache.mesos.hdfs.util.FailureUtils;
+import org.apache.mesos.process.FailureUtils;
 import org.apache.mesos.hdfs.util.HDFSConstants;
+import org.apache.mesos.protobuf.ExecutorInfoBuilder;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -283,7 +284,7 @@ public class HdfsScheduler extends Observable implements org.apache.mesos.Schedu
     postfix = postfix.substring(postfix.indexOf('.') + 1, postfix.length());
     postfix = postfix.substring(postfix.indexOf('.') + 1, postfix.length());
     driver.sendFrameworkMessage(
-      ExecutorID.newBuilder().setValue("executor." + postfix).build(),
+      ExecutorInfoBuilder.createExecutorId("executor." + postfix),
       slaveID,
       message.getBytes(Charset.defaultCharset()));
   }

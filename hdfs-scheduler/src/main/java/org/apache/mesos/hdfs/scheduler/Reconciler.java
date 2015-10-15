@@ -4,12 +4,13 @@ import com.google.inject.Inject;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.Protos;
-import org.apache.mesos.Protos.TaskState;
 import org.apache.mesos.Protos.TaskStatus;
 import org.apache.mesos.SchedulerDriver;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
 import org.apache.mesos.hdfs.state.HdfsState;
 import org.apache.mesos.hdfs.util.HDFSConstants;
+import org.apache.mesos.hdfs.util.TaskStatusFactory;
+import org.apache.mesos.protobuf.TaskUtil;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -117,11 +118,9 @@ public class Reconciler implements Observer {
       if (id == null) {
         log.warn("NULL TaskID encountered during Explicit Reconciliation.");
       } else {
-        Protos.TaskID taskId = Protos.TaskID.newBuilder().setValue(id).build();
-        TaskStatus taskStatus = TaskStatus.newBuilder()
-          .setTaskId(taskId)
-          .setState(TaskState.TASK_RUNNING).build();
+        Protos.TaskID taskId = TaskUtil.createTaskId(id);
 
+        TaskStatus taskStatus = TaskStatusFactory.createRunningStatus(taskId);
         tasks.add(taskStatus);
       }
     }

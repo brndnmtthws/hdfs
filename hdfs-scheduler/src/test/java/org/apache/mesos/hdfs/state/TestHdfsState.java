@@ -2,31 +2,26 @@ package org.apache.mesos.hdfs.state;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import org.apache.mesos.Protos.CommandInfo;
-import org.apache.mesos.Protos.ExecutorID;
 import org.apache.mesos.Protos.ExecutorInfo;
-import org.apache.mesos.Protos.FrameworkID;
-import org.apache.mesos.Protos.Label;
-import org.apache.mesos.Protos.Labels;
 import org.apache.mesos.Protos.Offer;
-import org.apache.mesos.Protos.OfferID;
 import org.apache.mesos.Protos.Resource;
-import org.apache.mesos.Protos.SlaveID;
-import org.apache.mesos.Protos.TaskID;
 import org.apache.mesos.Protos.TaskState;
 import org.apache.mesos.Protos.TaskStatus;
-import org.apache.mesos.Protos.Value;
 import org.apache.mesos.hdfs.TestSchedulerModule;
 import org.apache.mesos.hdfs.scheduler.Task;
 import org.apache.mesos.hdfs.util.HDFSConstants;
-import org.apache.mesos.hdfs.util.StatusFactory;
+import org.apache.mesos.hdfs.util.TaskStatusFactory;
+import org.apache.mesos.protobuf.CommandInfoBuilder;
+import org.apache.mesos.protobuf.ExecutorInfoBuilder;
+import org.apache.mesos.protobuf.OfferBuilder;
+import org.apache.mesos.protobuf.ResourceBuilder;
+import org.apache.mesos.protobuf.TaskStatusBuilder;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -48,7 +43,7 @@ public class TestHdfsState {
     Task inTask = createTask();
     state.recordTask(inTask);
 
-    TaskStatus status = createTaskStatus(inTask.getId(), TaskState.TASK_FAILED);
+    TaskStatus status = createTaskStatus(inTask.getId().getValue(), TaskState.TASK_FAILED);
     state.update(null, status);
     List<Task> tasks = state.getTasks();
     assertEquals(0, tasks.size());
@@ -61,7 +56,7 @@ public class TestHdfsState {
     Task inTask = createTask();
     state.recordTask(inTask);
 
-    TaskStatus status = createTaskStatus(inTask.getId(), TaskState.TASK_RUNNING);
+    TaskStatus status = createTaskStatus(inTask.getId().getValue(), TaskState.TASK_RUNNING);
     state.update(null, status);
     List<Task> tasks = state.getTasks();
     assertEquals(1, tasks.size());
@@ -119,8 +114,8 @@ public class TestHdfsState {
     state.recordTask(namenode1Task);
     state.recordTask(namenode2Task);
 
-    TaskStatus status1 = StatusFactory.createNameNodeStatus(namenode1Task.getId(), true);
-    TaskStatus status2 = StatusFactory.createNameNodeStatus(namenode2Task.getId(), true);
+    TaskStatus status1 = TaskStatusFactory.createNameNodeStatus(namenode1Task.getId(), true);
+    TaskStatus status2 = TaskStatusFactory.createNameNodeStatus(namenode2Task.getId(), true);
 
     state.update(null, status1);
     assertFalse(state.nameNodesInitialized());
@@ -161,68 +156,28 @@ public class TestHdfsState {
     return "taskIdName_" + new BigInteger(130, random).toString(32);
   }
 
-  private FrameworkID createFrameworkId() {
-    return FrameworkID.newBuilder().setValue(testIdName).build();
-  }
-
   private List<Resource> createResourceList() {
-    Resource r = Resource.newBuilder()
-      .setName("name")
-      .setType(Value.Type.SCALAR)
-      .setScalar(Value.Scalar.newBuilder()
-        .setValue(1).build())
-      .setRole("role")
-      .build();
-
+    Resource r = ResourceBuilder.createScalarResource("name", 1, "role");
     List<Resource> resources = new ArrayList<Resource>();
     resources.add(r);
     return resources;
   }
 
-  private TaskStatus createTaskStatus(TaskID taskID, TaskState state) {
-    return TaskStatus.newBuilder()
-      .setTaskId(taskID)
-      .setState(state)
-      .setSlaveId(SlaveID.newBuilder().setValue("slave").build())
-      .setMessage("From Test")
-      .build();
+  private TaskStatus createTaskStatus(String taskId, TaskState state) {
+    return TaskStatusBuilder.createTaskStatus(taskId, "slave", state, "From Test");
   }
 
-  private TaskStatus createTaskStatusWithLabel(TaskID taskID, TaskState state, String value) {
-    TaskStatus.Builder builder = TaskStatus.newBuilder(createTaskStatus(taskID, state));
-    return builder.setLabels(Labels.newBuilder()
-      .addLabels(Label.newBuilder()
-        .setKey(HDFSConstants.NN_STATUS_KEY)
-        .setValue(value)))
-      .build();
-  }
 
   private ExecutorInfo createExecutorInfo() {
-    return ExecutorInfo
-      .newBuilder()
-      .setExecutorId(ExecutorID.newBuilder().setValue("executor").build())
-      .setCommand(
-        CommandInfo
-          .newBuilder()
-          .addAllUris(
-            Arrays.asList(
-              CommandInfo.URI
-                .newBuilder()
-                .setValue("http://test_url/")
-                .build())))
-      .build();
+
+    ExecutorInfoBuilder builder = new ExecutorInfoBuilder("executor", "executor");
+    builder.addCommandInfo(new CommandInfoBuilder()
+      .addUri("http://test_url/")
+      .build());
+    return builder.build();
   }
 
   private Offer createOffer() {
-    return Offer.newBuilder()
-      .setId(createTestOfferId(1))
-      .setFrameworkId(FrameworkID.newBuilder().setValue("framework").build())
-      .setSlaveId(SlaveID.newBuilder().setValue("slave").build())
-      .setHostname(TEST_HOST)
-      .build();
-  }
-
-  private OfferID createTestOfferId(int instanceNumber) {
-    return OfferID.newBuilder().setValue("offer" + instanceNumber).build();
+    return new OfferBuilder("offer1", "framework", "slave", TEST_HOST).build();
   }
 }

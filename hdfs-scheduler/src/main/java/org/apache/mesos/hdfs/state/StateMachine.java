@@ -6,7 +6,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.SchedulerDriver;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
 import org.apache.mesos.hdfs.scheduler.Reconciler;
-import org.apache.mesos.hdfs.util.FailureUtils;
+import org.apache.mesos.process.FailureUtils;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 
 /**

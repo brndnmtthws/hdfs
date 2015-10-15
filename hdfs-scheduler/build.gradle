@@ -9,6 +9,7 @@ ext {
 
 
 dependencies {
+  compile project(':mesos-commons')
   compile project(':hdfs-commons')
   compile "com.floreysoft:jmte:${jmteVer}"
   compile "org.eclipse.jetty:jetty-server:${jettyVer}"

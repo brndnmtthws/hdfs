@@ -1,4 +1,4 @@
-package org.apache.mesos.hdfs.util;
+package org.apache.mesos.process;
 
 /**
  * Process failure handler interface.

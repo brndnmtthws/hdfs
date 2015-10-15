@@ -1,12 +1,12 @@
 package org.apache.mesos.hdfs.scheduler;
 
-import com.google.protobuf.ByteString;
 import org.apache.mesos.Protos.ExecutorInfo;
 import org.apache.mesos.Protos.Offer;
 import org.apache.mesos.Protos.Resource;
 import org.apache.mesos.Protos.TaskID;
 import org.apache.mesos.Protos.TaskInfo;
 import org.apache.mesos.Protos.TaskStatus;
+import org.apache.mesos.protobuf.TaskInfoBuilder;
 
 import java.io.IOException;
 import java.io.ObjectStreamException;
@@ -31,17 +31,11 @@ public class Task implements Serializable {
     String type,
     String idName) {
 
-    TaskID taskId = TaskID.newBuilder()
-      .setValue(String.format("task.%s.%s", type, idName))
-      .build();
-
-    this.info = TaskInfo.newBuilder()
-      .setExecutor(execInfo)
-      .setName(name)
-      .setTaskId(taskId)
-      .setSlaveId(offer.getSlaveId())
+    this.info = new TaskInfoBuilder(String.format("task.%s.%s", type, idName), name)
+      .setExecutorInfo(execInfo)
+      .setSlaveId(offer.getSlaveId().getValue())
       .addAllResources(resources)
-      .setData(ByteString.copyFromUtf8(String.format("bin/hdfs-mesos-%s", type)))
+      .setData(String.format("bin/hdfs-mesos-%s", type))
       .build();
 
     setStatus(null);
