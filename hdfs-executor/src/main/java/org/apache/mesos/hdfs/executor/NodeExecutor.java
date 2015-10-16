@@ -11,8 +11,8 @@ import org.apache.mesos.Protos.Status;
 import org.apache.mesos.Protos.TaskID;
 import org.apache.mesos.Protos.TaskInfo;
 import org.apache.mesos.Protos.TaskState;
-import org.apache.mesos.Protos.TaskStatus;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
+import org.apache.mesos.protobuf.TaskStatusBuilder;
 
 /**
  * The executor for a Basic Node (either a Journal Node or Data Node).
@@ -49,7 +49,7 @@ public class NodeExecutor extends AbstractNodeExecutor {
     executorInfo = taskInfo.getExecutor();
     task = new Task(taskInfo);
     startProcess(driver, task);
-    driver.sendStatusUpdate(TaskStatus.newBuilder()
+    driver.sendStatusUpdate(TaskStatusBuilder.newBuilder()
       .setTaskId(taskInfo.getTaskId())
       .setState(TaskState.TASK_RUNNING)
       .setData(taskInfo.getData()).build());
@@ -62,7 +62,7 @@ public class NodeExecutor extends AbstractNodeExecutor {
       task.getProcess().destroy();
       task.setProcess(null);
     }
-    driver.sendStatusUpdate(TaskStatus.newBuilder()
+    driver.sendStatusUpdate(TaskStatusBuilder.newBuilder()
       .setTaskId(taskId)
       .setState(TaskState.TASK_KILLED)
       .build());

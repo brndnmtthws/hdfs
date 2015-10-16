@@ -3,6 +3,7 @@ plugins {
 }
 
 dependencies {
+  compile project(':mesos-commons')
   compile project(':hdfs-commons')
 
 }

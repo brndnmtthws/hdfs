@@ -1,4 +1,4 @@
-package org.apache.mesos.hdfs.file;
+package org.apache.mesos.file;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

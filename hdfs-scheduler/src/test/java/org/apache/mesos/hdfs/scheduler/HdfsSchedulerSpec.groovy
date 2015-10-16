@@ -1,12 +1,14 @@
 package org.apache.mesos.hdfs.scheduler
 
 import com.google.inject.Guice
-import org.apache.mesos.Protos
 import org.apache.mesos.SchedulerDriver
 import org.apache.mesos.hdfs.TestSchedulerModule
+import org.apache.mesos.hdfs.config.HdfsFrameworkConfig
 import org.apache.mesos.hdfs.state.AcquisitionPhase
 import org.apache.mesos.hdfs.state.HdfsState
 import org.apache.mesos.hdfs.state.StateMachine
+import org.apache.mesos.protobuf.FrameworkInfoUtil
+import org.apache.mesos.protobuf.OfferBuilder
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -21,13 +23,15 @@ class HdfsSchedulerSpec extends Specification {
   def driver = Mock(SchedulerDriver)
   def state = injector.getInstance(HdfsState.class)
   def scheduler
+  def config = Mock(HdfsFrameworkConfig)
 
   @Shared
   int offerCount = 1
 
   def setup() {
     stateMachine.reconciler >> reconciler
-    scheduler = new HdfsScheduler(null, state, stateMachine)
+    config.hdfsRole >> "*"
+    scheduler = new HdfsScheduler(config, state, stateMachine)
   }
 
   def "resource offers - reconciling"() {
@@ -105,7 +109,7 @@ class HdfsSchedulerSpec extends Specification {
 
   def "registered"() {
     given:
-    def frameworkID = createFrameworkId("frameworkId")
+    def frameworkID = FrameworkInfoUtil.createFrameworkId("frameworkId")
 
     when:
     scheduler.registered(driver, frameworkID, null)
@@ -136,20 +140,11 @@ class HdfsSchedulerSpec extends Specification {
     3 * driver.declineOffer(*_)
   }
 
-  def createFrameworkId(String name) {
-    return Protos.FrameworkID.newBuilder().setValue(name).build()
-  }
-
   def createOffer() {
-    return Protos.Offer.newBuilder()
-      .setId(createTestOfferId(offerCount++))
-      .setFrameworkId(Protos.FrameworkID.newBuilder().setValue("framework").build())
-      .setSlaveId(Protos.SlaveID.newBuilder().setValue("slave").build())
-      .setHostname("host")
-      .build()
+    return OfferBuilder.createOffer("framework", offerCount++ as String, "slave", "host")
   }
 
   def createTestOfferId(int instanceNumber) {
-    return Protos.OfferID.newBuilder().setValue("offer" + instanceNumber).build()
+    return OfferBuilder.createOfferID("offer" + instanceNumber)
   }
 }

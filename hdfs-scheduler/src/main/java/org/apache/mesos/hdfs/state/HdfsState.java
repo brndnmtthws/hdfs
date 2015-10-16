@@ -11,6 +11,7 @@ import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
 import org.apache.mesos.hdfs.scheduler.StateFactory;
 import org.apache.mesos.hdfs.scheduler.Task;
 import org.apache.mesos.hdfs.util.HDFSConstants;
+import org.apache.mesos.protobuf.TaskStatusBuilder;
 import org.apache.mesos.state.State;
 import org.apache.mesos.state.Variable;
 
@@ -134,7 +135,7 @@ public class HdfsState implements Observer {
     // being overwritten to empty.  This would break determinging when
     // NameNodes are initialized since that computation relies on labels.
     if (curr.hasLabels()) {
-      return TaskStatus.newBuilder(next).setLabels(curr.getLabels()).build();
+      return new TaskStatusBuilder(next).setLabels(curr.getLabels()).build();
     }
 
     return next;

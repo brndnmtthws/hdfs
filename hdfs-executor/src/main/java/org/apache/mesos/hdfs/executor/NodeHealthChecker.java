@@ -1,10 +1,10 @@
 package org.apache.mesos.hdfs.executor;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.ExecutorDriver;
 import org.apache.mesos.hdfs.util.HDFSConstants;
+import org.apache.mesos.stream.StreamUtil;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -48,7 +48,7 @@ public class NodeHealthChecker {
       } catch (SecurityException | IllegalArgumentException e) {
         log.error(healthCheckErrStr, e);
       }
-      IOUtils.closeQuietly(socket);
+      StreamUtil.closeQuietly(socket);
     }
 
     return taskHealthy;

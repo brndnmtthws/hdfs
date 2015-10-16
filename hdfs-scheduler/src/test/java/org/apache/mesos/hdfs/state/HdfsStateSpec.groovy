@@ -5,6 +5,9 @@ import org.apache.mesos.Protos
 import org.apache.mesos.hdfs.TestSchedulerModule
 import org.apache.mesos.hdfs.scheduler.Task
 import org.apache.mesos.hdfs.util.HDFSConstants
+import org.apache.mesos.protobuf.ExecutorInfoBuilder
+import org.apache.mesos.protobuf.FrameworkInfoUtil
+import org.apache.mesos.protobuf.OfferBuilder
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -163,7 +166,7 @@ class HdfsStateSpec extends Specification {
   def createExecutorInfo() {
     return Protos.ExecutorInfo
       .newBuilder()
-      .setExecutorId(Protos.ExecutorID.newBuilder().setValue("executor").build())
+      .setExecutorId(ExecutorInfoBuilder.createExecutorId("executor"))
       .setCommand(
       Protos.CommandInfo
         .newBuilder()
@@ -177,16 +180,11 @@ class HdfsStateSpec extends Specification {
   }
 
   def createOffer() {
-    return Protos.Offer.newBuilder()
-      .setId(createTestOfferId(1))
-      .setFrameworkId(Protos.FrameworkID.newBuilder().setValue("framework").build())
-      .setSlaveId(Protos.SlaveID.newBuilder().setValue("slave").build())
-      .setHostname(TEST_HOST)
-      .build()
+    return OfferBuilder.createOffer("framework", "offer", "slave", TEST_HOST);
   }
 
   def createTestOfferId(int instanceNumber) {
-    return Protos.OfferID.newBuilder().setValue("offer" + instanceNumber).build()
+    return OfferBuilder.createOfferID("offer" + instanceNumber);
   }
 
   def createTaskIdName() {
@@ -194,7 +192,7 @@ class HdfsStateSpec extends Specification {
   }
 
   def createFrameworkId() {
-    return Protos.FrameworkID.newBuilder().setValue(testIdName).build()
+    return FrameworkInfoUtil.createFrameworkId(testIdName)
   }
 
 }

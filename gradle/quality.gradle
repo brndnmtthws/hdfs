@@ -6,6 +6,14 @@ apply plugin: "jacoco"
 
 tasks.withType(FindBugs) {
   excludeFilter = file("$rootProject.projectDir/gradle/findbugs/excludeFilter.xml")
+  maxHeapSize = '1024m'
+}
+
+tasks.withType(GroovyCompile) {
+  configure(groovyOptions.forkOptions) {
+    memoryMaximumSize = '1g'
+    jvmArgs = ['-XX:MaxPermSize=512m', '-Xms512m', '-Xmx1g']
+  }
 }
 
 checkstyle {

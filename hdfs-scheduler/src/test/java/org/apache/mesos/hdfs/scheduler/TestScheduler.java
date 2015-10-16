@@ -3,13 +3,8 @@ package org.apache.mesos.hdfs.scheduler;
 import com.google.common.collect.Lists;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import org.apache.mesos.Protos.FrameworkID;
 import org.apache.mesos.Protos.Offer;
-import org.apache.mesos.Protos.OfferID;
-import org.apache.mesos.Protos.Resource;
-import org.apache.mesos.Protos.SlaveID;
 import org.apache.mesos.Protos.TaskInfo;
-import org.apache.mesos.Protos.Value;
 import org.apache.mesos.SchedulerDriver;
 import org.apache.mesos.hdfs.TestSchedulerModule;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
@@ -17,6 +12,8 @@ import org.apache.mesos.hdfs.state.AcquisitionPhase;
 import org.apache.mesos.hdfs.state.HdfsState;
 import org.apache.mesos.hdfs.state.StateMachine;
 import org.apache.mesos.hdfs.util.HDFSConstants;
+import org.apache.mesos.protobuf.OfferBuilder;
+import org.apache.mesos.protobuf.ResourceBuilder;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -25,7 +22,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
@@ -49,7 +45,6 @@ public class TestScheduler {
   public void init() {
     MockitoAnnotations.initMocks(this);
   }
-
 
   @Test
   public void launchesOnlyNeededNumberOfJournalNodes()
@@ -105,39 +100,14 @@ public class TestScheduler {
   }
 
   private Offer createTestOfferWithResources(int instanceNumber, double cpus, int mem) {
-    return Offer.newBuilder()
-      .setId(createTestOfferId(instanceNumber))
-      .setFrameworkId(FrameworkID.newBuilder().setValue("framework1").build())
-      .setSlaveId(SlaveID.newBuilder().setValue("slave" + instanceNumber).build())
-      .setHostname("host" + instanceNumber)
-      .addAllResources(Arrays.asList(
-        Resource.newBuilder()
-          .setName("cpus")
-          .setType(Value.Type.SCALAR)
-          .setScalar(Value.Scalar.newBuilder()
-            .setValue(cpus).build())
-          .setRole("*")
-          .build(),
-        Resource.newBuilder()
-          .setName("mem")
-          .setType(Value.Type.SCALAR)
-          .setScalar(Value.Scalar.newBuilder()
-            .setValue(mem).build())
-          .setRole("*")
-          .build()))
+    ResourceBuilder resourceBuilder = new ResourceBuilder("*");
+    return new OfferBuilder("offer" + instanceNumber, "framework1", "slave" + instanceNumber, "host" + instanceNumber)
+      .addResource(resourceBuilder.createCpuResource(cpus))
+      .addResource(resourceBuilder.createMemResource(mem))
       .build();
-  }
-
-  private OfferID createTestOfferId(int instanceNumber) {
-    return OfferID.newBuilder().setValue("offer" + instanceNumber).build();
   }
 
   private Offer createTestOffer(int instanceNumber) {
-    return Offer.newBuilder()
-      .setId(createTestOfferId(instanceNumber))
-      .setFrameworkId(FrameworkID.newBuilder().setValue("framework1").build())
-      .setSlaveId(SlaveID.newBuilder().setValue("slave" + instanceNumber).build())
-      .setHostname("host" + instanceNumber)
-      .build();
+    return new OfferBuilder("offer" + instanceNumber, "framework1", "slave" + instanceNumber, "host" + instanceNumber).build();
   }
 }

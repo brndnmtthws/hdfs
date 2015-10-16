@@ -16,13 +16,13 @@ import org.apache.mesos.Protos.SlaveInfo;
 import org.apache.mesos.Protos.Status;
 import org.apache.mesos.Protos.TaskInfo;
 import org.apache.mesos.Protos.TaskState;
-import org.apache.mesos.Protos.TaskStatus;
+import org.apache.mesos.file.FileUtils;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
 import org.apache.mesos.hdfs.config.NodeConfig;
-import org.apache.mesos.hdfs.file.FileUtils;
 import org.apache.mesos.hdfs.util.HDFSConstants;
-import org.apache.mesos.hdfs.util.ProcessWatcher;
-import org.apache.mesos.hdfs.util.StreamRedirect;
+import org.apache.mesos.process.ProcessUtil;
+import org.apache.mesos.process.ProcessWatcher;
+import org.apache.mesos.protobuf.TaskStatusBuilder;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -105,6 +105,7 @@ public abstract class AbstractNodeExecutor implements Executor {
    * Create Symbolic Link for the HDFS binary.
    */
   private void createSymbolicLink(ExecutorDriver driver) {
+    // todo:  (kgs) https://mesosphere.atlassian.net/browse/HDFS-172
     log.info("Creating a symbolic link for HDFS binary");
     try {
       // Find Hdfs binary in sandbox
@@ -122,9 +123,7 @@ public abstract class AbstractNodeExecutor implements Executor {
 
       // Try to delete the symbolic link in case a dangling link is present
       try {
-        ProcessBuilder processBuilder = new ProcessBuilder("unlink", hdfsBinaryPath);
-        Process process = processBuilder.start();
-        redirectProcess(process);
+        Process process = ProcessUtil.startCmd("unlink", hdfsBinaryPath);
         int exitCode = process.waitFor();
         if (exitCode != 0) {
           log.info("Unable to unlink old sym link. Link may not exist. Exit code: " + exitCode);
@@ -172,8 +171,7 @@ public abstract class AbstractNodeExecutor implements Executor {
     BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
     bufferedWriter.write(scriptContent);
     bufferedWriter.close();
-    ProcessBuilder processBuilder = new ProcessBuilder("chmod", "a+x", pathEnvVarLocation);
-    Process process = processBuilder.start();
+    Process process = ProcessUtil.startCmd("chmod", "a+x", pathEnvVarLocation);
     int exitCode = process.waitFor();
     if (exitCode != 0) {
       String msg = "Error creating the symbolic link to hdfs binary."
@@ -202,12 +200,11 @@ public abstract class AbstractNodeExecutor implements Executor {
     reloadConfig();
     if (proc == null) {
       try {
-        ProcessBuilder processBuilder = new ProcessBuilder("sh", "-c", task.getCmd());
-        processBuilder.environment().putAll(createHdfsNodeEnvironment(task));
-        proc = processBuilder.start();
-        procWatcher.watch(proc);
-        task.setProcess(proc);
-        redirectProcess(task.getProcess());
+        Map<String, String> envMap = createHdfsNodeEnvironment(task);
+
+        Process process = ProcessUtil.startCmd(envMap, task.getCmd());
+        procWatcher.watch(process);
+        task.setProcess(process);
       } catch (IOException e) {
         log.error("Unable to start process:", e);
         task.getProcess().destroy();
@@ -256,11 +253,9 @@ public abstract class AbstractNodeExecutor implements Executor {
     }
     try {
       log.info(String.format("Reloading hdfs-site.xml from %s", configUri));
-      ProcessBuilder processBuilder = new ProcessBuilder("sh", "-c",
+      Process process = ProcessUtil.startCmd(
         String.format("curl -o hdfs-site.xml %s && mv hdfs-site.xml etc/hadoop/", configUri));
-      Process process = processBuilder.start();
       //TODO(nicgrayson) check if the config has changed
-      redirectProcess(process);
       int exitCode = process.waitFor();
       if (exitCode == 0) {
         log.info("Finished reloading hdfs-site.xml, exited with status " + exitCode);
@@ -273,25 +268,13 @@ public abstract class AbstractNodeExecutor implements Executor {
   }
 
   /**
-   * Redirects a process to STDERR and STDOUT for logging and debugging purposes.
-   */
-  protected void redirectProcess(Process process) {
-    StreamRedirect stdoutRedirect = new StreamRedirect(process.getInputStream(), System.out);
-    stdoutRedirect.start();
-    StreamRedirect stderrRedirect = new StreamRedirect(process.getErrorStream(), System.err);
-    stderrRedirect.start();
-  }
-
-  /**
    * Run a command and wait for it's successful completion.
    */
   protected void runCommand(ExecutorDriver driver, Task task, String command) {
     reloadConfig();
     try {
       log.info(String.format("About to run command: %s", command));
-      ProcessBuilder processBuilder = new ProcessBuilder("sh", "-c", command);
-      Process init = processBuilder.start();
-      redirectProcess(init);
+      Process init = ProcessUtil.startCmd(command);
       int exitCode = init.waitFor();
       if (exitCode == 0) {
         log.info("Finished running command, exited with status " + exitCode);
@@ -356,10 +339,12 @@ public abstract class AbstractNodeExecutor implements Executor {
    * Let the scheduler know that the task has failed.
    */
   private void sendTaskFailed(ExecutorDriver driver, Task task) {
-    driver.sendStatusUpdate(TaskStatus.newBuilder()
-      .setTaskId(task.getTaskInfo().getTaskId())
-      .setState(TaskState.TASK_FAILED)
-      .build());
+    driver.sendStatusUpdate(
+      new TaskStatusBuilder()
+        .setTaskId(task.getTaskInfo().getTaskId())
+        .setState(TaskState.TASK_FAILED)
+        .build()
+    );
   }
 
   /**

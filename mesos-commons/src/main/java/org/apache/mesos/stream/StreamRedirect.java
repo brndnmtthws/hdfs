@@ -1,4 +1,4 @@
-package org.apache.mesos.hdfs.util;
+package org.apache.mesos.stream;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -13,7 +13,7 @@ import java.nio.charset.Charset;
 /**
  * Can be used to redirect the STDOUT and STDERR of a started process. Used for the executors.
  */
-public class StreamRedirect extends Thread {
+public class StreamRedirect implements Runnable {
   private final Log log = LogFactory.getLog(StreamRedirect.class);
 
   private InputStream stream;

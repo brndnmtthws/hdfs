@@ -1,4 +1,4 @@
-package org.apache.mesos.hdfs.util;
+package org.apache.mesos.process;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
