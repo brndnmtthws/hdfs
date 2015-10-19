@@ -12,9 +12,8 @@ import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.mesos.ExecutorDriver;
 import org.apache.mesos.MesosExecutorDriver;
-import org.apache.mesos.Protos.Status;
-import org.apache.mesos.Protos.TaskID;
-import org.apache.mesos.Protos.TaskInfo;
+import org.apache.mesos.Protos;
+import org.apache.mesos.Protos.*;
 import org.apache.mesos.Protos.TaskStatus;
 import org.apache.mesos.file.FileUtils;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
@@ -261,6 +260,13 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
       log.error(errorMsg);
       throw new ExecutorException(errorMsg);
     }
+
+    File backupDir = config.getBackupDir() != null ? new File(config.getBackupDir() + "/" + getNodeId()) : null;
+    if (backupDir != null && !backupDir.exists() && !backupDir.mkdirs()) {
+      final String errorMsg = "unable to make directory: " + backupDir;
+      log.error(errorMsg);
+      throw new ExecutorException(errorMsg);
+    }
   }
 
   @Override
@@ -300,6 +306,25 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
     super.frameworkMessage(driver, msg);
     String messageStr = new String(msg, Charset.defaultCharset());
     log.info(String.format("Received framework message: %s", messageStr));
+  }
+
+  private String getNodeId() {
+    String id = null;
+
+    for (Protos.CommandInfo.URI uri : nameNodeTask.getTaskInfo().getExecutor().getCommand().getUrisList()) {
+      String value = uri.getValue();
+      String param = "node=";
+
+      int paramIdx = value.indexOf(param);
+      if (paramIdx != -1) {
+        int paramEnd = value.indexOf('&', paramIdx);
+        if (paramEnd == -1) paramEnd = value.length();
+        id = value.substring(paramIdx + param.length(), paramEnd);
+      }
+    }
+
+    if (id == null) throw new ExecutorException("Can't find node id from executor.command.uris");
+    return id;
   }
 
   private boolean processRunning(Task task) {
