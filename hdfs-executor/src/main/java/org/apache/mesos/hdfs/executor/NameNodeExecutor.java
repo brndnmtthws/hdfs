@@ -14,7 +14,6 @@ import org.apache.mesos.ExecutorDriver;
 import org.apache.mesos.MesosExecutorDriver;
 import org.apache.mesos.Protos;
 import org.apache.mesos.Protos.*;
-import org.apache.mesos.Protos.TaskStatus;
 import org.apache.mesos.file.FileUtils;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
 import org.apache.mesos.hdfs.util.HDFSConstants;
@@ -321,12 +320,18 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
       int paramIdx = value.indexOf(param);
       if (paramIdx != -1) {
         int paramEnd = value.indexOf('&', paramIdx);
-        if (paramEnd == -1) paramEnd = value.length();
+        if (paramEnd == -1) {
+          paramEnd = value.length();
+        }
+
         id = value.substring(paramIdx + param.length(), paramEnd);
       }
     }
 
-    if (id == null) throw new ExecutorException("Can't find node id from executor.command.uris");
+    if (id == null) {
+      throw new ExecutorException("Can't find node id from executor.command.uris");
+    }
+
     return id;
   }
 

@@ -3,10 +3,6 @@ package org.apache.mesos.hdfs.scheduler;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.Protos.*;
-import org.apache.mesos.Protos.ExecutorInfo;
-import org.apache.mesos.Protos.Offer;
-import org.apache.mesos.Protos.Resource;
-import org.apache.mesos.Protos.TaskInfo;
 import org.apache.mesos.SchedulerDriver;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
 import org.apache.mesos.hdfs.config.NodeConfig;
@@ -214,7 +210,9 @@ public abstract class HdfsNode implements IOfferEvaluator, ILauncher {
     String nodeId = null;
     for (String type : getTaskTypes()) {
       String taskName = getNextTaskName(type);
-      if (nodeId == null) nodeId = taskName;
+      if (nodeId == null) {
+        nodeId = taskName;
+      }
 
       List<Resource> resources = getTaskResources(type);
       ExecutorInfo execInfo = createExecutor(taskIdName, name, nodeId, executorName);
