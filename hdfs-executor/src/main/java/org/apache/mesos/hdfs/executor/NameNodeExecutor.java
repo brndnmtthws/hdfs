@@ -114,6 +114,7 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
         try {
           initNameNode(driver, nameNodeTask.getTaskInfo().getName() + ".hdfs.mesos");
         } catch (Exception ex) {
+          log.error("Failed to launch " + nameNodeTask.getTaskInfo().getName(), ex);
           // Failure to start a NameNode on a NameNodeExecutor is catastrophic.
           FailureUtils.exit("Failed to launch Namenode", HDFSConstants.NAMENODE_EXIT_CODE);
         }
@@ -154,14 +155,16 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
         // is used as a mutex indicates whether or not any NameNode has ever been formatted.
         // The first NameNode to acquire the mutex and find that no NameNode has ever been
         // formatted, formats itself.  All others bootstrap.
-        if (!nameNodeQuorumInitialized()) {
+        String backupDir = config.getBackupDir();
+        String status = getNameNodeStatus();
+        log.info("Initializing NN, status=" + status + ", backupDir=" + backupDir);
+
+        if (status == null || status.isEmpty())  {
           formatNameNode(driver);
-          curatorClient.setData()
-            .forPath(
-              getStatusPath(),
-              HDFSConstants.NN_STATUS_INIT_VAL.getBytes(Charset.forName("UTF-8")));
-        } else {
+          setNameNodeStatus("formatted");
+        } else if (status.equals("formatted") || backupDir == null) {
           bootstrapNameNode(driver);
+          setNameNodeStatus("bootstrapped");
         }
       } finally {
         lock.release();
@@ -180,13 +183,13 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
     driver.sendStatusUpdate(status);
   }
 
-  private boolean nameNodeQuorumInitialized() throws Exception {
+  private String getNameNodeStatus() throws Exception {
     byte[] data = curatorClient.getData().forPath(getStatusPath());
-    String status = new String(data, "UTF-8");
-    log.info("name_node_status from ZK: " + status);
-    boolean initialized = status.equals(HDFSConstants.NN_STATUS_INIT_VAL);
-    log.info("initialized: " + initialized);
-    return initialized;
+    return data != null ? new String(data, "UTF-8") : null;
+  }
+
+  private void setNameNodeStatus(String status) throws Exception {
+    curatorClient.setData().forPath(getStatusPath(), status.getBytes(Charset.forName("UTF-8")));
   }
 
   private void formatNameNode(ExecutorDriver driver) {
