@@ -113,7 +113,8 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
     Runnable r = new Runnable() {
       public void run() {
         try {
-          initNameNode(driver, nameNodeTask.getTaskInfo().getName() + ".hdfs.mesos");
+          initNameNode(driver, nameNodeTask.getTaskInfo().getName() + "." + config.getFrameworkName()
+            + "." + config.getMesosDnsDomain());
         } catch (Exception ex) {
           // Failure to start a NameNode on a NameNodeExecutor is catastrophic.
           FailureUtils.exit("Failed to launch Namenode", HDFSConstants.NAMENODE_EXIT_CODE);
