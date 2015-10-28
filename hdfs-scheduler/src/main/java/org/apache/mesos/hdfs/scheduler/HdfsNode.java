@@ -97,7 +97,9 @@ public abstract class HdfsNode implements IOfferEvaluator, ILauncher {
 
     String url = String.format("http://%s:%d/%s", config.getFrameworkHostAddress(),
         confServerPort, HDFSConstants.HDFS_CONFIG_FILE_NAME);
-    if (nnNum != null) url += "?nn=" + nnNum;
+    if (nnNum != null) {
+      url += "?nn=" + nnNum;
+    }
 
     return Arrays.asList(
       CommandInfoBuilder.createCmdInfoUri(String.format("http://%s:%d/%s", config.getFrameworkHostAddress(),

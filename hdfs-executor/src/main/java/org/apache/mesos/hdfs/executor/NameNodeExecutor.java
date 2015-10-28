@@ -265,7 +265,10 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
       throw new ExecutorException(errorMsg);
     }
 
-    File backupDir = config.getBackupDir() != null ? new File(config.getBackupDir() + "/" + nameNodeTask.getTaskInfo().getName()) : null;
+    File backupDir = config.getBackupDir() != null
+        ? new File(config.getBackupDir() + "/" + nameNodeTask.getTaskInfo().getName())
+        : null;
+
     if (backupDir != null && !backupDir.exists() && !backupDir.mkdirs()) {
       final String errorMsg = "unable to make directory: " + backupDir;
       log.error(errorMsg);
