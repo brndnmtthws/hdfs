@@ -22,11 +22,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * This is the HTTP service which allows executors to fetch the configuration for hdfs-site.xml.
@@ -124,10 +120,9 @@ public class ConfigServer {
       model.put("dataDir", hdfsFrameworkConfig.getDataDir());
       model.put("haZookeeperQuorum", hdfsFrameworkConfig.getHaZookeeperQuorum());
 
-      String node = request.getParameter("node");
-      if (hdfsFrameworkConfig.getBackupDir() != null && node != null && node.startsWith(HDFSConstants.NAME_NODE_ID)) {
-        model.put("backupDir", hdfsFrameworkConfig.getBackupDir());
-        model.put("node", node);
+      String nnNum = request.getParameter("nn");
+      if (hdfsFrameworkConfig.getBackupDir() != null && nnNum != null) {
+        model.put("backupDir", hdfsFrameworkConfig.getBackupDir() + "/" + nameNodeId(nnNum));
       }
 
       content = engine.transform(content, model);
@@ -155,6 +150,14 @@ public class ConfigServer {
         journalNodeString = journalNodeString.substring(0, journalNodeString.length() - 1);
       }
       return journalNodeString;
+    }
+
+    private String nameNodeId(String nnNum) {
+      if (!nnNum.equals("NN1") && !nnNum.equals("NN2")) {
+        throw new IllegalArgumentException(nnNum);
+      }
+
+      return "namenode" + nnNum.charAt(2);
     }
   }
 }
