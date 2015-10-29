@@ -122,7 +122,7 @@ public class ConfigServer {
 
       String nnNum = request.getParameter("nn");
       if (hdfsFrameworkConfig.getBackupDir() != null && nnNum != null) {
-        model.put("backupDir", hdfsFrameworkConfig.getBackupDir() + "/" + nameNodeId(nnNum));
+        model.put("backupDir", hdfsFrameworkConfig.getBackupDir() + "/" + nnNum);
       }
 
       content = engine.transform(content, model);
@@ -150,14 +150,6 @@ public class ConfigServer {
         journalNodeString = journalNodeString.substring(0, journalNodeString.length() - 1);
       }
       return journalNodeString;
-    }
-
-    private String nameNodeId(String nnNum) {
-      if (!nnNum.equals("NN1") && !nnNum.equals("NN2")) {
-        throw new IllegalArgumentException(nnNum);
-      }
-
-      return "namenode" + nnNum.charAt(2);
     }
   }
 }
