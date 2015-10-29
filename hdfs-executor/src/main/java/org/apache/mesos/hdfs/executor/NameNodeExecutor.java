@@ -145,17 +145,24 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
   private void initNameNode(ExecutorDriver driver, String dnsName) throws Exception {
     waitDnsResolution(dnsName);
 
+    // All Namenoedes are started simultaneously. Their startups are intentionally
+    // serialized through the mutex acquired above. The value stored in the Znode which
+    // is used as a mutex indicates whether or not any NameNode has ever been formatted.
+    // The first NameNode to acquire the mutex and find that no NameNode has ever been
+    // formatted, formats itself. All others bootstrap or recover from the backup if exists.
     InterProcessMutex lock = new InterProcessMutex(curatorClient, getStatusPath());
     if (lock.acquire(HDFSConstants.ZK_MUTEX_ACQUIRE_TIMEOUT_SEC, TimeUnit.SECONDS)) {
       try {
-
         // In order to start a set of NameNodes, one must first be formatted.  Other
         // NameNodes then bootstrap off that node or others which have already bootstrapped.
-        // All Namenoedes are started simultaneously.  Their startups are intentionally
-        // serialized through the mutex acquired above.  The value stored in the Znode which
-        // is used as a mutex indicates whether or not any NameNode has ever been formatted.
-        // The first NameNode to acquire the mutex and find that no NameNode has ever been
-        // formatted, formats itself.  All others bootstrap.
+        // If second NameNode is already bootstrapped and backupDir is defined, then
+        // we skip initialization, letting NameNode to recover from backupDir.
+
+        // So the logic is following:
+        // 1. format NameNode if not formatted;
+        // 2. bootstrap NameNode if formatted or no backup exists;
+        // 3. once some NameNode is bootstrapped and backup exists,
+        //    let NameNode to recover itself from a backup
         String backupDir = config.getBackupDir();
         String status = getNameNodeStatus();
         log.info("Initializing NN, status=" + status + ", backupDir=" + backupDir);
