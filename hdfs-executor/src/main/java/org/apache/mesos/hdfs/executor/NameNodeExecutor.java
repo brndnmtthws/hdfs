@@ -169,10 +169,10 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
 
         if (status == null || status.isEmpty())  {
           formatNameNode(driver);
-          setNameNodeStatus("formatted");
-        } else if (status.equals("formatted") || backupDir == null) {
+          setNameNodeStatus(HDFSConstants.NN_STATUS_FORMATTED_VAL);
+        } else if (status.equals(HDFSConstants.NN_STATUS_FORMATTED_VAL) || backupDir == null) {
           bootstrapNameNode(driver);
-          setNameNodeStatus("bootstrapped");
+          setNameNodeStatus(HDFSConstants.NN_STATUS_BOOTSTRAPPED_VAL);
         }
       } finally {
         lock.release();

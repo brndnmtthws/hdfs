@@ -57,8 +57,12 @@ public final class HDFSConstants {
   public static final String ZK_FRAMEWORK_ID_KEY = "FrameworkId";
   public static final Integer ZK_MUTEX_ACQUIRE_TIMEOUT_SEC = 30;
   public static final Integer CURATOR_MAX_RETRIES = 3;
+
   public static final String NN_STATUS_KEY = "status";
   public static final String NN_STATUS_INIT_VAL = "initialized";
   public static final String NN_STATUS_UNINIT_VAL = "uninitialized";
+  public static final String NN_STATUS_FORMATTED_VAL = "formatted";
+  public static final String NN_STATUS_BOOTSTRAPPED_VAL = "bootstrapped";
+
   public static final Integer POLL_DELAY_MS = 1000;
 }
