@@ -145,7 +145,7 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
   private void initNameNode(ExecutorDriver driver, String dnsName) throws Exception {
     waitDnsResolution(dnsName);
 
-    // All Namenoedes are started simultaneously. Their startups are intentionally
+    // All NameNodes are started simultaneously. Their startups are intentionally
     // serialized through the mutex acquired above. The value stored in the Znode which
     // is used as a mutex indicates whether or not any NameNode has ever been formatted.
     // The first NameNode to acquire the mutex and find that no NameNode has ever been

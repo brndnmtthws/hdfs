@@ -52,7 +52,8 @@ public class NameNode extends HdfsNode {
         log.info(String.format("Already running %s namenodes", HDFSConstants.TOTAL_NAME_NODES));
       } else if (state.hostOccupied(hostname, HDFSConstants.NAME_NODE_ID)) {
         log.info(String.format("Already running namenode on %s", offer.getHostname()));
-      } else if (config.getRunDatanodeExclusively() && state.hostOccupied(hostname, HDFSConstants.DATA_NODE_ID)) {
+      } else if (config.getRunDatanodeExclusively()
+        && state.hostOccupied(hostname, HDFSConstants.DATA_NODE_ID)) {
         log.info(String.format("Cannot colocate namenode and datanode on %s", offer.getHostname()));
       } else if (!state.hostOccupied(hostname, HDFSConstants.JOURNAL_NODE_ID)) {
         log.info(String.format("We need to colocate the namenode with a journalnode and there is "

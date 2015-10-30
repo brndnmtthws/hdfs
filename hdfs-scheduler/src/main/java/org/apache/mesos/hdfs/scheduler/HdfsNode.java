@@ -96,17 +96,17 @@ public abstract class HdfsNode implements IOfferEvaluator, ILauncher {
     int confServerPort = config.getConfigServerPort();
 
     String url = String.format("http://%s:%d/%s", config.getFrameworkHostAddress(),
-        confServerPort, HDFSConstants.HDFS_CONFIG_FILE_NAME);
+      confServerPort, HDFSConstants.HDFS_CONFIG_FILE_NAME);
     if (nnNum != null) {
-      url += "?nn=" + nnNum;
+      url += "?" + HDFSConstants.NAMENODE_NUM_PARAM + "=" + nnNum;
     }
 
     return Arrays.asList(
       CommandInfoBuilder.createCmdInfoUri(String.format("http://%s:%d/%s", config.getFrameworkHostAddress(),
         confServerPort,
         HDFSConstants.HDFS_BINARY_FILE_NAME)),
-        CommandInfoBuilder.createCmdInfoUri(url),
-        CommandInfoBuilder.createCmdInfoUri(config.getJreUrl()));
+      CommandInfoBuilder.createCmdInfoUri(url),
+      CommandInfoBuilder.createCmdInfoUri(config.getJreUrl()));
   }
 
   private List<Environment.Variable> getExecutorEnvironment() {
@@ -214,7 +214,7 @@ public abstract class HdfsNode implements IOfferEvaluator, ILauncher {
     String nnNum = null;
     for (String type : getTaskTypes()) {
       String taskName = getNextTaskName(type);
-      if (nnNum == null && taskName.startsWith("namenode")) {
+      if (nnNum == null && taskName.startsWith(HDFSConstants.NAME_NODE_ID)) {
         nnNum = taskName;
       }
 

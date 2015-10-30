@@ -22,7 +22,11 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /**
  * This is the HTTP service which allows executors to fetch the configuration for hdfs-site.xml.
@@ -120,7 +124,7 @@ public class ConfigServer {
       model.put("dataDir", hdfsFrameworkConfig.getDataDir());
       model.put("haZookeeperQuorum", hdfsFrameworkConfig.getHaZookeeperQuorum());
 
-      String nnNum = request.getParameter("nn");
+      String nnNum = request.getParameter(HDFSConstants.NAMENODE_NUM_PARAM);
       if (hdfsFrameworkConfig.getBackupDir() != null && nnNum != null) {
         model.put("backupDir", hdfsFrameworkConfig.getBackupDir() + "/" + nnNum);
       }
