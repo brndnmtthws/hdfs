@@ -211,12 +211,12 @@ public abstract class HdfsNode implements IOfferEvaluator, ILauncher {
     String taskIdName = String.format("%s.%s.%d", name, executorName, System.currentTimeMillis());
     List<Task> tasks = new ArrayList<>();
 
-    String nnNum = null;
+    String nnNum = getTaskTypes().contains(HDFSConstants.NAME_NODE_ID)
+      ? getNextTaskName(HDFSConstants.NAME_NODE_ID)
+      : null;
+
     for (String type : getTaskTypes()) {
       String taskName = getNextTaskName(type);
-      if (nnNum == null && taskName.startsWith(HDFSConstants.NAME_NODE_ID)) {
-        nnNum = taskName;
-      }
 
       List<Resource> resources = getTaskResources(type);
       ExecutorInfo execInfo = createExecutor(taskIdName, name, nnNum, executorName);
