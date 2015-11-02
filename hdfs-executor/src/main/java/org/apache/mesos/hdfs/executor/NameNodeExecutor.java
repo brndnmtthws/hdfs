@@ -173,6 +173,10 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
         } else if (status.equals(HDFSConstants.NN_STATUS_FORMATTED_VAL) || backupDir == null) {
           bootstrapNameNode(driver);
           setNameNodeStatus(HDFSConstants.NN_STATUS_BOOTSTRAPPED_VAL);
+        } else {
+          // bootstrapped && backupDir != null
+          // just start NameNode and let it recover from a backup dir
+          startNameNode(driver, null);
         }
       } finally {
         lock.release();
@@ -209,8 +213,12 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
   }
 
   private void startNameNode(ExecutorDriver driver, String startType) {
+    log.info("Starting NN, startType=" + startType);
     initDir();
-    runNameNodeCommand(driver, startType);
+
+    if (startType != null) {
+      runNameNodeCommand(driver, startType);
+    }
 
     if (!processRunning(nameNodeTask)) {
       startProcess(driver, nameNodeTask);
