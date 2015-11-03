@@ -65,7 +65,7 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
     final NameNodeExecutor executor = injector.getInstance(NameNodeExecutor.class);
     MesosExecutorDriver driver = new MesosExecutorDriver(executor);
     Runtime.getRuntime().addShutdownHook(new Thread(new TaskShutdownHook(executor, driver)));
-    System.exit(driver.run() == Status.DRIVER_STOPPED ? 0 : 1);
+    FailureUtils.exit("mesos driver exited", driver.run() == Status.DRIVER_STOPPED ? 0 : 1);
   }
 
   /**

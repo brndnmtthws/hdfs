@@ -5,6 +5,7 @@ import com.google.inject.Injector;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.hdfs.config.ConfigServer;
+import org.apache.mesos.process.FailureUtils;
 
 /**
  * Main entry point for the Scheduler.
@@ -35,8 +36,9 @@ public final class Main {
     return new Thread.UncaughtExceptionHandler() {
       @Override
       public void uncaughtException(Thread t, Throwable e) {
-        log.error("Scheduler exiting due to uncaught exception", e);
-        System.exit(2);
+        final String message = "Scheduler exiting due to uncaught exception";
+        log.error(message, e);
+        FailureUtils.exit(message, 2);
       }
     };
   }

@@ -1,25 +1,22 @@
 package org.apache.mesos.hdfs.executor;
 
-import com.google.inject.Guice;
 import com.google.inject.Inject;
-import com.google.inject.Injector;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mesos.Executor;
 import org.apache.mesos.ExecutorDriver;
-import org.apache.mesos.MesosExecutorDriver;
 import org.apache.mesos.Protos.CommandInfo;
 import org.apache.mesos.Protos.ExecutorInfo;
 import org.apache.mesos.Protos.FrameworkInfo;
 import org.apache.mesos.Protos.SlaveInfo;
-import org.apache.mesos.Protos.Status;
 import org.apache.mesos.Protos.TaskInfo;
 import org.apache.mesos.Protos.TaskState;
 import org.apache.mesos.file.FileUtils;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
 import org.apache.mesos.hdfs.config.NodeConfig;
 import org.apache.mesos.hdfs.util.HDFSConstants;
+import org.apache.mesos.process.FailureUtils;
 import org.apache.mesos.process.ProcessUtil;
 import org.apache.mesos.process.ProcessWatcher;
 import org.apache.mesos.protobuf.TaskStatusBuilder;
@@ -61,16 +58,6 @@ public abstract class AbstractNodeExecutor implements Executor {
     this.config = config;
     this.procWatcher = new ProcessWatcher(new HdfsProcessExitHandler());
     healthCheckTimer = new Timer(true);
-  }
-
-  /**
-   * Main method which injects the configuration and state and creates the driver.
-   */
-  public static void main(String[] args) {
-    Injector injector = Guice.createInjector();
-    MesosExecutorDriver driver = new MesosExecutorDriver(
-      injector.getInstance(AbstractNodeExecutor.class));
-    System.exit(driver.run() == Status.DRIVER_STOPPED ? 0 : 1);
   }
 
   /**
@@ -158,6 +145,9 @@ public abstract class AbstractNodeExecutor implements Executor {
    * requires that /usr/bin/ is on the Mesos slave PATH, which is defined as part of the standard
    * Mesos slave packaging.
    */
+  @edu.umd.cs.findbugs.annotations.SuppressWarnings(
+    value = "DMI_HARDCODED_ABSOLUTE_FILENAME",
+    justification = "hadoop is required to be in this location")
   private void addBinaryToPath(ExecutorDriver driver, String hdfsBinaryPath)
     throws IOException, InterruptedException {
     if (config.usingNativeHadoopBinaries()) {
@@ -188,7 +178,7 @@ public abstract class AbstractNodeExecutor implements Executor {
     if (StringUtils.isNotBlank(message)) {
       log.fatal(message, e);
     }
-    System.exit(statusCode);
+    FailureUtils.exit(message, statusCode);
   }
 
   /**

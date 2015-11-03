@@ -12,6 +12,7 @@ import org.apache.mesos.Protos.TaskID;
 import org.apache.mesos.Protos.TaskInfo;
 import org.apache.mesos.Protos.TaskState;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
+import org.apache.mesos.process.FailureUtils;
 import org.apache.mesos.protobuf.TaskStatusBuilder;
 
 /**
@@ -38,7 +39,7 @@ public class NodeExecutor extends AbstractNodeExecutor {
     final NodeExecutor executor = injector.getInstance(NodeExecutor.class);
     MesosExecutorDriver driver = new MesosExecutorDriver(executor);
     Runtime.getRuntime().addShutdownHook(new Thread(new TaskShutdownHook(executor, driver)));
-    System.exit(driver.run() == Status.DRIVER_STOPPED ? 0 : 1);
+    FailureUtils.exit("mesos driver exited", driver.run() == Status.DRIVER_STOPPED ? 0 : 1);
   }
 
   /**
