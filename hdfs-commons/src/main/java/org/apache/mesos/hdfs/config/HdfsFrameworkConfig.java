@@ -58,11 +58,27 @@ public class HdfsFrameworkConfig {
     Path configPath = new Path(props.getProperty("mesos.conf.path", "etc/hadoop/mesos-site.xml"));
     Configuration configuration = new Configuration();
     configuration.addResource(configPath);
+    configuration.addResource(getEnvConfiguration());
     setConf(configuration);
   }
 
   public HdfsFrameworkConfig(Configuration conf) {
     setConf(conf);
+  }
+
+  private Configuration getEnvConfiguration() {
+    Configuration cfg = new Configuration(false);
+
+    for (String name : System.getenv().keySet()) {
+      if (!name.startsWith("MESOS_")) {
+        continue;
+      }
+
+      String cfgName = name.toLowerCase().replace("_", ".");
+      cfg.set(cfgName, System.getenv(name));
+    }
+
+    return cfg;
   }
 
   private void setConf(Configuration conf) {
