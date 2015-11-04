@@ -44,6 +44,14 @@
     <value>/var/lib/hdfs/data</value>
   </property>
 
+    <!-- Uncomment this to enable backup
+    <property>
+      <name>mesos.hdfs.backup.dir</name>
+      <description>Backup dir for HDFS</description>
+      <value>/tmp/nfs</value>
+    </property>
+    -->
+
   <property>
     <name>mesos.hdfs.framework.mnt.path</name>
     <value>/opt/mesosphere</value>
