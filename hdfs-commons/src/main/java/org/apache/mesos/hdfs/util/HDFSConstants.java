@@ -16,6 +16,7 @@ public final class HDFSConstants {
   // Messages
   public static final String NAME_NODE_INIT_MESSAGE = "-i";
   public static final String NAME_NODE_BOOTSTRAP_MESSAGE = "-b";
+  public static final String JOURNAL_NODE_INIT_MESSAGE = "-s";
   public static final String RELOAD_CONFIG = "reload config";
 
   // NodeIds
@@ -56,8 +57,14 @@ public final class HDFSConstants {
   public static final String ZK_FRAMEWORK_ID_KEY = "FrameworkId";
   public static final Integer ZK_MUTEX_ACQUIRE_TIMEOUT_SEC = 30;
   public static final Integer CURATOR_MAX_RETRIES = 3;
+
+  public static final String NAMENODE_NUM_PARAM = "nn";
+
   public static final String NN_STATUS_KEY = "status";
   public static final String NN_STATUS_INIT_VAL = "initialized";
   public static final String NN_STATUS_UNINIT_VAL = "uninitialized";
+  public static final String NN_STATUS_FORMATTED_VAL = "formatted";
+  public static final String NN_STATUS_BOOTSTRAPPED_VAL = "bootstrapped";
+
   public static final Integer POLL_DELAY_MS = 1000;
 }
