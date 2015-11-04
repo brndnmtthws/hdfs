@@ -116,6 +116,7 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
           initNameNode(driver, nameNodeTask.getTaskInfo().getName() + "." + config.getFrameworkName()
             + "." + config.getMesosDnsDomain());
         } catch (Exception ex) {
+          log.error("Failed to launch " + nameNodeTask.getTaskInfo().getName(), ex);
           // Failure to start a NameNode on a NameNodeExecutor is catastrophic.
           FailureUtils.exit("Failed to launch Namenode", HDFSConstants.NAMENODE_EXIT_CODE);
         }
@@ -145,25 +146,38 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
   private void initNameNode(ExecutorDriver driver, String dnsName) throws Exception {
     waitDnsResolution(dnsName);
 
+    // All NameNodes are started simultaneously. Their startups are intentionally
+    // serialized through the mutex acquired above. The value stored in the Znode which
+    // is used as a mutex indicates whether or not any NameNode has ever been formatted.
+    // The first NameNode to acquire the mutex and find that no NameNode has ever been
+    // formatted, formats itself. All others bootstrap or recover from the backup if exists.
     InterProcessMutex lock = new InterProcessMutex(curatorClient, getStatusPath());
     if (lock.acquire(HDFSConstants.ZK_MUTEX_ACQUIRE_TIMEOUT_SEC, TimeUnit.SECONDS)) {
       try {
-
         // In order to start a set of NameNodes, one must first be formatted.  Other
         // NameNodes then bootstrap off that node or others which have already bootstrapped.
-        // All Namenoedes are started simultaneously.  Their startups are intentionally
-        // serialized through the mutex acquired above.  The value stored in the Znode which
-        // is used as a mutex indicates whether or not any NameNode has ever been formatted.
-        // The first NameNode to acquire the mutex and find that no NameNode has ever been
-        // formatted, formats itself.  All others bootstrap.
-        if (!nameNodeQuorumInitialized()) {
+        // If second NameNode is already bootstrapped and backupDir is defined, then
+        // we skip initialization, letting NameNode to recover from backupDir.
+
+        // So the logic is following:
+        // 1. format NameNode if not formatted;
+        // 2. bootstrap NameNode if formatted or no backup exists;
+        // 3. once some NameNode is bootstrapped and backup exists,
+        //    let NameNode to recover itself from a backup
+        String backupDir = config.getBackupDir();
+        String status = getNameNodeStatus();
+        log.info("Initializing NN, status=" + status + ", backupDir=" + backupDir);
+
+        if (status == null || status.isEmpty())  {
           formatNameNode(driver);
-          curatorClient.setData()
-            .forPath(
-              getStatusPath(),
-              HDFSConstants.NN_STATUS_INIT_VAL.getBytes(Charset.forName("UTF-8")));
-        } else {
+          setNameNodeStatus(HDFSConstants.NN_STATUS_FORMATTED_VAL);
+        } else if (status.equals(HDFSConstants.NN_STATUS_FORMATTED_VAL) || backupDir == null) {
           bootstrapNameNode(driver);
+          setNameNodeStatus(HDFSConstants.NN_STATUS_BOOTSTRAPPED_VAL);
+        } else {
+          // bootstrapped && backupDir != null
+          // just start NameNode and let it recover from a backup dir
+          startNameNode(driver, null);
         }
       } finally {
         lock.release();
@@ -182,13 +196,13 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
     driver.sendStatusUpdate(status);
   }
 
-  private boolean nameNodeQuorumInitialized() throws Exception {
+  private String getNameNodeStatus() throws Exception {
     byte[] data = curatorClient.getData().forPath(getStatusPath());
-    String status = new String(data, "UTF-8");
-    log.info("name_node_status from ZK: " + status);
-    boolean initialized = status.equals(HDFSConstants.NN_STATUS_INIT_VAL);
-    log.info("initialized: " + initialized);
-    return initialized;
+    return data != null ? new String(data, "UTF-8") : null;
+  }
+
+  private void setNameNodeStatus(String status) throws Exception {
+    curatorClient.setData().forPath(getStatusPath(), status.getBytes(Charset.forName("UTF-8")));
   }
 
   private void formatNameNode(ExecutorDriver driver) {
@@ -200,8 +214,12 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
   }
 
   private void startNameNode(ExecutorDriver driver, String startType) {
+    log.info("Starting NN, startType=" + startType);
     initDir();
-    runNameNodeCommand(driver, startType);
+
+    if (startType != null) {
+      runNameNodeCommand(driver, startType);
+    }
 
     if (!processRunning(nameNodeTask)) {
       startProcess(driver, nameNodeTask);
@@ -259,6 +277,16 @@ public class NameNodeExecutor extends AbstractNodeExecutor {
     FileUtils.deleteDirectory(nameDir);
     if (!nameDir.mkdirs()) {
       final String errorMsg = "unable to make directory: " + nameDir;
+      log.error(errorMsg);
+      throw new ExecutorException(errorMsg);
+    }
+
+    File backupDir = config.getBackupDir() != null
+        ? new File(config.getBackupDir() + "/" + nameNodeTask.getTaskInfo().getName())
+        : null;
+
+    if (backupDir != null && !backupDir.exists() && !backupDir.mkdirs()) {
+      final String errorMsg = "unable to make directory: " + backupDir;
       log.error(errorMsg);
       throw new ExecutorException(errorMsg);
     }
