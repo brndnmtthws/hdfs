@@ -100,6 +100,28 @@ Authentication with CRAM-MD5 (Optional)
 
 2. Ensure that the Mesos master has access to the same credentials.  See the [Mesos configuration documentation](http://mesos.apache.org/documentation/latest/configuration/), in particular the --credentials flag.  Authentication defaults to CRAM-MD5 so setting the --authenticators flag is not necessary.
 
+NameNode backup (Optional)
+--------------------------
+Framework supports "live" backup of NameNode data. This function is disabled by default.
+
+In order to enable it, you need to uncomment `mesos.hdfs.backup.dir` setting in `mesos-site.xml` file.
+This setting should point to some shared (i.e. NFS) directory. Example:
+```
+  <property>
+    <name>mesos.hdfs.backup.dir</name>
+    <description>Backup dir for HDFS</description>
+    <value>/nfs/hadoop</value>
+  </property>
+```
+
+Using this approach NameNodes would be configured to use 2 data directories to store it's data. Example for namenode1:
+```
+  <property>
+    <name>dfs.namenode.name.dir</name>
+    <value>file://${dataDir}/name,file://${backupDir/namenode1</value>
+  </property>
+```
+All NameNode related data would be written to both directories.
 
 Shutdown Instructions (Optional)
 --------------------------
