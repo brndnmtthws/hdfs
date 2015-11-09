@@ -7,7 +7,7 @@ import org.apache.mesos.hdfs.scheduler.StateFactory;
 /**
  * Guice Module for initializing interfaces to implementations for the HDFS Scheduler.
  */
-public class TestSchedulerModule extends AbstractModule {
+public class SchedulerModuleTest extends AbstractModule {
 
   @Override
   protected void configure() {

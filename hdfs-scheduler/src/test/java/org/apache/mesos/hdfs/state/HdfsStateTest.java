@@ -7,7 +7,7 @@ import org.apache.mesos.Protos.Offer;
 import org.apache.mesos.Protos.Resource;
 import org.apache.mesos.Protos.TaskState;
 import org.apache.mesos.Protos.TaskStatus;
-import org.apache.mesos.hdfs.TestSchedulerModule;
+import org.apache.mesos.hdfs.SchedulerModuleTest;
 import org.apache.mesos.hdfs.scheduler.Task;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 import org.apache.mesos.hdfs.util.TaskStatusFactory;
@@ -27,8 +27,8 @@ import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.*;
 
-public class TestHdfsState {
-  private final Injector injector = Guice.createInjector(new TestSchedulerModule());
+public class HdfsStateTest {
+  private final Injector injector = Guice.createInjector(new SchedulerModuleTest());
   private SecureRandom random = new SecureRandom();
   private static final String testIdName = "framework";
   private static final String TEST_HOST = "host";

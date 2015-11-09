@@ -2,7 +2,7 @@ package org.apache.mesos.hdfs.state;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import org.apache.mesos.hdfs.TestSchedulerModule;
+import org.apache.mesos.hdfs.SchedulerModuleTest;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
 import org.apache.mesos.hdfs.scheduler.Reconciler;
 import org.apache.mesos.hdfs.util.HDFSConstants;
@@ -15,8 +15,8 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class TestStateMachine {
-  private final Injector injector = Guice.createInjector(new TestSchedulerModule());
+public class StateMachineTest {
+  private final Injector injector = Guice.createInjector(new SchedulerModuleTest());
   private final HdfsFrameworkConfig config = injector.getInstance(HdfsFrameworkConfig.class);
 
   private final int TARGET_JOURNAL_COUNT = config.getJournalNodeCount();

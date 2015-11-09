@@ -2,7 +2,7 @@ package org.apache.mesos.hdfs.state
 
 import com.google.inject.Guice
 import org.apache.mesos.Protos
-import org.apache.mesos.hdfs.TestSchedulerModule
+import org.apache.mesos.hdfs.SchedulerModuleTest
 import org.apache.mesos.hdfs.scheduler.Task
 import org.apache.mesos.hdfs.util.HDFSConstants
 import org.apache.mesos.protobuf.ExecutorInfoBuilder
@@ -18,7 +18,7 @@ import java.security.SecureRandom
  *
  */
 class HdfsStateSpec extends Specification {
-  def injector = Guice.createInjector(new TestSchedulerModule())
+  def injector = Guice.createInjector(new SchedulerModuleTest())
   static final String TEST_HOST = "host"
   static final String TEST_TYPE = "type"
   static final String TEST_NAME = "name"
