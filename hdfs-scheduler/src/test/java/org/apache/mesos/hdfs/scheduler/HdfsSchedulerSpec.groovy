@@ -2,7 +2,7 @@ package org.apache.mesos.hdfs.scheduler
 
 import com.google.inject.Guice
 import org.apache.mesos.SchedulerDriver
-import org.apache.mesos.hdfs.TestSchedulerModule
+import org.apache.mesos.hdfs.SchedulerModuleTest
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig
 import org.apache.mesos.hdfs.state.AcquisitionPhase
 import org.apache.mesos.hdfs.state.HdfsState
@@ -17,7 +17,7 @@ import spock.lang.Specification
  */
 class HdfsSchedulerSpec extends Specification {
 
-  def injector = Guice.createInjector(new TestSchedulerModule())
+  def injector = Guice.createInjector(new SchedulerModuleTest())
   def reconciler = Mock(Reconciler)
   def stateMachine = Mock(StateMachine)
   def driver = Mock(SchedulerDriver)
