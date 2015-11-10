@@ -82,6 +82,13 @@ Applying mesos slave constraints (Optional)
 "id" may be type of range. 
 ```
 
+System Environment for Configurations
+--------------------------
+Many scheduler configurations can be made by setting the system environment variables.  To do this, convert the property to upper case and replace `.` with `_`.
+Example `mesos.hdfs.data.dir` can be replaced with `MESOS_HDFS_DATA_DIR`.  
+
+Currently this only works for values that are used by scheduler.  Values used by the executor can not be controlled in this way yet.
+
 
 Authentication with CRAM-MD5 (Optional)
 --------------------------
