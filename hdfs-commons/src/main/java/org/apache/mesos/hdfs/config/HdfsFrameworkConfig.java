@@ -69,13 +69,14 @@ public class HdfsFrameworkConfig {
   private Configuration getEnvConfiguration() {
     Configuration cfg = new Configuration(false);
 
-    for (String name : System.getenv().keySet()) {
+    for (Map.Entry<Object, Object> property : System.getProperties().entrySet()) {
+      String name = property.getKey().toString();
       if (!name.startsWith("MESOS_")) {
         continue;
       }
 
       String cfgName = name.toLowerCase().replace("_", ".");
-      cfg.set(cfgName, System.getenv(name));
+      cfg.set(cfgName, property.getValue().toString());
     }
 
     return cfg;
