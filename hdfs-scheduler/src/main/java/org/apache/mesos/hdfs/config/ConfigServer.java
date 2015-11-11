@@ -122,6 +122,7 @@ public class ConfigServer {
       model.put("journalnodes", journalNodeString);
       model.put("frameworkName", hdfsFrameworkConfig.getFrameworkName());
       model.put("dataDir", hdfsFrameworkConfig.getDataDir());
+      model.put("secondaryDataDir", hdfsFrameworkConfig.getSecondaryDataDir());
       model.put("haZookeeperQuorum", hdfsFrameworkConfig.getHaZookeeperQuorum());
 
       String nnNum = request.getParameter(HDFSConstants.NAMENODE_NUM_PARAM);

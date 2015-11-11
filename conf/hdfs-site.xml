@@ -84,7 +84,7 @@
 
   <property>
     <name>dfs.datanode.data.dir</name>
-    <value>file://${dataDir}/data</value>
+    <value>file://${dataDir}/data${if secondaryDataDir},file://${secondaryDataDir}/data${end}</value>
   </property>
 
   <property>
@@ -169,7 +169,7 @@
     <value>1000</value>
   </property>
 
-  <!-- This property needs to be consistent with mesos.hdfs.secondary.data.dir -->
+  <!-- This property needs to be consistent with mesos.hdfs.domain.socket.dir -->
   <property>
     <name>dfs.domain.socket.path</name>
     <value>/var/run/hadoop-hdfs/dn._PORT</value>
