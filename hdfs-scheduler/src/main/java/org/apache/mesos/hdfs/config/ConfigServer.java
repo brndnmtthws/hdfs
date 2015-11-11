@@ -124,6 +124,7 @@ public class ConfigServer {
       model.put("dataDir", hdfsFrameworkConfig.getDataDir());
       model.put("secondaryDataDir", hdfsFrameworkConfig.getSecondaryDataDir());
       model.put("haZookeeperQuorum", hdfsFrameworkConfig.getHaZookeeperQuorum());
+      model.put("domainSocketDir", hdfsFrameworkConfig.getDomainSocketDir());
 
       String nnNum = request.getParameter(HDFSConstants.NAMENODE_NUM_PARAM);
       if (hdfsFrameworkConfig.getBackupDir() != null && nnNum != null) {

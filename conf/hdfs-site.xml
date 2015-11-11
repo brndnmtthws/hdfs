@@ -172,6 +172,6 @@
   <!-- This property needs to be consistent with mesos.hdfs.domain.socket.dir -->
   <property>
     <name>dfs.domain.socket.path</name>
-    <value>/var/run/hadoop-hdfs/dn._PORT</value>
+    <value>${domainSocketDir}/dn._PORT</value>
   </property>
 </configuration>
