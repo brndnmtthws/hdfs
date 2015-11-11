@@ -288,7 +288,11 @@ public class HdfsFrameworkConfig {
   }
 
   public String getSecondaryDataDir() {
-    return getConf().get("mesos.hdfs.secondary.data.dir", "/var/run/hadoop-hdfs");
+    return getConf().get("mesos.hdfs.secondary.data.dir");
+  }
+
+  public String getDomainSocketDir() {
+    return getConf().get("mesos.hdfs.domain.socket.dir", "/var/run/hadoop-hdfs");
   }
 
   public String getBackupDir() {
