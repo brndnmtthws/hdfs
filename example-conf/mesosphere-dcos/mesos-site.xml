@@ -44,20 +44,6 @@
     <value>/var/lib/hdfs/data</value>
   </property>
 
-    <!-- Uncomment this to enable secondary data dir
-    <property>
-      <name>mesos.hdfs.secondary.data.dir</name>
-      <description>The secondary data directory in HDFS</description>
-      <value>/var/lib/hdfs/data</value>
-    </property>
-    -->
-    <!--
-    <property>
-      <name>mesos.hdfs.domain.socket.dir</name>
-      <description>The secondary data directory in HDFS</description>
-      <value>/var/lib/hdfs/data</value>
-    </property>
-    -->
     <!-- Uncomment this to enable backup
     <property>
       <name>mesos.hdfs.backup.dir</name>
