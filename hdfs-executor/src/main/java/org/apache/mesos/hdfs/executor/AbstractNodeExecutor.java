@@ -68,6 +68,7 @@ public abstract class AbstractNodeExecutor implements Executor {
     FrameworkInfo frameworkInfo, SlaveInfo slaveInfo) {
     // Set up data dir
     setUpDataDir();
+    setUpDomainSocketDir();
     if (!config.usingNativeHadoopBinaries()) {
       createSymbolicLink(driver);
     }
@@ -83,8 +84,19 @@ public abstract class AbstractNodeExecutor implements Executor {
     FileUtils.createDir(dataDir);
 
     // Create secondary data dir if it does not exist
-    File secondaryDataDir = new File(config.getSecondaryDataDir());
-    FileUtils.createDir(secondaryDataDir);
+    if (config.getSecondaryDataDir() != null) {
+      File secondaryDataDir = new File(config.getSecondaryDataDir());
+      FileUtils.createDir(secondaryDataDir);
+    }
+  }
+
+  /**
+   * Delete and recreate domain socket directory.
+   */
+  private void setUpDomainSocketDir() {
+    // Create domain socket dir if it does not exist
+    File domainSocketDir = new File(config.getDomainSocketDir());
+    FileUtils.createDir(domainSocketDir);
   }
 
 
