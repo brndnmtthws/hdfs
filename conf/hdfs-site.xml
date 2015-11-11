@@ -84,7 +84,7 @@
 
   <property>
     <name>dfs.datanode.data.dir</name>
-    <value>file://${dataDir}/data</value>
+    <value>file://${dataDir}/data${if secondaryDataDir},file://${secondaryDataDir}/data${end}</value>
   </property>
 
   <property>
