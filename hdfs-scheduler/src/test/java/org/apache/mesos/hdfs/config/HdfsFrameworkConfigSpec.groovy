@@ -27,19 +27,23 @@ class HdfsFrameworkConfigSpec extends Specification {
 
     when:
     def config = new HdfsFrameworkConfig()
-    def value = config.dataDir
+    def datadir = config.dataDir
+    def fwName = config.frameworkName
 
     then:
-    value == "/var/lib/hdfs/data"
+    datadir == "/var/lib/hdfs/data"
+    fwName == "hdfs"
 
     when:
     System.setProperty("MESOS_HDFS_DATA_DIR", "spacetime")
+    System.setProperty("MESOS_HDFS_FRAMEWORK_NAME", "einstein")
     config = new HdfsFrameworkConfig()
-    value = config.dataDir
+    datadir = config.dataDir
+    fwName = config.frameworkName
 
     then:
-    value == "spacetime"
-
+    datadir == "spacetime"
+    fwName == "einstein"
   }
 
   def createXML() {
@@ -49,6 +53,11 @@ class HdfsFrameworkConfigSpec extends Specification {
           <name>mesos.hdfs.data.dir</name>
           <description>The primary data directory in HDFS</description>
           <value>/var/lib/hdfs/data</value>
+        </property>
+        <property>
+          <name>mesos.hdfs.framework.name</name>
+          <description>Your Mesos framework name and cluster name when accessing files (hdfs://YOUR_NAME)</description>
+          <value>hdfs</value>
         </property>
       </configuration>
       """

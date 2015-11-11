@@ -2,8 +2,14 @@ package org.apache.mesos.hdfs.scheduler;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.mesos.Protos.*;
+import org.apache.mesos.Protos.CommandInfo;
+import org.apache.mesos.Protos.Environment;
+import org.apache.mesos.Protos.ExecutorInfo;
+import org.apache.mesos.Protos.Offer;
+import org.apache.mesos.Protos.Resource;
+import org.apache.mesos.Protos.TaskInfo;
 import org.apache.mesos.SchedulerDriver;
+import org.apache.mesos.collections.Maps;
 import org.apache.mesos.hdfs.config.HdfsFrameworkConfig;
 import org.apache.mesos.hdfs.config.NodeConfig;
 import org.apache.mesos.hdfs.state.HdfsState;
@@ -109,11 +115,13 @@ public abstract class HdfsNode implements IOfferEvaluator, ILauncher {
       CommandInfoBuilder.createCmdInfoUri(config.getJreUrl()));
   }
 
-  private List<Environment.Variable> getExecutorEnvironment() {
-    return Arrays.asList(
-      EnvironmentBuilder.createEnvironment("LD_LIBRARY_PATH", config.getLdLibraryPath()),
-      EnvironmentBuilder.createEnvironment("EXECUTOR_OPTS", "-Xmx" + config.getExecutorHeap() + "m -Xms" +
-        config.getExecutorHeap() + "m"));
+  protected List<Environment.Variable> getExecutorEnvironment() {
+    List<Environment.Variable> env = EnvironmentBuilder.
+      createEnvironment(Maps.propertyMapThatStartWith(System.getProperties(), "MESOS"));
+    env.add(EnvironmentBuilder.createEnvironment("LD_LIBRARY_PATH", config.getLdLibraryPath()));
+    env.add(EnvironmentBuilder.createEnvironment("EXECUTOR_OPTS", "-Xmx"
+      + config.getExecutorHeap() + "m -Xms" + config.getExecutorHeap() + "m"));
+    return env;
   }
 
   private List<String> getTaskNames(String taskType) {
