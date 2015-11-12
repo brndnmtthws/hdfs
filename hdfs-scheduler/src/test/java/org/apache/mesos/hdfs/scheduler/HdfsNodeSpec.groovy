@@ -18,7 +18,7 @@ class HdfsNodeSpec extends Specification {
   }
 
   @RestoreSystemProperties
-  def "environment with system properties"() {
+  def "executor environment with system properties"() {
 
     when:
     config.getLdLibraryPath() >> "path"

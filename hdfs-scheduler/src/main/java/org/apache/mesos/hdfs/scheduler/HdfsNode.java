@@ -122,6 +122,7 @@ public abstract class HdfsNode implements IOfferEvaluator, ILauncher {
     env.add(EnvironmentBuilder.createEnvironment("LD_LIBRARY_PATH", config.getLdLibraryPath()));
     env.add(EnvironmentBuilder.createEnvironment("EXECUTOR_OPTS", "-Xmx"
       + config.getExecutorHeap() + "m -Xms" + config.getExecutorHeap() + "m"));
+    log.info(env);
     return env;
   }
 
