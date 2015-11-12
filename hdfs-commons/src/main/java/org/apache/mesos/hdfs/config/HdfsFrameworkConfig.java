@@ -70,7 +70,8 @@ public class HdfsFrameworkConfig {
   }
 
   private Configuration getEnvConfiguration() {
-    Map<String, String> map = Maps.filterKeys(System.getenv(), new StartsWithPredicate("MESOS"));
+    Map<String, String> map = Maps.filterKeys(System.getenv(),
+      new StartsWithPredicate(HDFSConstants.PROPERTY_VAR_PREFIX));
     return mapToConfiguration(map);
   }
 
@@ -86,7 +87,7 @@ public class HdfsFrameworkConfig {
   @SuppressWarnings("unchecked")
   private Configuration getSysPropertiesConfiguration() {
     Map<String, String> map = new HashMap(System.getProperties());
-    map = Maps.filterKeys(map, new StartsWithPredicate("MESOS"));
+    map = Maps.filterKeys(map, new StartsWithPredicate(HDFSConstants.PROPERTY_VAR_PREFIX));
     return mapToConfiguration(map);
   }
 

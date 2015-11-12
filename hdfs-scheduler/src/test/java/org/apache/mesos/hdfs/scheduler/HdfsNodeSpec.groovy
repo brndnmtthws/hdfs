@@ -28,7 +28,7 @@ class HdfsNodeSpec extends Specification {
     hdfsNode.getExecutorEnvironment().size() == 2
 
     when:
-    System.properties.put("MESOS_NEW_PROP", "value")
+    System.properties.put("MESOS_HDFS_NEW_PROP", "value")
 
     then:
     hdfsNode.getExecutorEnvironment().size() == 3

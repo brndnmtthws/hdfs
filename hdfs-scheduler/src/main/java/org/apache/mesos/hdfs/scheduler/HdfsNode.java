@@ -118,7 +118,8 @@ public abstract class HdfsNode implements IOfferEvaluator, ILauncher {
 
   protected List<Environment.Variable> getExecutorEnvironment() {
     List<Environment.Variable> env = EnvironmentBuilder.
-      createEnvironment(MapUtil.propertyMapFilter(System.getProperties(), new StartsWithPredicate("MESOS")));
+      createEnvironment(MapUtil.propertyMapFilter(System.getProperties(),
+        new StartsWithPredicate(HDFSConstants.PROPERTY_VAR_PREFIX)));
     env.add(EnvironmentBuilder.createEnvironment("LD_LIBRARY_PATH", config.getLdLibraryPath()));
     env.add(EnvironmentBuilder.createEnvironment("EXECUTOR_OPTS", "-Xmx"
       + config.getExecutorHeap() + "m -Xms" + config.getExecutorHeap() + "m"));
