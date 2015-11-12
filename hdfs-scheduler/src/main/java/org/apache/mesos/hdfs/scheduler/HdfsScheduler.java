@@ -243,8 +243,10 @@ public class HdfsScheduler extends Observable implements org.apache.mesos.Schedu
       log.error(msg, e);
       throw new SchedulerException(msg, e);
     }
-
-    registerFramework(this, frameworkInfo.build(), config.getMesosMasterUri());
+    log.info("*** registering framework ***");
+    final FrameworkInfo framework = frameworkInfo.build();
+    log.info(framework);
+    registerFramework(this, framework, config.getMesosMasterUri());
   }
 
   private void registerFramework(HdfsScheduler sched, FrameworkInfo fInfo, String masterUri) {
