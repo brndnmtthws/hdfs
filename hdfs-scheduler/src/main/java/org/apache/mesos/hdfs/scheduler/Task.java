@@ -31,9 +31,8 @@ public class Task implements Serializable {
     String type,
     String idName) {
 
-    this.info = new TaskInfoBuilder(String.format("task.%s.%s", type, idName), name)
+    this.info = new TaskInfoBuilder(String.format("task.%s.%s", type, idName), name, offer.getSlaveId().getValue())
       .setExecutorInfo(execInfo)
-      .setSlaveId(offer.getSlaveId().getValue())
       .addAllResources(resources)
       .setData(String.format("bin/hdfs-mesos-%s", type))
       .build();

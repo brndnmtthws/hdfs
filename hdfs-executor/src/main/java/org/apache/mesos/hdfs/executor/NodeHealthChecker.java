@@ -2,7 +2,6 @@ package org.apache.mesos.hdfs.executor;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.mesos.ExecutorDriver;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 import org.apache.mesos.stream.StreamUtil;
 
@@ -21,7 +20,7 @@ public class NodeHealthChecker {
   public NodeHealthChecker() {
   }
 
-  public boolean runHealthCheckForTask(ExecutorDriver driver, Task task) {
+  public boolean runHealthCheckForTask(Task task) {
     String taskIdStr = task.getTaskInfo().getTaskId().getValue();
     int healthCheckPort = getHealthCheckPort(taskIdStr);
     boolean taskHealthy = false;
