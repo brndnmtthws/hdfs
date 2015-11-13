@@ -243,19 +243,18 @@ public class HdfsScheduler extends Observable implements org.apache.mesos.Schedu
       log.error(msg, e);
       throw new SchedulerException(msg, e);
     }
-
     registerFramework(this, frameworkInfo.build(), config.getMesosMasterUri());
   }
 
-  private void registerFramework(HdfsScheduler sched, FrameworkInfo fInfo, String masterUri) {
+  private void registerFramework(HdfsScheduler sched, FrameworkInfo frameworkInfo, String masterUri) {
     Credential cred = getCredential();
-
+    log.info(frameworkInfo);
     if (cred != null) {
       log.info("Registering with credentials.");
-      new MesosSchedulerDriver(sched, fInfo, masterUri, cred).run();
+      new MesosSchedulerDriver(sched, frameworkInfo, masterUri, cred).run();
     } else {
       log.info("Registering without authentication");
-      new MesosSchedulerDriver(sched, fInfo, masterUri).run();
+      new MesosSchedulerDriver(sched, frameworkInfo, masterUri).run();
     }
   }
 

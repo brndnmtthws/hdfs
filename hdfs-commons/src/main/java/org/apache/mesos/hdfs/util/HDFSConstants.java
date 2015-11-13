@@ -66,5 +66,7 @@ public final class HDFSConstants {
   public static final String NN_STATUS_FORMATTED_VAL = "formatted";
   public static final String NN_STATUS_BOOTSTRAPPED_VAL = "bootstrapped";
 
+  public static final String PROPERTY_VAR_PREFIX = "MESOS_HDFS_";
+
   public static final Integer POLL_DELAY_MS = 1000;
 }

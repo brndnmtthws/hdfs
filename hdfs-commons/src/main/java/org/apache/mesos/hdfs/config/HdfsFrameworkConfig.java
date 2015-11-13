@@ -1,11 +1,13 @@
 package org.apache.mesos.hdfs.config;
 
+import com.google.common.collect.Maps;
 import com.google.inject.Singleton;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.mesos.collections.StartsWithPredicate;
 import org.apache.mesos.hdfs.util.HDFSConstants;
 
 import java.net.InetAddress;
@@ -58,6 +60,7 @@ public class HdfsFrameworkConfig {
     Path configPath = new Path(props.getProperty("mesos.conf.path", "etc/hadoop/mesos-site.xml"));
     Configuration configuration = new Configuration();
     configuration.addResource(configPath);
+    configuration.addResource(getSysPropertiesConfiguration());
     configuration.addResource(getEnvConfiguration());
     setConf(configuration);
   }
@@ -67,19 +70,25 @@ public class HdfsFrameworkConfig {
   }
 
   private Configuration getEnvConfiguration() {
+    Map<String, String> map = Maps.filterKeys(System.getenv(),
+      new StartsWithPredicate(HDFSConstants.PROPERTY_VAR_PREFIX));
+    return mapToConfiguration(map);
+  }
+
+  private Configuration mapToConfiguration(Map<String, String> map) {
     Configuration cfg = new Configuration(false);
-
-    for (Map.Entry<Object, Object> property : System.getProperties().entrySet()) {
-      String name = property.getKey().toString();
-      if (!name.startsWith("MESOS_")) {
-        continue;
-      }
-
-      String cfgName = name.toLowerCase().replace("_", ".");
-      cfg.set(cfgName, property.getValue().toString());
+    for (Map.Entry<String, String> entry : map.entrySet()) {
+      String cfgName = entry.getKey().toLowerCase().replace("_", ".");
+      cfg.set(cfgName, entry.getValue());
     }
-
     return cfg;
+  }
+
+  @SuppressWarnings("unchecked")
+  private Configuration getSysPropertiesConfiguration() {
+    Map<String, String> map = new HashMap(System.getProperties());
+    map = Maps.filterKeys(map, new StartsWithPredicate(HDFSConstants.PROPERTY_VAR_PREFIX));
+    return mapToConfiguration(map);
   }
 
   private void setConf(Configuration conf) {
