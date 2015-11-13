@@ -18,13 +18,11 @@ public class TaskInfoBuilder {
 
   Protos.TaskInfo.Builder builder = Protos.TaskInfo.newBuilder();
 
-  public TaskInfoBuilder(String taskId) {
+  // min required fields to create a taskInfo
+  public TaskInfoBuilder(String taskId, String name, String slaveId) {
     setId(taskId);
-  }
-
-  public TaskInfoBuilder(String taskId, String name) {
-    this(taskId);
     setName(name);
+    setSlaveId(slaveId);
   }
 
   public TaskInfoBuilder setId(String taskId) {

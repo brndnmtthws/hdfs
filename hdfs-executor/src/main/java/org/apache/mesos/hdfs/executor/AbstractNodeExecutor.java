@@ -322,7 +322,7 @@ public abstract class AbstractNodeExecutor implements Executor {
     String taskIdStr = task.getTaskInfo().getTaskId().getValue();
     log.info("Performing health check for task: " + taskIdStr);
 
-    boolean taskHealthy = nodeHealthChecker.runHealthCheckForTask(driver, task);
+    boolean taskHealthy = nodeHealthChecker.runHealthCheckForTask(task);
     if (!taskHealthy) {
       log.fatal("Node health check failed for task: " + taskIdStr);
       killTask(driver, task.getTaskInfo().getTaskId());
