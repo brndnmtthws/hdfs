@@ -28,11 +28,8 @@ Installing HDFS-Mesos on your Cluster
 3. Optional: Customize any additional configurations that weren't updated at compile time in `hdfs-mesos-*/etc/hadoop/*-site.xml` Note that if you update hdfs-site.xml, it will be used by the scheduler and bundled with the executors. However, core-site.xml and mesos-site.xml will be used by the scheduler only.
 4. Check that `hostname` on that node resolves to a non-localhost IP; update /etc/hosts if necessary.
 
-### If you have Hadoop pre-installed in your cluster
-If you have Hadoop installed across your cluster, you don't need the Mesos scheduler application to distribute the binaries. You can set the `mesos.hdfs.native-hadoop-binaries` configuration parameter in `mesos-site.xml` if don't want the binaries distributed.
 
-### Mesos-DNS custom configuration
-You can see the example configuration in the `example-conf/dcos` directory. Since Mesos-DNS provides native bindings for master detection, we can simply use those names in our mesos and hdfs configurations. The example configuration assumes your Mesos masters and your zookeeper nodes are colocated. If they aren't you'll need to specify your zookeeper nodes separately. Also, note that you are using the example in `example-conf/dcos`, the `mesos.hdfs.native-hadoop-binaries` property needs to be set to `false` if your HDFS binaries are not predistributed.
+**NOTE:** Read [Configurations](config.md) for details on how to configure and custom HDFS.
 
 Starting HDFS-Mesos
 --------------------------
