@@ -79,7 +79,7 @@
 
   <property>
     <name>dfs.namenode.name.dir</name>
-    <value>file:///var/lib/hdfs/data/name${if backupDir},${backupDir}${end}</value>
+    <value>file:///var/lib/hdfs/data/name</value>
   </property>
 
   <property>
