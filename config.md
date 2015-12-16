@@ -45,7 +45,7 @@ There are additional configurations for executor jvm and resource management of 
 ## System Environment Variables
 
 All of the configuration flags previously defined can be overriden with system environment variables.  The format to use to override a variable is to
-upper case the string and replace dots (".") with underscores ("_").  For example, to override the `mesos.hdfs.framework.name`, the value is `MESOS_HDFS_FRAMEWORK_NAME=unicorn".
+upper case the string and replace dots (".") with underscores ("_").  For example, to override the `mesos.hdfs.framework.name`, the value is `MESOS_HDFS_FRAMEWORK_NAME=unicorn`.
 To use this value, export the value, then start the scheduler.  If a value is overridden by the system environment variable it will be propagated to
 the executors.
 
