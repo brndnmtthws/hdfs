@@ -33,7 +33,7 @@
 
   <property>
     <name>mesos.hdfs.domain.socket.dir</name>
-    <description>The secondary data directory in HDFS</description>
+    <description>The location used for a local socket used by the data nodes</description>
     <value>/var/run/hadoop-hdfs</value>
   </property>
 
