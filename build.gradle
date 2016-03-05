@@ -1,0 +1,83 @@
+allprojects {
+  apply plugin: 'idea'
+
+  group = "com.apache.mesos.hdfs"
+  version = "0.1.5"
+}
+
+idea {
+  project {
+    jdkName = '1.8'
+    languageLevel = '1.7'
+    ipr {
+      withXml { provider ->
+        provider.node.component
+          .find { it.@name == 'VcsDirectoryMappings' }
+          .mapping.@vcs = 'Git'
+      }
+    }
+  }
+}
+
+subprojects {
+
+  apply plugin: 'java'
+  apply plugin: 'application'
+  apply plugin: "jacoco"
+
+  apply from: "$rootDir/gradle/quality.gradle"
+  apply from: "$rootDir/gradle/spock.gradle"
+
+  sourceCompatibility = '1.7'
+  targetCompatibility = '1.7'
+
+  [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+  mainClassName = "org.apache.mesos.hdfs.scheduler.Main"
+
+  ext {
+    curatorVer = "2.9.0"
+    mesosVer = "0.24.1"
+    hadoopVer = "2.5.0"
+    slf4jVer = "1.7.10"
+    logbackVer = "1.1.2"
+    guiceVer = "3.0"
+    junitVer = "4.11"
+    mockitoVer = "1.9.5"
+  }
+
+  repositories {
+    mavenLocal()
+    mavenCentral()
+  }
+
+  dependencies {
+
+    compile "org.apache.curator:curator-framework:${curatorVer}"
+    compile "org.apache.curator:curator-recipes:${curatorVer}"
+    compile "org.apache.mesos:mesos:${mesosVer}"
+
+    compile "org.slf4j:log4j-over-slf4j:${slf4jVer}"
+    compile "org.slf4j:jcl-over-slf4j:${slf4jVer}"
+    compile "ch.qos.logback:logback-classic:${logbackVer}"
+
+    compile("org.apache.hadoop:hadoop-common:${hadoopVer}") {
+      exclude group: "log4j", module: "log4j"
+      exclude group: "org.slf4j", module: "slf4j-log4j12"
+      exclude group: "javax.servlet", module: "servlet-api"
+      exclude group: "commons-httpclient", module: "commons-httpclient"
+      exclude group: "net.java.dev.jets3t", module: "jets3t"
+    }
+
+    compile "com.google.inject:guice:${guiceVer}"
+
+  }
+
+  jacocoTestReport {
+    reports {
+      xml.enabled false
+      csv.enabled false
+      html.destination "${buildDir}/jacoco"
+    }
+  }
+}
